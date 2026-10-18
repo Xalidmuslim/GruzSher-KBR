@@ -67,7 +67,12 @@ private fun AppScreen() {
     val api = remember { Api() }
     val scope = rememberCoroutineScope()
     var vehicles by remember { mutableStateOf(if (BuildConfig.DEBUG) offlineDemoCatalog() else emptyList()) }
-    var bookings by remember { mutableStateOf<List<Booking>>(emptyList()) }
+    val context = LocalContext.current
+    val demoStore = remember(context) { DemoSnapshotStore(context.applicationContext) }
+    val restoredDemo = remember(demoStore) { demoStore.load() }
+    var bookings by remember { mutableStateOf(restoredDemo.first) }
+    var demoState by remember { mutableStateOf(restoredDemo.second) }
+    var demoNotice by remember { mutableStateOf<String?>(null) }
     var token by remember { mutableStateOf<String?>(null) }
     var busy by remember { mutableStateOf(!BuildConfig.DEBUG) }
     var error by remember { mutableStateOf<String?>(null) }
@@ -78,6 +83,33 @@ private fun AppScreen() {
     val offlineIntentKeys = remember { mutableStateMapOf<String, String>() }
     val offlineCreatedAt = remember { mutableStateMapOf<String, String>() }
     val offlineCancelledAt = remember { mutableStateMapOf<String, String>() }
+
+    LaunchedEffect(bookings, demoState) {
+        if (!BuildConfig.DEMO_SERVER_ENABLED) demoStore.save(bookings, demoState)
+    }
+    fun chooseTrip(booking: Booking) {
+        val picked = chooseDemoBooking(demoState, booking.id, booking.status)
+        demoNotice = picked.message
+        if (picked.success) {
+            demoState = picked.state
+            tab = 3
+        }
+    }
+    fun runDemoAction(action: DemoAction) {
+        val result = performDemoAction(demoState, action)
+        demoNotice = result.message
+        if (result.success) {
+            demoState = result.state
+            val rideId = result.state.tripId
+            if (offlineDemo && rideId != null) {
+                bookings = bookings.map { booking ->
+                    if (booking.id == rideId && result.state.tripStatus in setOf("CONFIRMED", "ACTIVE", "COMPLETED")) {
+                        booking.copy(status = result.state.tripStatus)
+                    } else booking
+                }
+            }
+        }
+    }
 
     fun demoSlots(): List<DemoRentalSlot> = bookings.mapNotNull { booking ->
         runCatching { DemoRentalSlot(booking.vehicleId,
@@ -130,8 +162,8 @@ private fun AppScreen() {
         containerColor = Cream,
         bottomBar = {
             NavigationBar(containerColor = Color.White) {
-                val titles = listOf("Карта", "Поездки", "Профиль")
-                val icons = listOf(Icons.Outlined.LocalShipping, Icons.Outlined.ReceiptLong, Icons.Outlined.AccountCircle)
+                val titles = listOf("Карта", "Поездки", "Профиль", "Демо")
+                val icons = listOf(Icons.Outlined.LocalShipping, Icons.Outlined.ReceiptLong, Icons.Outlined.AccountCircle, Icons.Outlined.CheckCircle)
                 titles.forEachIndexed { index, title ->
                     NavigationBarItem(selected = tab == index, onClick = { tab = index },
                         icon = { Icon(icons[index], contentDescription = null) }, label = { Text(title) })
@@ -155,6 +187,7 @@ private fun AppScreen() {
             when (tab) {
                 0 -> PremiumCatalog(vehicles, busy, onSelect = { selected = it }, onRefresh = { reloadVehicles() })
                 1 -> BookingsPage(bookings, vehicles,
+                    onDemoSelect = { chooseTrip(it) },
                     onTimeline = { id ->
                         if (offlineDemo && BuildConfig.DEBUG) {
                             val current = bookings.find { it.id == id }
@@ -167,6 +200,7 @@ private fun AppScreen() {
                         if (bookings.any { it.id == id && canCancelBooking(it.status) }) {
                             bookings = bookings.map { if (it.id == id) it.copy(status = "CANCELLED") else it }
                             offlineCancelledAt[id] = Instant.now().toString()
+                            if (demoState.tripId == id) demoState = demoState.copy(tripStatus = "CANCELLED", doorsOpen = false)
                         }
                     } else {
                     val t = token
@@ -177,7 +211,13 @@ private fun AppScreen() {
                     }
                     }
                 })
-                else -> ProfilePage()
+                2 -> ProfilePage()
+                else -> DemoCenter(
+                    state = demoState, bookings = bookings, cars = vehicles, notice = demoNotice,
+                    onSelectBooking = { chooseTrip(it) },
+                    onAction = { runDemoAction(it) },
+                    onOpenMap = { tab = 0 }
+                )
             }
         }
     }
@@ -214,6 +254,7 @@ private fun AppScreen() {
                             bookings = listOf(Booking(id, vehicle.id, "PENDING",
                                 start.format(DateTimeFormatter.ISO_OFFSET_DATE_TIME),
                                 end.format(DateTimeFormatter.ISO_OFFSET_DATE_TIME), cost)) + bookings
+                            demoState = chooseDemoBooking(demoState, id, "PENDING").state
                         }
                         selected = null
                         tab = 1
@@ -427,7 +468,7 @@ private fun VehicleBookingSheet(
                     Text(if (bookingSubmitting) "Отправляем заявку…" else "Отправить заявку на аренду")
                 }
             }
-            Text(if (canBook) "ТОЛЬКО ДЕМО: заявка не поступает оператору, не сохраняется после перезапуска и не даёт доступ к машине." else "Это просмотр и расчёт демотарифа. Чтобы бронировать, подключите сервер и войдите.",
+            Text(if (canBook) "ТОЛЬКО ДЕМО: заявка не поступает оператору, локально сохраняется на телефоне и не даёт доступ к машине." else "Это просмотр и расчёт демотарифа. Чтобы бронировать, подключите сервер и войдите.",
                 fontSize = 11.sp, color = Color.Gray, modifier = Modifier.padding(top = 12.dp))
         }
     }
@@ -440,6 +481,7 @@ private fun BookingsPage(
     onTimeline: suspend (String) -> List<BookingTimelineEvent>,
     onRefresh: () -> Unit,
     onCancel: (String) -> Unit,
+    onDemoSelect: (Booking) -> Unit,
 ) {
     var selectedBooking by remember { mutableStateOf<Booking?>(null) }
     Column(Modifier.fillMaxSize().padding(horizontal = 18.dp)) {
@@ -489,6 +531,11 @@ private fun BookingsPage(
                             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                                 OutlinedButton(onClick = { selectedBooking = booking },
                                     modifier = Modifier.weight(1f)) { Text("История", fontSize = 12.sp) }
+                                if (booking.status !in setOf("CANCELLED", "EXPIRED")) {
+                                    TextButton(onClick = { onDemoSelect(booking) }, modifier = Modifier.weight(1f)) {
+                                        Text("Демо", fontSize = 12.sp)
+                                    }
+                                }
                                 if (canCancelBooking(booking.status)) {
                                     TextButton(onClick = { onCancel(booking.id) },
                                         modifier = Modifier.weight(1f)) { Text("Отменить", fontSize = 12.sp) }

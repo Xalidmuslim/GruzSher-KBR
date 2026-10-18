@@ -1,6 +1,7 @@
 package ru.kbr.cargoshare
 
 import android.graphics.Color as AndroidColor
+import android.view.MotionEvent
 import android.graphics.drawable.GradientDrawable
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -573,6 +574,15 @@ fun LiveDemoScreen(
         MapView(context).apply {
             setTileSource(TileSourceFactory.MAPNIK)
             setMultiTouchControls(true)
+            setOnTouchListener { view, event ->
+                when (event.actionMasked) {
+                    MotionEvent.ACTION_DOWN, MotionEvent.ACTION_MOVE ->
+                        view.parent?.requestDisallowInterceptTouchEvent(true)
+                    MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL ->
+                        view.parent?.requestDisallowInterceptTouchEvent(false)
+                }
+                false
+            }
             setBuiltInZoomControls(false)
             controller.setZoom(15.0)
             controller.setCenter(route[centerIndexForRoute(route.size)])

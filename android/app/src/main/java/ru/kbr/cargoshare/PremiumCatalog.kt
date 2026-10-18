@@ -2,6 +2,7 @@ package ru.kbr.cargoshare
 
 import android.Manifest
 import android.content.pm.PackageManager
+import android.view.MotionEvent
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
@@ -243,6 +244,17 @@ internal fun NalchikMap(cars: List<Vehicle>, onSelect: (Vehicle) -> Unit, modifi
         MapView(context).apply {
             setTileSource(TileSourceFactory.MAPNIK)
             setMultiTouchControls(true)
+            // Compose's vertical list must not consume panning gestures inside the map.
+            // Returning false lets osmdroid handle pan, zoom and pin clicks itself.
+            setOnTouchListener { view, event ->
+                when (event.actionMasked) {
+                    MotionEvent.ACTION_DOWN, MotionEvent.ACTION_MOVE ->
+                        view.parent?.requestDisallowInterceptTouchEvent(true)
+                    MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL ->
+                        view.parent?.requestDisallowInterceptTouchEvent(false)
+                }
+                false
+            }
             setBuiltInZoomControls(false) // OSMDroid defaults obscure truck pins
             controller.setZoom(savedZoom)
             controller.setCenter(GeoPoint(savedLatitude,savedLongitude))
@@ -300,9 +312,12 @@ internal fun NalchikMap(cars: List<Vehicle>, onSelect: (Vehicle) -> Unit, modifi
     }
     val markerIcons = remember(context, markerSignature) {
         cars.associate { vehicle ->
+            // The price stays horizontal; only the truck glyph has a stable heading.
+            val facing = truckFacingDegrees(vehicle.id)
             vehicle.id to Pair(
-                truckMapMarker(context, hourlyRub = vehicle.hourlyPriceRub),
-                truckMapMarker(context, hourlyRub = vehicle.hourlyPriceRub, selected = true)
+                truckMapMarker(context, hourlyRub = vehicle.hourlyPriceRub, facingDegrees = facing),
+                truckMapMarker(context, hourlyRub = vehicle.hourlyPriceRub,
+                    selected = true, facingDegrees = facing)
             )
         }
     }

@@ -88,6 +88,10 @@ fun demoFare(s: LiveDemoSession, hourlyPriceRub: Int, now: Long): Int =
 
 /** Idempotent time transitions: resilient to Android lifecycle pauses and device restarts. */
 fun advanceLive(s: LiveDemoSession, now: Long): LiveDemoSession = when {
+    // Pre-v3.4 sessions may have no scan timestamps: start an automatic demo check.
+    s.phase == LivePhase.DOCUMENTS && s.documentIssue.isEmpty() &&
+      (s.passportStartedAt == 0L || s.licenceStartedAt == 0L) ->
+        s.copy(passportStartedAt = now, licenceStartedAt = now)
     s.phase == LivePhase.DOCUMENTS && s.documentIssue.isEmpty() &&
       s.passportStartedAt > 0L && s.licenceStartedAt > 0L &&
       now >= maxOf(s.passportStartedAt, s.licenceStartedAt) + LIVE_OPERATION_MS ->

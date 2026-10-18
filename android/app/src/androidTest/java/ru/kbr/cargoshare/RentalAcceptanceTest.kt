@@ -97,7 +97,7 @@ class RentalAcceptanceTest {
         tap("Продлить +2 ч")
         device.pressBack()
         assertTrue(device.wait(Until.hasObject(By.text("Тренажёр аренды")),10_000))
-        tap("Тренажёр аренды")
+        tap("LIVE Демо")
         assertTrue(device.wait(Until.hasObject(By.text("Продолжить")),10_000))
         tap("Продолжить")
         tap("Завершить поездку")

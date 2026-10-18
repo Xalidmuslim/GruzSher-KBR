@@ -39,11 +39,11 @@ import java.util.Locale
 import kotlin.math.ceil
 import kotlin.math.roundToInt
 
-private val LiveGreen = Color(0xFF184F3F)
-private val LivePaper = Color(0xFFF6F7F2)
-private val LiveInk = Color(0xFF192923)
-private val LivePale = Color(0xFFEAF0EA)
-private val LiveGray = Color(0xFF77847E)
+private val LiveGreen = PremiumTheme.Green
+private val LivePaper = PremiumTheme.Paper
+private val LiveInk = PremiumTheme.Text
+private val LivePale = PremiumTheme.Mint
+private val LiveGray = PremiumTheme.Muted
 
 @Composable
 fun LiveDemoScreen(
@@ -109,10 +109,15 @@ fun LiveDemoScreen(
         Spacer(Modifier.height(6.dp))
         Row(verticalAlignment = Alignment.CenterVertically) {
             Column(Modifier.weight(1f)) {
-                Text("ГрузШер LIVE DEMO", fontSize = 23.sp, fontWeight = FontWeight.ExtraBold, color = LiveInk)
-                Text("Реальная последовательность · симуляция", color = LiveGray, fontSize = 12.sp)
+                Text("ГРУЗШЕР", fontSize = 27.sp, fontWeight = FontWeight.Black,
+                    color = LiveGreen)
+                Text("LIVE Демо · полный цикл аренды", color = LiveGray, fontSize = 12.sp)
             }
-            TextButton(onClick = { perform(LiveEvent.RESET) }) { Text("Сначала", color = LiveGreen, fontSize = 12.sp) }
+            TextButton(onClick = { perform(LiveEvent.RESET) }) {
+                Icon(Icons.Outlined.Refresh, null, modifier = Modifier.size(16.dp))
+                Spacer(Modifier.width(3.dp))
+                Text("Сначала", fontSize = 11.sp)
+            }
         }
         Surface(shape = RoundedCornerShape(14.dp), color = LivePale) {
             Row(Modifier.fillMaxWidth().padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
@@ -128,7 +133,7 @@ fun LiveDemoScreen(
             }
         }
         if (session.phase != LivePhase.CHOOSE && car != null) {
-            LiveVehicleCard(car)
+            LiveVehicleCard(car, session.phase == LivePhase.DRIVING)
         }
         when (session.phase) {
             LivePhase.CHOOSE -> {
@@ -366,7 +371,7 @@ fun LiveDemoScreen(
         }
         if (session.phase !in setOf(LivePhase.CHOOSE, LivePhase.RECEIPT)) {
             Spacer(Modifier.height(7.dp))
-            Text("ДЕМО • никакие операции не связаны с реальным автомобилем",
+            Text("ДЕМО • управление автомобилем и расчёт полностью виртуальные",
                 modifier = Modifier.fillMaxWidth(), fontSize = 10.sp, color = LiveGray)
         }
         Spacer(Modifier.height(8.dp))
@@ -439,46 +444,50 @@ fun LiveDemoScreen(
     }
 }
 
-@Composable private fun LiveVehicleCard(car: Vehicle) {
-    Surface(color = Color.White, shape = RoundedCornerShape(17.dp)) {
-        Row(Modifier.fillMaxWidth().padding(10.dp), verticalAlignment = Alignment.CenterVertically) {
-            val localImage = when(car.id) {
-                "gazelle-next" -> "file:///android_asset/truck_g01.webp"
-                "ford-transit" -> "file:///android_asset/truck_g02.webp"
-                "largus-van" -> null // previous bitmap showed a different model
-                else -> null
-            }
-            Box(Modifier.size(width = 94.dp, height = 75.dp).clip(RoundedCornerShape(12.dp)).background(LivePale),
-                contentAlignment = Alignment.Center) {
-                if (localImage != null) AsyncImage(localImage, contentDescription = car.name,
-                    modifier = Modifier.fillMaxSize(), contentScale = ContentScale.Fit)
-                else Icon(Icons.Outlined.DirectionsCar, null, tint = LiveGreen)
-            }
+@Composable private fun LiveVehicleCard(car: Vehicle, active: Boolean = false) {
+    val dark = if (active) PremiumTheme.GreenDark else Color.White
+    val foreground = if (active) Color.White else LiveInk
+    Surface(color = dark, shape = RoundedCornerShape(21.dp)) {
+        Row(Modifier.fillMaxWidth().padding(13.dp), verticalAlignment = Alignment.CenterVertically) {
+            TruckArtwork(car, Modifier.size(116.dp, 90.dp))
             Spacer(Modifier.width(13.dp))
-            Column(Modifier.weight(1f)) {
-                Text(car.name, color = LiveInk, fontSize = 17.sp, fontWeight = FontWeight.Bold)
-                Text(car.type, color = LiveGray, fontSize = 11.sp)
-                Text("${car.hourlyPriceRub} ₽ / час · без залога", color = LiveGreen, fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
+            Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(5.dp)) {
+                Text(if (active) "● В пути · ДЕМО" else "● Учебная аренда",
+                    color = if (active) Color(0xFF9CE6BA) else LiveGreen,
+                    fontSize = 11.sp)
+                Text(car.name, color = foreground, fontSize = 19.sp, fontWeight = FontWeight.ExtraBold)
+                Text(car.type, color = if (active) Color.White.copy(alpha = .8f) else LiveGray, fontSize = 11.sp)
+                Text("${car.hourlyPriceRub} ₽/ч · без залога",
+                    color = if (active) Color.White else LiveGreen, fontSize = 12.sp,
+                    fontWeight = FontWeight.SemiBold)
             }
         }
     }
 }
 
 @Composable private fun LiveHeader(step: String, heading: String, detail: String) {
-    Surface(color = LiveGreen, shape = RoundedCornerShape(22.dp)) {
-        Column(Modifier.fillMaxWidth().padding(19.dp), verticalArrangement = Arrangement.spacedBy(11.dp)) {
-            Text("ГРУЗШЕР · ЭТАП $step / 14", fontSize = 10.sp, color = Color.White.copy(alpha = .85f), fontWeight = FontWeight.Bold)
-            LinearProgressIndicator(progress = { ((step.toIntOrNull() ?: 1) / 14f).coerceIn(0f, 1f) }, modifier = Modifier.fillMaxWidth().height(5.dp).clip(RoundedCornerShape(4.dp)), color = Color.White, trackColor = Color.White.copy(alpha = .24f))
-            Text(heading, fontSize = 22.sp, fontWeight = FontWeight.ExtraBold, color = Color.White)
-            Text(detail, fontSize = 12.sp, lineHeight = 17.sp, color = Color.White.copy(alpha = .82f))
+    Surface(color = Color.White, shape = RoundedCornerShape(23.dp), shadowElevation = 1.dp) {
+        Column(Modifier.fillMaxWidth().padding(17.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+            Text("ЭТАП $step / 14 · LIVE ДЕМО",
+                fontSize = 10.sp, color = LiveGreen, fontWeight = FontWeight.Bold)
+            LinearProgressIndicator(
+                progress = { ((step.toIntOrNull() ?: 1) / 14f).coerceIn(0f, 1f) },
+                modifier = Modifier.fillMaxWidth().height(5.dp).clip(RoundedCornerShape(5.dp)),
+                color = LiveGreen, trackColor = LivePale)
+            Text(heading, fontSize = 23.sp, lineHeight = 27.sp,
+                fontWeight = FontWeight.ExtraBold, color = LiveInk)
+            Text(detail, fontSize = 12.sp, lineHeight = 18.sp, color = LiveGray)
         }
     }
 }
 @Composable private fun LiveNumber(label: String, value: String, modifier: Modifier = Modifier) {
-    Surface(modifier, color = Color.White, shape = RoundedCornerShape(15.dp)) {
-        Column(Modifier.padding(12.dp)) {
-            Text(label, fontSize = 10.sp, color = LiveGray)
-            Text(value, fontSize = 16.sp, fontWeight = FontWeight.Bold, color = LiveGreen)
+    Surface(modifier, color = Color.White, shape = RoundedCornerShape(19.dp),
+        shadowElevation = 1.dp) {
+        Column(Modifier.padding(horizontal = 9.dp, vertical = 15.dp),
+            verticalArrangement = Arrangement.spacedBy(6.dp)) {
+            Text(label, fontSize = 11.sp, color = LiveGray)
+            Text(value, fontSize = 17.sp, fontWeight = FontWeight.ExtraBold,
+                color = LiveGreen, maxLines = 1)
         }
     }
 }

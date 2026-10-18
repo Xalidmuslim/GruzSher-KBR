@@ -61,6 +61,7 @@ fun LiveDemoScreen(
     var code by remember { mutableStateOf("") }
     var supportText by remember { mutableStateOf("") }
     var sentSupport by remember { mutableStateOf<String?>(null) }
+    var showReturnConfirm by remember { mutableStateOf(false) }
 
     val car = cars.find { it.id == session.carId } ?: cars.firstOrNull()
     fun perform(event: LiveEvent, value: String = "") {
@@ -95,9 +96,11 @@ fun LiveDemoScreen(
         }
     }
     LaunchedEffect(Unit) { onTripChanged(session) }
+    Box(Modifier.fillMaxSize().background(LivePaper)) {
     Column(
-        Modifier.fillMaxSize().background(LivePaper).verticalScroll(rememberScrollState())
-            .padding(horizontal = 18.dp).padding(bottom = 30.dp),
+        Modifier.fillMaxSize().verticalScroll(rememberScrollState())
+            .padding(horizontal = 18.dp)
+            .padding(bottom = if (session.phase in setOf(LivePhase.DRIVING, LivePhase.RETURNING, LivePhase.RETURN)) 106.dp else 30.dp),
         verticalArrangement = Arrangement.spacedBy(14.dp)
     ) {
         Spacer(Modifier.height(6.dp))
@@ -280,7 +283,7 @@ fun LiveDemoScreen(
                 }
                 LinearProgressIndicator(progress = { progress }, modifier = Modifier.fillMaxWidth(), color = LiveGreen)
                 LiveMetricRow("Скорость (учебная)", if (session.pauseStartedAt > 0L) "0 км/ч" else "${(25 + 12 * progress).roundToInt()} км/ч")
-                LiveMetricRow("Осталось до возврата", "${((LIVE_ROUTE_MS * (1 - progress)) / 1000f).roundToInt()} сек")
+                LiveMetricRow("Учебный маршрут", "${((LIVE_ROUTE_MS * (1 - progress)) / 1000f).roundToInt()} сек до стоянки")
                 if (session.pauseStartedAt > 0L) LiveNote("Режим ожидания: движение и учебный таймер маршрута остановлены.")
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     OutlinedButton(onClick = { perform(LiveEvent.TOGGLE_WAIT) }, modifier = Modifier.weight(1f)) {
@@ -303,24 +306,35 @@ fun LiveDemoScreen(
                 }
                 if (session.incident) LiveNote("Учебный инцидент №1 отмечен в журнале. Никому не отправлен.")
             }
+            LivePhase.RETURNING -> {
+                val progress = routeFraction(session, now)
+                val seconds = ((LIVE_RETURN_MS - (now - session.returnRequestedAt)).coerceAtLeast(0L) / 1000L)
+                LiveHeader("12", "Едем к стоянке", "Вы выбрали завершение поездки. Машина направляется в учебную зону возврата.")
+                LiveRouteMap(car, progress, "грузовик")
+                LiveMetricRow("Прибытие", "Через ${seconds} сек")
+                LinearProgressIndicator(progress = { progress }, modifier = Modifier.fillMaxWidth(), color = LiveGreen)
+                LiveNote("Маршрут и геозона условные. После прибытия потребуется фотоосмотр, закрытие дверей и подтверждение окончания.")
+            }
             LivePhase.RETURN -> {
-                LiveHeader("12", "Возврат грузовика", "Вы приехали в учебную зону завершения. Сделайте фото, закройте машину и завершите аренду.")
+                LiveHeader("13", "Возврат грузовика", "Вы приехали в учебную зону завершения. Сделайте фото, закройте машину и завершите аренду.")
                 LiveRouteMap(car, 1f, "грузовик")
                 LiveMetricRow("Учебная зона возврата", "Разрешено")
                 val photoDone = session.returnPhotoAt > 0L && now >= session.returnPhotoAt + LIVE_OPERATION_MS
                 val lockDone = session.lockingAt > 0L && now >= session.lockingAt + LIVE_OPERATION_MS
-                if (session.returnPhotoAt == 0L) LiveButton("Сделать фото после поездки", Icons.Outlined.PhotoCamera) { perform(LiveEvent.TAKE_RETURN_PHOTO) }
-                else if (!photoDone) LiveWait("Сохраняем учебный фотоотчёт…",
+                if (session.returnPhotoAt == 0L) {
+                    LiveNote("Шаг 1 из 3 · Сделайте учебный фотоосмотр машины, затем подтвердите закрытие дверей.")
+                } else if (!photoDone) LiveWait("Сохраняем учебный фотоотчёт…",
                     (LIVE_OPERATION_MS - (now - session.returnPhotoAt)).coerceAtLeast(0L) / 1000L,
                     (now - session.returnPhotoAt).toFloat() / 1000f)
-                else if (session.lockingAt == 0L) LiveButton("Закрыть автомобиль", Icons.Outlined.Lock) { perform(LiveEvent.LOCK_DOORS) }
-                else if (!lockDone) LiveWait("Проверяем виртуальное закрытие дверей…",
+                else if (session.lockingAt == 0L) {
+                    LiveNote("Шаг 2 из 3 · Фотоосмотр завершён. Теперь закройте учебный автомобиль.")
+                } else if (!lockDone) LiveWait("Проверяем виртуальное закрытие дверей…",
                     (LIVE_OPERATION_MS - (now - session.lockingAt)).coerceAtLeast(0L) / 1000L,
                     (now - session.lockingAt).toFloat() / 1000f)
-                else LiveButton("Завершить аренду и получить чек", Icons.Outlined.ReceiptLong) { perform(LiveEvent.FINISH) }
+                else LiveNote("Шаг 3 из 3 · Двери закрыты. Подтвердите завершение и получите чек.")
             }
             LivePhase.RECEIPT -> {
-                LiveHeader("13", "Поездка завершена", "Пример электронного отчёта с реальными показаниями таймера симуляции.")
+                LiveHeader("14", "Поездка завершена", "Пример электронного отчёта с реальными показаниями таймера симуляции.")
                 Surface(color = Color.White, shape = RoundedCornerShape(20.dp)) {
                     Column(Modifier.fillMaxWidth().padding(20.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
                         Icon(Icons.Outlined.CheckCircle, null, tint = LiveGreen, modifier = Modifier.size(44.dp))
@@ -353,6 +367,72 @@ fun LiveDemoScreen(
                 modifier = Modifier.fillMaxWidth(), fontSize = 10.sp, color = LiveGray)
         }
         Spacer(Modifier.height(8.dp))
+    }
+    if (session.phase in setOf(LivePhase.DRIVING, LivePhase.RETURNING, LivePhase.RETURN)) {
+        Surface(
+            modifier = Modifier.fillMaxWidth().align(Alignment.BottomCenter),
+            color = Color.White, shadowElevation = 11.dp, tonalElevation = 2.dp
+        ) {
+            Column(Modifier.fillMaxWidth().padding(horizontal = 18.dp, vertical = 10.dp),
+                verticalArrangement = Arrangement.spacedBy(3.dp)) {
+                val photoReady = session.returnPhotoAt > 0L && now >= session.returnPhotoAt + LIVE_OPERATION_MS
+                val lockReady = session.lockingAt > 0L && now >= session.lockingAt + LIVE_OPERATION_MS
+                val target = when {
+                    session.phase == LivePhase.DRIVING -> "Завершить поездку"
+                    session.phase == LivePhase.RETURNING -> "Направляемся на стоянку…"
+                    session.returnPhotoAt == 0L -> "Сделать фото при возврате"
+                    !photoReady -> "Обрабатываем фото…"
+                    session.lockingAt == 0L -> "Закрыть автомобиль"
+                    !lockReady -> "Проверяем закрытие…"
+                    else -> "Завершить аренду • чек"
+                }
+                val enabled = session.phase == LivePhase.DRIVING ||
+                    (session.phase == LivePhase.RETURN && (session.returnPhotoAt == 0L || photoReady &&
+                        (session.lockingAt == 0L || lockReady)))
+                Button(
+                    onClick = {
+                        when {
+                            session.phase == LivePhase.DRIVING -> showReturnConfirm = true
+                            session.phase == LivePhase.RETURN && session.returnPhotoAt == 0L -> perform(LiveEvent.TAKE_RETURN_PHOTO)
+                            session.phase == LivePhase.RETURN && session.lockingAt == 0L -> perform(LiveEvent.LOCK_DOORS)
+                            session.phase == LivePhase.RETURN -> perform(LiveEvent.FINISH)
+                            else -> Unit
+                        }
+                    },
+                    enabled = enabled,
+                    modifier = Modifier.fillMaxWidth().height(54.dp),
+                    shape = RoundedCornerShape(17.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = LiveGreen),
+                ) {
+                    Icon(if (session.phase == LivePhase.DRIVING) Icons.Outlined.Flag
+                        else Icons.Outlined.CheckCircle, null, modifier = Modifier.size(18.dp))
+                    Spacer(Modifier.width(8.dp))
+                    Text(target, fontWeight = FontWeight.Bold, fontSize = 15.sp)
+                }
+                Text("ДЕМО · нет реального управления замками или списаний",
+                    color = LiveGray, fontSize = 10.sp,
+                    modifier = Modifier.align(Alignment.CenterHorizontally))
+            }
+        }
+    }
+    }
+    if (showReturnConfirm) {
+        AlertDialog(
+            onDismissRequest = { showReturnConfirm = false },
+            icon = { Icon(Icons.Outlined.LocalParking, null, tint = LiveGreen) },
+            title = { Text("Завершить поездку?") },
+            text = {
+                Text("Для завершения аренды сначала доберёмся до учебной парковки (около 16 секунд). Затем потребуется сделать фото автомобиля и закрыть двери. Настоящий автомобиль не перемещается.")
+            },
+            confirmButton = {
+                Button(onClick = { showReturnConfirm = false; perform(LiveEvent.REQUEST_RETURN) }) {
+                    Text("Ехать к парковке")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showReturnConfirm = false }) { Text("Продолжить поездку") }
+            }
+        )
     }
 }
 
@@ -478,7 +558,7 @@ fun LiveDemoScreen(
         }
     }
     DisposableEffect(map) { map.onResume(); onDispose { map.onPause(); map.onDetach() } }
-    AndroidView(factory = { map }, modifier = Modifier.fillMaxWidth().height(260.dp)
+    AndroidView(factory = { map }, modifier = Modifier.fillMaxWidth().height(218.dp)
         .clip(RoundedCornerShape(20.dp)),
         update = { view ->
             val f = fraction.coerceIn(0f, 1f)

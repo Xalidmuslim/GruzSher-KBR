@@ -78,6 +78,7 @@ private fun AppScreen() {
     var error by remember { mutableStateOf<String?>(null) }
     var offlineDemo by remember { mutableStateOf(BuildConfig.DEBUG) }
     var tab by remember { mutableIntStateOf(0) }
+    var liveSelectedCarId by remember { mutableStateOf<String?>(null) }
     var selected by remember { mutableStateOf<Vehicle?>(null) }
     // Volatile simulator state is intentionally never synchronized to the API or stored on disk.
     val offlineIntentKeys = remember { mutableStateMapOf<String, String>() }
@@ -88,6 +89,7 @@ private fun AppScreen() {
         if (!BuildConfig.DEMO_SERVER_ENABLED) demoStore.save(bookings, demoState)
     }
     fun chooseTrip(booking: Booking) {
+        liveSelectedCarId = booking.vehicleId
         val picked = chooseDemoBooking(demoState, booking.id, booking.status)
         demoNotice = picked.message
         if (picked.success) {
@@ -162,7 +164,7 @@ private fun AppScreen() {
         containerColor = Cream,
         bottomBar = {
             NavigationBar(containerColor = Color.White) {
-                val titles = listOf("Карта", "Поездки", "Профиль", "Демо")
+                val titles = listOf("Карта", "Поездки", "Профиль", "LIVE Демо")
                 val icons = listOf(Icons.Outlined.LocalShipping, Icons.Outlined.ReceiptLong, Icons.Outlined.AccountCircle, Icons.Outlined.CheckCircle)
                 titles.forEachIndexed { index, title ->
                     NavigationBarItem(selected = tab == index, onClick = { tab = index },
@@ -185,7 +187,7 @@ private fun AppScreen() {
                 }
             }
             when (tab) {
-                0 -> PremiumCatalog(vehicles, busy, onSelect = { selected = it }, onRefresh = { reloadVehicles() })
+                0 -> PremiumCatalog(vehicles, busy, onSelect = { selected = it }, onRefresh = { reloadVehicles() }, onLiveDemo = { liveSelectedCarId = null; tab = 3 })
                 1 -> BookingsPage(bookings, vehicles,
                     onDemoSelect = { chooseTrip(it) },
                     onTimeline = { id ->
@@ -212,11 +214,37 @@ private fun AppScreen() {
                     }
                 })
                 2 -> ProfilePage()
-                else -> DemoCenter(
-                    state = demoState, bookings = bookings, cars = vehicles, notice = demoNotice,
-                    onSelectBooking = { chooseTrip(it) },
-                    onAction = { runDemoAction(it) },
-                    onOpenMap = { tab = 0 }
+                else -> LiveDemoScreen(
+                    cars = vehicles,
+                    selectedCarId = liveSelectedCarId,
+                    onBackToMap = { tab = 0 },
+                    onTripChanged = { live ->
+                        if (offlineDemo && live.bookingId.isNotBlank() && live.carId.isNotBlank()) {
+                            val current = vehicles.firstOrNull { it.id == live.carId }
+                            val phaseStatus = when (live.phase) {
+                                LivePhase.RECEIPT -> "COMPLETED"
+                                LivePhase.DRIVING, LivePhase.RETURN -> "ACTIVE"
+                                LivePhase.INSPECT, LivePhase.UNLOCK, LivePhase.READY -> "CONFIRMED"
+                                else -> "PENDING"
+                            }
+                            if (current != null) {
+                                val simulatedStart = java.time.OffsetDateTime.ofInstant(
+                                    java.time.Instant.ofEpochMilli(live.approvalStartedAt), LocalZone)
+                                val simulatedEnd = simulatedStart.plusHours((live.durationHours + live.extraHours).toLong())
+                                val cost = if (live.phase == LivePhase.RECEIPT) demoFare(live, current.hourlyPriceRub, System.currentTimeMillis())
+                                    else (live.durationHours + live.extraHours) * current.hourlyPriceRub
+                                val record = Booking(live.bookingId, live.carId, phaseStatus,
+                                    simulatedStart.format(DateTimeFormatter.ISO_OFFSET_DATE_TIME),
+                                    simulatedEnd.format(DateTimeFormatter.ISO_OFFSET_DATE_TIME), cost)
+                                if (bookings.none { it.id == live.bookingId }) {
+                                    bookings = listOf(record) + bookings
+                                    offlineCreatedAt[live.bookingId] = Instant.now().toString()
+                                } else {
+                                    bookings = bookings.map { if (it.id == live.bookingId) record else it }
+                                }
+                            }
+                        }
+                    }
                 )
             }
         }
@@ -224,6 +252,11 @@ private fun AppScreen() {
     selected?.let { vehicle ->
         VehicleBookingSheet(vehicle = vehicle, canBook = token != null || (offlineDemo && BuildConfig.DEBUG),
             onDismiss = { selected = null },
+            onTryLiveDemo = {
+                liveSelectedCarId = vehicle.id
+                selected = null
+                tab = 3
+            },
             onQuote = { start, end ->
                 if (offlineDemo && BuildConfig.DEBUG) {
                     val h = java.time.Duration.between(start, end).toHours().toInt()
@@ -353,6 +386,7 @@ private fun VehicleBookingSheet(
     vehicle: Vehicle,
     canBook: Boolean,
     onDismiss: () -> Unit,
+    onTryLiveDemo: () -> Unit,
     onQuote: suspend (ZonedDateTime, ZonedDateTime) -> Pair<Int, Boolean>,
     onBook: suspend (ZonedDateTime, ZonedDateTime, String) -> Boolean,
 ) {
@@ -380,7 +414,13 @@ private fun VehicleBookingSheet(
             }
             Text("${vehicle.payloadKg} кг · ${vehicle.cargoVolumeM3} м³ · ${vehicle.transmission}", color = Green)
             Text(vehicle.pickupLocation, color = Color.Gray, fontSize = 13.sp)
-            Spacer(Modifier.height(20.dp))
+            Spacer(Modifier.height(12.dp))
+            Button(
+                onClick = onTryLiveDemo,
+                modifier = Modifier.fillMaxWidth().height(54.dp),
+                shape = RoundedCornerShape(16.dp),
+            ) { Text("Пройти аренду в реальном времени (ДЕМО)") }
+            Spacer(Modifier.height(16.dp))
             Text("Начало аренды", fontWeight = FontWeight.SemiBold)
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.padding(top = 8.dp)) {
                 OutlinedButton(onClick = {

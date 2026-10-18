@@ -363,7 +363,7 @@ internal fun NalchikMap(cars: List<Vehicle>, onSelect: (Vehicle) -> Unit, modifi
                     centerOnGps()
                 }
             },
-            modifier = Modifier.align(Alignment.CenterEnd).padding(end = 12.dp),
+            modifier = Modifier.align(Alignment.TopEnd).padding(top = 12.dp, end = 12.dp),
             containerColor = Color.White, contentColor = Forest,
         ) { Icon(Icons.Outlined.MyLocation, "Моё местоположение") }
         Column(

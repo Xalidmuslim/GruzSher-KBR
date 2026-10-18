@@ -557,7 +557,7 @@ fun LiveDemoScreen(
 
 /** Map tiles are real OSM. All route geometry and simulated marker coordinates are illustrative. */
 @Composable internal fun LiveRouteMap(car: Vehicle?, fraction: Float, mode: String,
-    modifier: Modifier = Modifier.fillMaxWidth().height(218.dp)) {
+    modifier: Modifier = Modifier.fillMaxWidth().height(218.dp), compact: Boolean = false) {
     val context = LocalContext.current
     val origin = remember(car?.id) { GeoPoint(car?.latitude ?: 43.4853, car?.longitude ?: 43.6071) }
     val route = remember(origin, mode) {
@@ -617,12 +617,28 @@ fun LiveDemoScreen(
             moving.title = if (mode == "пешком") "Учебный пешеход" else "Учебный грузовик"
             view.invalidate()
         })
-    Column(Modifier.align(Alignment.BottomStart).padding(start=9.dp,bottom=24.dp)) {
-        FilledIconButton(onClick={map.controller.zoomIn()},colors=IconButtonDefaults.filledIconButtonColors(containerColor=Color.White,contentColor=LiveGreen)) {Icon(Icons.Outlined.Add,"Приблизить маршрут")}
-        FilledIconButton(onClick={map.controller.zoomOut()},colors=IconButtonDefaults.filledIconButtonColors(containerColor=Color.White,contentColor=LiveGreen)) {Icon(Icons.Outlined.Remove,"Отдалить маршрут")}
+    if (!compact) {
+        // Controls avoid the bottom status overlays and remain touchable on small screens.
+        Column(Modifier.align(Alignment.TopStart).padding(start = 10.dp, top = 70.dp),
+            verticalArrangement = Arrangement.spacedBy(6.dp)) {
+            FilledIconButton(onClick={map.controller.zoomIn()},
+                colors=IconButtonDefaults.filledIconButtonColors(containerColor=Color.White,contentColor=LiveGreen)) {
+                Icon(Icons.Outlined.Add,"Приблизить маршрут")
+            }
+            FilledIconButton(onClick={map.controller.zoomOut()},
+                colors=IconButtonDefaults.filledIconButtonColors(containerColor=Color.White,contentColor=LiveGreen)) {
+                Icon(Icons.Outlined.Remove,"Отдалить маршрут")
+            }
+        }
+        FilledIconButton(
+            onClick={map.controller.animateTo(route[centerIndexForRoute(route.size)]);map.controller.setZoom(15.0)},
+            modifier=Modifier.align(Alignment.TopEnd).padding(end = 12.dp, top = 12.dp),
+            colors=IconButtonDefaults.filledIconButtonColors(containerColor=Color.White,contentColor=LiveGreen)
+        ) {Icon(Icons.Outlined.MyLocation,"Центр учебного маршрута")}
     }
-    FilledIconButton(onClick={map.controller.animateTo(route[centerIndexForRoute(route.size)]);map.controller.setZoom(15.0)},modifier=Modifier.align(Alignment.BottomEnd).padding(end=9.dp,bottom=24.dp),colors=IconButtonDefaults.filledIconButtonColors(containerColor=Color.White,contentColor=LiveGreen)) {Icon(Icons.Outlined.MyLocation,"Центр учебного маршрута")}
-    Text("Учебная траектория · не GPS · тайлы OSM требуют интернет",modifier=Modifier.align(Alignment.BottomCenter).background(Color.White.copy(alpha=.9f)).padding(4.dp),color=LiveGray,fontSize=8.sp)
+    Text(if (compact) "© OpenStreetMap" else "Учебная траектория · не GPS · © OpenStreetMap",
+        modifier=Modifier.align(Alignment.BottomCenter).background(Color.White.copy(alpha=.9f)).padding(4.dp),
+        color=LiveGray,fontSize=if(compact) 7.sp else 8.sp)
     }
 }
 

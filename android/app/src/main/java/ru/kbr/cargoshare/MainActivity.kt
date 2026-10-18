@@ -200,12 +200,11 @@ private fun AppScreen() {
         }
     }
 
-    // OS back gesture: dialogs dismiss themselves, tabs return home, home never exits abruptly.
-    BackHandler(enabled = selected == null) {
-        if (tab != 0) {receiptId=null; tab = 0}
-        else scope.launch { snackbar.showSnackbar(
-            "Вы на главном экране. Чтобы свернуть приложение, используйте жест «Домой».",
-            duration = SnackbarDuration.Short) }
+    // Use platform edge-swipe/predictive Back. Dialogs handle Back on their own;
+    // nested bottom-navigation destinations return to the fleet home.
+    BackHandler(enabled = selected == null && tab != 0) {
+        receiptId = null
+        tab = 0
     }
     Scaffold(
         snackbarHost = { SnackbarHost(hostState = snackbar) },

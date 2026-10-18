@@ -1,14 +1,12 @@
 package ru.kbr.cargoshare
 
 import android.content.Intent
-import android.graphics.Bitmap
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import androidx.test.uiautomator.*
 import org.junit.Assert.*
 import org.junit.Test
 import org.junit.runner.RunWith
-import java.io.File
 
 /** Runs only in the separate referencepreview application. No real data/network transactions. */
 @RunWith(AndroidJUnit4::class)
@@ -26,8 +24,7 @@ class RentalAcceptanceTest {
             // Preserve genuine emulator evidence rather than guessing why navigation stopped.
             screen("failure")
             runCatching {
-                val tree = File(context.filesDir,"acceptance/failure_hierarchy.xml")
-                device.dumpWindowHierarchy(tree)
+                device.executeShellCommand("uiautomator dump /sdcard/Download/GruzSherQA/failure_hierarchy.xml")
             }
         }
         assertNotNull("Missing action: $text",node)
@@ -38,11 +35,9 @@ class RentalAcceptanceTest {
         clickable.click()
     }
     private fun screen(name:String) {
-        val file=File(context.filesDir,"acceptance/$name.png")
-        file.parentFile!!.mkdirs()
-        val bitmap=instrumentation.uiAutomation.takeScreenshot()
-        assertNotNull(bitmap)
-        file.outputStream().use {assertTrue(bitmap.compress(Bitmap.CompressFormat.PNG,100,it))}
+        // Shell screenshot path survives Gradle's post-test package uninstall.
+        device.executeShellCommand("mkdir -p /sdcard/Download/GruzSherQA")
+        device.executeShellCommand("screencap -p /sdcard/Download/GruzSherQA/$name.png")
     }
     @Test fun archiveRatingDoesNotReplaceActiveSessionAndOldSessionsMigrate() {
         val store=LiveDemoStorage(context)

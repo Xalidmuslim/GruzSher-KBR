@@ -33,7 +33,6 @@ private fun fleetClass(v: Vehicle) = if(v.type.contains("тент",true)) "Те�
     val scope=rememberCoroutineScope()
     LaunchedEffect(carousel.firstVisibleItemIndex,filter) { shown.getOrNull(carousel.firstVisibleItemIndex)?.let {selectedId=it.id} }
     LazyColumn(state=scroll,modifier=Modifier.fillMaxSize().background(PremiumTheme.Paper),contentPadding=PaddingValues(14.dp),verticalArrangement=Arrangement.spacedBy(8.dp)) {
-        item { DemoNotice(onLiveDemo) }
         item { PremiumBrandHeader() }
         if(active) item {Button(onClick=onLiveDemo,modifier=Modifier.fillMaxWidth(),shape=RoundedCornerShape(16.dp)) {Icon(Icons.Outlined.PlayArrow,null);Text("Вернуться к поездке")}}
         item { PremiumDemoBanner(cars.firstOrNull(),onClick=onLiveDemo) }

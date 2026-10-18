@@ -94,7 +94,10 @@ fun FullScreenVehicleBooking(
     }
     Dialog(onDismissRequest = onDismiss,
         properties = DialogProperties(usePlatformDefaultWidth = false)) {
-        Column(Modifier.fillMaxSize().background(PremiumTheme.Paper).statusBarsPadding()) {
+        // Keep the fixed booking CTA entirely above Android's bottom gesture bar.
+        Column(Modifier.fillMaxSize().background(PremiumTheme.Paper)
+            .statusBarsPadding().navigationBarsPadding().imePadding()
+            .padding(bottom = 20.dp)) {
             Row(
                 Modifier.fillMaxWidth().background(Color.White).padding(start = 11.dp,
                     end = 18.dp, top = 7.dp, bottom = 7.dp),
@@ -170,7 +173,7 @@ fun FullScreenVehicleBooking(
                         }
                         Column(Modifier.width(115.dp)) {
                             LiveRouteMap(vehicle, 0f, "пешком",
-                                Modifier.fillMaxWidth().height(78.dp))
+                                Modifier.fillMaxWidth().height(78.dp), compact = true)
                         }
                     }
                 }
@@ -272,7 +275,7 @@ fun FullScreenVehicleBooking(
                     fontSize = 11.sp, color = PremiumTheme.Muted, lineHeight = 16.sp)
             }
             Surface(color = Color.White, shadowElevation = 12.dp) {
-                Column(Modifier.fillMaxWidth().navigationBarsPadding().padding(horizontal = 17.dp, vertical = 12.dp),
+                Column(Modifier.fillMaxWidth().padding(horizontal = 17.dp, vertical = 12.dp),
                     verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Column(Modifier.weight(1f)) {

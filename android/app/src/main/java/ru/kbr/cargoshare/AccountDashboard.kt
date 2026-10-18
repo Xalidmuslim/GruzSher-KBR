@@ -177,7 +177,7 @@ fun TripsDashboard(
                                             Color(0xFFFFEDE9) else Pale,
                                     ) {
                                         Text(if (offline && b.status == "PENDING" && !isLive)
-                                                "Учебная заявка · без подтверждения" else ticketLabel(b, live),
+                                                "Создана · Демо" else ticketLabel(b, live),
                                             modifier = Modifier.padding(horizontal = 9.dp, vertical = 5.dp),
                                             fontSize = 11.sp, fontWeight = FontWeight.SemiBold,
                                             color = if (b.status == "CANCELLED" || b.status == "EXPIRED") ErrorRed else Jade)

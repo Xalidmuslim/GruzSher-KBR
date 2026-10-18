@@ -235,14 +235,22 @@ private fun PremiumTruckCard(vehicle: Vehicle, onClick: () -> Unit) {
 @Composable
 internal fun NalchikMap(cars: List<Vehicle>, onSelect: (Vehicle) -> Unit, modifier: Modifier = Modifier, selectedVehicleId: String? = null) {
     val context = LocalContext.current
-    var savedLatitude by rememberSaveable { mutableDoubleStateOf(NalchikCenter.latitude) }
-    var savedLongitude by rememberSaveable { mutableDoubleStateOf(NalchikCenter.longitude) }
-    var savedZoom by rememberSaveable { mutableDoubleStateOf(12.5) }
+    // A saveable primitive camera buffer, not Compose observable states. MapListener
+    // fires dozens of times per pinch/drag; recomposing the screen on every tick
+    // used to make the map background and overlays flicker.
+    val camera = rememberSaveable { doubleArrayOf(NalchikCenter.latitude, NalchikCenter.longitude, 13.0) }
     var lastSelection by rememberSaveable { mutableStateOf(selectedVehicleId) }
     val map = remember(context) {
         Configuration.getInstance().userAgentValue = context.packageName
         MapView(context).apply {
             setTileSource(TileSourceFactory.MAPNIK)
+            // OSMDroid normally renders a grey grid while loading newly zoomed tiles.
+            // Use a flat map-like fallback instead and keep nearby decoded tiles in
+            // memory to reduce flashes on pinch gestures.
+            setBackgroundColor(android.graphics.Color.rgb(238, 242, 234))
+            overlayManager.tilesOverlay.setLoadingBackgroundColor(android.graphics.Color.rgb(238, 242, 234))
+            overlayManager.tilesOverlay.setLoadingLineColor(android.graphics.Color.rgb(238, 242, 234))
+            overlayManager.tilesOverlay.setOvershootTileCache(2)
             setMultiTouchControls(true)
             // Compose's vertical list must not consume panning gestures inside the map.
             // Returning false lets osmdroid handle pan, zoom and pin clicks itself.
@@ -256,11 +264,18 @@ internal fun NalchikMap(cars: List<Vehicle>, onSelect: (Vehicle) -> Unit, modifi
                 false
             }
             setBuiltInZoomControls(false) // OSMDroid defaults obscure truck pins
-            controller.setZoom(savedZoom)
-            controller.setCenter(GeoPoint(savedLatitude,savedLongitude))
-            addMapListener(object: org.osmdroid.events.MapListener {
-                override fun onScroll(event:org.osmdroid.events.ScrollEvent):Boolean {savedLatitude=mapCenter.latitude;savedLongitude=mapCenter.longitude;return false}
-                override fun onZoom(event:org.osmdroid.events.ZoomEvent):Boolean {savedZoom=event.zoomLevel;return false}
+            controller.setZoom(camera[2])
+            controller.setCenter(GeoPoint(camera[0], camera[1]))
+            addMapListener(object : org.osmdroid.events.MapListener {
+                override fun onScroll(event: org.osmdroid.events.ScrollEvent): Boolean {
+                    camera[0] = mapCenter.latitude
+                    camera[1] = mapCenter.longitude
+                    return false
+                }
+                override fun onZoom(event: org.osmdroid.events.ZoomEvent): Boolean {
+                    camera[2] = event.zoomLevel
+                    return false
+                }
             })
             minZoomLevel = 8.0
             maxZoomLevel = 19.0

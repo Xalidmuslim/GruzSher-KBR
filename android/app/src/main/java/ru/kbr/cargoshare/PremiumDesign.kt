@@ -83,7 +83,7 @@ fun localTruckArtwork(vehicle: Vehicle): String = artworkSource(vehicle)
 
 @Composable fun PremiumDemoBanner(car: Vehicle?, modifier: Modifier = Modifier, onClick: () -> Unit) {
     Card(onClick = onClick, modifier = modifier.fillMaxWidth(), shape = RoundedCornerShape(20.dp)) {
-        Box(Modifier.fillMaxWidth().height(116.dp).background(PremiumTheme.GreenDark)) {
+        Box(Modifier.fillMaxWidth().height(108.dp).background(PremiumTheme.GreenDark)) {
             AsyncImage("file:///android_asset/premium/live_banner.webp", null,
                 contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize())
             Row(Modifier.fillMaxSize().background(Brush.horizontalGradient(

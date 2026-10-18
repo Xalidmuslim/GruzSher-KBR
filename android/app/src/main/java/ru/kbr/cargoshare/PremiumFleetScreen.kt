@@ -49,7 +49,7 @@ fun PremiumFleetScreen(
 
     if (fullMap) {
         Column(Modifier.fillMaxSize().background(PremiumTheme.Paper)) {
-            Row(Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 6.dp),
+            Row(Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 3.dp),
                 verticalAlignment = Alignment.CenterVertically) {
                 IconButton(onClick = { fullMap = false }) {
                     Icon(Icons.Outlined.ArrowBack, "Назад к автомобилям", tint = PremiumTheme.GreenDark)
@@ -106,8 +106,8 @@ fun PremiumFleetScreen(
     }
 
     LazyColumn(state = scroll, modifier = Modifier.fillMaxSize().background(PremiumTheme.Paper),
-        contentPadding = PaddingValues(start = 12.dp, end = 12.dp, top = 10.dp, bottom = 20.dp),
-        verticalArrangement = Arrangement.spacedBy(10.dp)) {
+        contentPadding = PaddingValues(start = 12.dp, end = 12.dp, top = 2.dp, bottom = 18.dp),
+        verticalArrangement = Arrangement.spacedBy(6.dp)) {
         item(key = "header") { PremiumBrandHeader() }
         if (active) item(key = "active") {
             Button(onClick = onLiveDemo, modifier = Modifier.fillMaxWidth(),
@@ -120,7 +120,7 @@ fun PremiumFleetScreen(
         item(key = "banner") { PremiumDemoBanner(cars.firstOrNull(), onClick = onLiveDemo) }
         item(key = "search") {
             Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                Text("Найти грузовик", fontSize = 21.sp, fontWeight = FontWeight.Bold,
+                Text("Найти грузовик", fontSize = 20.sp, fontWeight = FontWeight.Bold,
                     color = PremiumTheme.Text, modifier = Modifier.weight(1f))
                 IconButton(onClick = onRefresh, enabled = !loading, modifier = Modifier.size(40.dp)) {
                     Icon(Icons.Outlined.Refresh, "Обновить автопарк")
@@ -135,7 +135,7 @@ fun PremiumFleetScreen(
         item(key = "filters") { FleetFilters(filter) { filter = it; selectedId = ""; scope.launch { carousel.scrollToItem(0) } } }
         if (loading) item(key = "loading") { LinearProgressIndicator(Modifier.fillMaxWidth()) }
         if (showEmbeddedMap) item(key = "map") {
-            Box(Modifier.fillMaxWidth().height(191.dp).clip(RoundedCornerShape(20.dp))
+            Box(Modifier.fillMaxWidth().height(258.dp).clip(RoundedCornerShape(20.dp))
                 .background(PremiumTheme.Mint)) {
                 NalchikMap(shown, { car ->
                     selectedId = car.id

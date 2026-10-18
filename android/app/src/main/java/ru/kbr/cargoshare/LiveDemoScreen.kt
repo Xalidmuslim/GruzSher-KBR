@@ -278,11 +278,11 @@ fun LiveDemoScreen(
                 LiveRouteMap(car, progress, "грузовик")
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     LiveNumber("Время", "${elapsed / 60}:${(elapsed % 60).toString().padStart(2, '0')}", Modifier.weight(1f))
-                    LiveNumber("Путь", "${String.format(Locale.US, "%.1f", progress * 3.2)} км", Modifier.weight(1f))
-                    LiveNumber("Тариф", "$fare ₽", Modifier.weight(1f))
+                    LiveNumber("Путь", "${String.format(Locale.US, "%.2f", demoDistanceKm(session, now))} км", Modifier.weight(1f))
+                    LiveNumber("Стоимость", "$fare ₽", Modifier.weight(1f))
                 }
                 LinearProgressIndicator(progress = { progress }, modifier = Modifier.fillMaxWidth(), color = LiveGreen)
-                LiveMetricRow("Скорость (учебная)", if (session.pauseStartedAt > 0L) "0 км/ч" else "${(25 + 12 * progress).roundToInt()} км/ч")
+                LiveMetricRow("Скорость (учебная)", "${demoSpeedKmh(session)} км/ч")
                 LiveMetricRow("Учебный маршрут", "${((LIVE_ROUTE_MS * (1 - progress)) / 1000f).roundToInt()} сек до стоянки")
                 if (session.pauseStartedAt > 0L) LiveNote("Режим ожидания: движение и учебный таймер маршрута остановлены.")
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -341,7 +341,7 @@ fun LiveDemoScreen(
                         Text("Учебный чек • ${session.bookingId}", fontSize = 18.sp, fontWeight = FontWeight.Bold)
                         LiveMetricRow("Грузовик", car?.name ?: "Автомобиль")
                         LiveMetricRow("Тариф", "${session.durationHours + session.extraHours} ч")
-                        LiveMetricRow("Пройдено", "3,2 км (симуляция)")
+                        LiveMetricRow("Пройдено", "${String.format(Locale.US, "%.2f", demoDistanceKm(session, now))} км (демо)")
                         HorizontalDivider()
                         LiveMetricRow("Расчётная стоимость", "${demoFare(session, car?.hourlyPriceRub ?: 650, now)} ₽")
                         Text("СПИСАНО НА САМОМ ДЕЛЕ: 0 ₽", fontSize = 15.sp, fontWeight = FontWeight.Bold, color = LiveGreen)
@@ -442,14 +442,14 @@ fun LiveDemoScreen(
             val localImage = when(car.id) {
                 "gazelle-next" -> "file:///android_asset/truck_g01.webp"
                 "ford-transit" -> "file:///android_asset/truck_g02.webp"
-                "largus-van" -> "file:///android_asset/truck_g03.webp"
+                "largus-van" -> null // previous bitmap showed a different model
                 else -> null
             }
             Box(Modifier.size(width = 94.dp, height = 75.dp).clip(RoundedCornerShape(12.dp)).background(LivePale),
                 contentAlignment = Alignment.Center) {
                 if (localImage != null) AsyncImage(localImage, contentDescription = car.name,
                     modifier = Modifier.fillMaxSize(), contentScale = ContentScale.Fit)
-                else Icon(Icons.Outlined.LocalShipping, null, tint = LiveGreen)
+                else Icon(Icons.Outlined.DirectionsCar, null, tint = LiveGreen)
             }
             Spacer(Modifier.width(13.dp))
             Column(Modifier.weight(1f)) {
@@ -525,17 +525,17 @@ fun LiveDemoScreen(
         if (mode == "пешком") listOf(
             GeoPoint(origin.latitude + 0.0012, origin.longitude - 0.0018), origin
         ) else listOf(origin,
-            GeoPoint(origin.latitude + 0.0023, origin.longitude + 0.0040),
-            GeoPoint(origin.latitude + 0.0063, origin.longitude + 0.0045),
-            GeoPoint(origin.latitude + 0.0091, origin.longitude - 0.0012),
-            GeoPoint(origin.latitude + 0.0122, origin.longitude + 0.0008))
+            GeoPoint(origin.latitude + 0.0010, origin.longitude + 0.0008),
+            GeoPoint(origin.latitude + 0.0020, origin.longitude + 0.0020),
+            GeoPoint(origin.latitude + 0.0032, origin.longitude + 0.0024),
+            GeoPoint(origin.latitude + 0.0044, origin.longitude + 0.0027))
     }
     val map = remember(context, car?.id, mode) {
         Configuration.getInstance().userAgentValue = context.packageName
         MapView(context).apply {
             setTileSource(TileSourceFactory.MAPNIK)
             setMultiTouchControls(true)
-            controller.setZoom(13.8)
+            controller.setZoom(15.0)
             controller.setCenter(route[centerIndexForRoute(route.size)])
             minZoomLevel = 9.0
             maxZoomLevel = 18.0

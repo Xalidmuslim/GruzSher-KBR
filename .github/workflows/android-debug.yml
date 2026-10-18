@@ -3,7 +3,7 @@ name: GruzSher Preview - Android APK
 on:
   workflow_dispatch:
   push:
-    branches: [main, 'redesign/gruzsher-premium-v3', 'redesign/gruzsher-v3-1-structural', 'redesign/gruzsher-v3-2-layout-fixes', 'fix/gruzsher-v3-3-booking-training-ux']
+    branches: [main, 'redesign/gruzsher-premium-v3', 'redesign/gruzsher-v3-1-structural', 'redesign/gruzsher-v3-2-layout-fixes', 'fix/gruzsher-v3-3-booking-training-ux', 'feature/gruzsher-v3-4-native-auto-onboarding']
     paths:
       - 'android/**'
       - 'backend/**'

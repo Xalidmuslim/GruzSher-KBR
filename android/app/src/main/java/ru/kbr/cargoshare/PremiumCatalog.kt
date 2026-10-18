@@ -295,11 +295,31 @@ internal fun NalchikMap(cars: List<Vehicle>, onSelect: (Vehicle) -> Unit, modifi
         else locationMessage = "Для определения позиции по GPS разрешите точное местоположение."
     }
     val currentOnSelect by rememberUpdatedState(onSelect)
-    LaunchedEffect(selectedVehicleId,map,cars) {
-        val selected=cars.firstOrNull {it.id==selectedVehicleId}
-        map.overlays.filterIsInstance<Marker>().forEach {it.icon=compactTruckMarker(context, selected=it.title==selected?.name)}
-        if(selectedVehicleId!=lastSelection && selected?.latitude!=null && selected.longitude!=null) map.controller.animateTo(GeoPoint(selected.latitude,selected.longitude))
-        lastSelection=selectedVehicleId
+    val markerSignature = remember(cars) {
+        cars.joinToString("|") { "${it.id}:${it.latitude}:${it.longitude}:${it.name}:${it.hourlyPriceRub}" }
+    }
+    val markerIcons = remember(context, markerSignature) {
+        cars.associate { vehicle ->
+            vehicle.id to Pair(
+                truckMapMarker(context, hourlyRub = vehicle.hourlyPriceRub),
+                truckMapMarker(context, hourlyRub = vehicle.hourlyPriceRub, selected = true)
+            )
+        }
+    }
+    LaunchedEffect(selectedVehicleId, map, markerSignature) {
+        val selected = cars.firstOrNull { it.id == selectedVehicleId }
+        map.overlays.filterIsInstance<Marker>().forEach { marker ->
+            val vehicle = cars.firstOrNull { it.name == marker.title }
+            if (vehicle != null) {
+                marker.icon = if (vehicle.id == selectedVehicleId)
+                    markerIcons[vehicle.id]?.second else markerIcons[vehicle.id]?.first
+            }
+        }
+        if (selectedVehicleId != lastSelection &&
+            selected?.latitude != null && selected.longitude != null) {
+            map.controller.animateTo(GeoPoint(selected.latitude, selected.longitude))
+        }
+        lastSelection = selectedVehicleId
         map.invalidate()
     }
     DisposableEffect(map, permissionGranted) {
@@ -316,10 +336,6 @@ internal fun NalchikMap(cars: List<Vehicle>, onSelect: (Vehicle) -> Unit, modifi
             map.onDetach()
         }
     }
-    // Avoid rebuilding all marker overlays after unrelated Compose recompositions.
-    val markerSignature = remember(cars) {
-        cars.joinToString("|") { "${it.id}:${it.latitude}:${it.longitude}:${it.name}:${it.hourlyPriceRub}" }
-    }
     Box(modifier) {
         AndroidView(factory = { map }, modifier = Modifier.fillMaxSize(), update = { view ->
             if (view.tag != markerSignature) {
@@ -332,15 +348,16 @@ internal fun NalchikMap(cars: List<Vehicle>, onSelect: (Vehicle) -> Unit, modifi
                         position = GeoPoint(lat, lon)
                         title = vehicle.name
                         snippet = "${vehicle.hourlyPriceRub} ₽ / ч · Демоданные"
-                        // Compact, centered truck symbols do not overlap like wide price balloons.
-                        // The precise price remains in the vehicle detail sheet on tap.
-                        icon = compactTruckMarker(context)
-                        setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_CENTER)
+                        // Every truck shows its own hourly tariff from the actual catalogue.
+                        icon = if (selectedVehicleId == vehicle.id)
+                            markerIcons[vehicle.id]?.second else markerIcons[vehicle.id]?.first
+                        setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_BOTTOM)
                         setOnMarkerClickListener { tapped, _ ->
                             view.overlays.filterIsInstance<Marker>().forEach { previous ->
                                 val original = cars.firstOrNull { it.name == previous.title }
                                 if (original != null) {
-                                    previous.icon = compactTruckMarker(context, selected = previous === tapped)
+                                    previous.icon = if (previous === tapped)
+                                        markerIcons[original.id]?.second else markerIcons[original.id]?.first
                                 }
                             }
                             view.invalidate()

@@ -8,11 +8,11 @@ android {
     namespace = "ru.kbr.cargoshare"
     compileSdk = 35
     defaultConfig {
-        applicationId = "ru.kbr.cargoshare.referencepreview.ux360"
+        applicationId = "ru.kbr.cargoshare.referencepreview.ux361"
         minSdk = 26
         targetSdk = 35
-        versionCode = 39
-        versionName = "3.6.0-ux-preview"
+        versionCode = 40
+        versionName = "3.6.1-map-prices-back"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
     buildFeatures {

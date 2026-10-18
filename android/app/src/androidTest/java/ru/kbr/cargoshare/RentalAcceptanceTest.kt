@@ -117,7 +117,14 @@ class RentalAcceptanceTest {
         tap("Вернуться к автомобилям")
         tap("Поездки");screen("07_trips_history")
         tap("Профиль");screen("08_profile")
-        device.pressBack();device.pressBack()
-        assertTrue(device.hasObject(By.text("Найти грузовик")))
+        device.pressBack()
+        assertTrue("Back from Profile should restore Trips",
+            device.wait(Until.hasObject(By.text("Мои поездки")),10_000))
+        device.pressBack()
+        assertTrue("Back from Trips should restore Home",
+            device.wait(Until.hasObject(By.text("Найти грузовик")),10_000))
+        device.pressBack()
+        assertTrue("First Back on Home must not close the app",
+            device.wait(Until.hasObject(By.text("Найти грузовик")),3_000))
     }
 }

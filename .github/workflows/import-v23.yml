@@ -1,0 +1,98 @@
+name: Import v2.3 source and build Android APK
+
+on:
+  push:
+    paths:
+      - 'GruzSher-KBR-v2.3-alpha-CI-source.zip'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  import-test-build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Verify exact v2.3 source archive
+        shell: bash
+        run: |
+          test -f GruzSher-KBR-v2.3-alpha-CI-source.zip || { echo '::error::Upload the v2.3 ZIP to the repository root first'; exit 1; }
+          echo '808f91e914f93dc753b3b581521b811599e5b1e691fed8b509bb39bc7092c136  GruzSher-KBR-v2.3-alpha-CI-source.zip' | sha256sum --check
+
+      - name: Extract verified project files
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path, PurePosixPath
+          from zipfile import ZipFile
+          archive = Path('GruzSher-KBR-v2.3-alpha-CI-source.zip')
+          allowed_roots = {'android', 'backend', 'ios', 'docs', '.github', 'README.md', '.gitignore', 'docker-compose.yml'}
+          with ZipFile(archive) as z:
+              for entry in z.infolist():
+                  p = PurePosixPath(entry.filename)
+                  if p.is_absolute() or '..' in p.parts or not p.parts or p.parts[0] not in allowed_roots:
+                      raise ValueError(f'Unsafe path: {entry.filename}')
+              z.extractall('.')
+          for path in ['android/app/build.gradle.kts', 'android/app/src/main/AndroidManifest.xml', 'backend/tests/test_api.py']:
+              if not Path(path).is_file():
+                  raise FileNotFoundError(path)
+          print('Verified v2.3 Android and backend sources extracted')
+          PY
+
+      - name: Commit imported project to main
+        shell: bash
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -- android backend ios docs .github/workflows/android-debug.yml README.md .gitignore docker-compose.yml
+          if ! git diff --cached --quiet; then
+            git commit -m 'Import GruzSher v2.3 Android and backend source'
+            git push origin HEAD:main
+          fi
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Run backend tests
+        shell: bash
+        run: |
+          python -m pip install -r backend/requirements-dev.txt
+          python -m pytest -q backend/tests
+
+      - name: Set up Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+      - name: Install Android SDK 35
+        run: sdkmanager 'platforms;android-35' 'build-tools;35.0.0' 'platform-tools'
+      - name: Install Gradle 8.9
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.9'
+      - name: Android tests and debug APK
+        working-directory: android
+        run: |
+          gradle --no-daemon testDebugUnitTest
+          gradle --no-daemon assembleDebug
+      - name: Record APK checksum
+        shell: bash
+        run: |
+          test -s android/app/build/outputs/apk/debug/app-debug.apk
+          cd android/app/build/outputs/apk/debug
+          sha256sum app-debug.apk > SHA256SUMS.txt
+      - name: Upload APK artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: GruzSher-KBR-v2.3-preview-APK
+          path: |
+            android/app/build/outputs/apk/debug/app-debug.apk
+            android/app/build/outputs/apk/debug/SHA256SUMS.txt
+          if-no-files-found: error
+          retention-days: 30

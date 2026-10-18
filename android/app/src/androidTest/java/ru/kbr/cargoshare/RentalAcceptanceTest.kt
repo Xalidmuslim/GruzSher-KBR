@@ -59,11 +59,25 @@ class RentalAcceptanceTest {
         assertTrue(device.wait(Until.hasObject(By.text("Найти грузовик")),30_000))
         screen("01_home_fleet")
         tap("Выбрать →")
+        // Wait for the full-screen booking Dialog before capturing it.
+        // Compose navigation is asynchronous; an immediate screenshot captures the old home.
+        assertTrue("Booking screen did not appear",
+            device.wait(Until.hasObject(By.text("Выбор грузовика")),15_000))
         screen("02_vehicle_details")
         screen("10_booking_legacy")
         tap("Продолжить к автопроверке · ДЕМО")
+        assertTrue("Phone step did not open",
+            device.wait(Until.hasObject(By.text("Подтвердите телефон")),15_000))
         tap("Получить SMS-код")
-        assertTrue(device.wait(Until.hasObject(By.text("Подтвердить номер")),10_000))
+        // The verification controls are below the phone field on smaller screens.
+        Thread.sleep(3800L)
+        runCatching {
+            UiScrollable(UiSelector().scrollable(true))
+                .scrollIntoView(UiSelector().text("Подтвердить номер"))
+        }
+        screen("phone_after_sms")
+        assertTrue("SMS verification action is not visible",
+            device.wait(Until.hasObject(By.text("Подтвердить номер")),10_000))
         device.findObjects(By.clazz("android.widget.EditText")).last().text="2468"
         tap("Подтвердить номер")
         screen("03_auto_documents")

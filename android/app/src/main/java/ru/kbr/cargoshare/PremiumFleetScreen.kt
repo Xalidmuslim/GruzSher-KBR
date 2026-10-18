@@ -5,6 +5,8 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
+import kotlinx.coroutines.launch
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.*
@@ -35,28 +37,32 @@ fun PremiumFleetScreen(
 ) {
     var mapMode by remember { mutableStateOf(true) }
     var filter by remember { mutableStateOf("Все") }
+    var filtersOpen by remember { mutableStateOf(false) }
+    val carousel = rememberLazyListState()
+    val scope = rememberCoroutineScope()
     val categories = remember(cars) { cars.map(::fleetClass).distinct() }
     LaunchedEffect(categories) { if (filter != "Все" && filter !in categories) filter = "Все" }
     val shown = remember(cars, filter) { cars.filter { filter == "Все" || fleetClass(it) == filter } }
     val located = remember(shown) { shown.filter { it.latitude != null && it.longitude != null } }
+    LaunchedEffect(filter) { carousel.scrollToItem(0) }
     Column(
         Modifier.fillMaxSize().background(PremiumTheme.Paper),
         verticalArrangement = Arrangement.spacedBy(0.dp)
     ) {
-        Column(Modifier.padding(start = 18.dp, end = 18.dp, top = 9.dp, bottom = 9.dp)) {
+        Column(Modifier.padding(start = 18.dp, end = 18.dp, top = 4.dp, bottom = 3.dp)) {
             PremiumBrandHeader()
-            Spacer(Modifier.height(12.dp))
+            Spacer(Modifier.height(7.dp))
             // Compact CTA: the map and actual vehicles now dominate the viewport.
             Surface(onClick = onLiveDemo,
                 shape = RoundedCornerShape(17.dp), color = PremiumTheme.Green) {
                 Row(
-                    Modifier.fillMaxWidth().padding(horizontal = 14.dp, vertical = 11.dp),
+                    Modifier.fillMaxWidth().padding(horizontal = 13.dp, vertical = 7.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Surface(color = Color.White.copy(alpha = .16f),
                         shape = RoundedCornerShape(12.dp)) {
                         Icon(Icons.Outlined.PlayArrow, null, tint = Color.White,
-                            modifier = Modifier.padding(8.dp).size(22.dp))
+                            modifier = Modifier.padding(7.dp).size(19.dp))
                     }
                     Spacer(Modifier.width(11.dp))
                     Column(Modifier.weight(1f)) {
@@ -70,38 +76,43 @@ fun PremiumFleetScreen(
                         modifier = Modifier.size(17.dp))
                 }
             }
-            Spacer(Modifier.height(12.dp))
+            Spacer(Modifier.height(7.dp))
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Column(Modifier.weight(1f)) {
-                    Text("Найти грузовик", fontSize = 24.sp, fontWeight = FontWeight.ExtraBold,
+                    Text("Найти грузовик", fontSize = 21.sp, fontWeight = FontWeight.ExtraBold,
                         color = PremiumTheme.Text)
-                    Text("${shown.size} автомобиля рядом · Нальчик",
+                    Text(if (filter == "Все") "${shown.size} автомобиля · Нальчик" else "${shown.size} · $filter",
                         fontSize = 11.sp, color = PremiumTheme.Muted)
+                }
+                if (categories.size > 1) {
+                    Box {
+                        IconButton(onClick = { filtersOpen = true }) {
+                            Icon(Icons.Outlined.Tune, "Фильтровать автомобили",
+                                tint = PremiumTheme.Green)
+                        }
+                        DropdownMenu(expanded = filtersOpen, onDismissRequest = { filtersOpen = false }) {
+                            (listOf("Все") + categories).forEach { name ->
+                                DropdownMenuItem(
+                                    text = { Text(name, color = PremiumTheme.Text, fontSize = 13.sp) },
+                                    onClick = { filter = name; filtersOpen = false },
+                                    leadingIcon = {
+                                        if (filter == name) Icon(Icons.Outlined.Check, null,
+                                            tint = PremiumTheme.Green)
+                                    }
+                                )
+                            }
+                        }
+                    }
                 }
                 IconButton(onClick = onRefresh, enabled = !loading) {
                     Icon(Icons.Outlined.Refresh, "Обновить автопарк", tint = PremiumTheme.Green)
                 }
             }
-            if (categories.size > 1) {
-                Spacer(Modifier.height(7.dp))
-                LazyRow(horizontalArrangement = Arrangement.spacedBy(7.dp)) {
-                    items(listOf("Все") + categories, key = { it }) { item ->
-                        FilterChip(
-                            selected = filter == item,
-                            onClick = { filter = item },
-                            label = { Text(item, fontSize = 11.sp, maxLines = 1) },
-                            shape = RoundedCornerShape(13.dp),
-                            colors = FilterChipDefaults.filterChipColors(
-                                containerColor = Color.White, selectedContainerColor = PremiumTheme.Green,
-                                selectedLabelColor = Color.White)
-                        )
-                    }
-                }
-            }
+
         }
         // Actual segmented control, not a title with a link.
         Row(
-            Modifier.fillMaxWidth().padding(start = 18.dp, end = 18.dp, bottom = 10.dp),
+            Modifier.fillMaxWidth().padding(start = 18.dp, end = 18.dp, bottom = 6.dp),
             horizontalArrangement = Arrangement.spacedBy(7.dp)
         ) {
             FleetTab("На карте", Icons.Outlined.Map, mapMode, Modifier.weight(1f)) { mapMode = true }
@@ -154,10 +165,26 @@ fun PremiumFleetScreen(
                 verticalAlignment = Alignment.CenterVertically) {
                 Text("Доступны для аренды", fontSize = 15.sp, fontWeight = FontWeight.Bold,
                     color = PremiumTheme.Text, modifier = Modifier.weight(1f))
-                Text("Листайте →", fontSize = 11.sp, color = PremiumTheme.Muted)
+                IconButton(
+                    onClick = { scope.launch { carousel.animateScrollToItem(
+                        (carousel.firstVisibleItemIndex - 1).coerceAtLeast(0)) } },
+                    modifier = Modifier.size(30.dp),
+                    enabled = carousel.firstVisibleItemIndex > 0
+                ) { Icon(Icons.Outlined.ChevronLeft, "Предыдущая машина",
+                    tint = PremiumTheme.Green, modifier = Modifier.size(23.dp)) }
+                Text("${(carousel.firstVisibleItemIndex + 1).coerceAtMost(shown.size)}/${shown.size}",
+                    color = PremiumTheme.Muted, fontSize = 11.sp)
+                IconButton(
+                    onClick = { scope.launch { carousel.animateScrollToItem(
+                        (carousel.firstVisibleItemIndex + 1).coerceAtMost(shown.lastIndex)) } },
+                    modifier = Modifier.size(30.dp),
+                    enabled = carousel.firstVisibleItemIndex < shown.lastIndex
+                ) { Icon(Icons.Outlined.ChevronRight, "Следующая машина",
+                    tint = PremiumTheme.Green, modifier = Modifier.size(23.dp)) }
             }
             Spacer(Modifier.height(7.dp))
             LazyRow(
+                state = carousel,
                 modifier = Modifier.fillMaxWidth(),
                 contentPadding = PaddingValues(horizontal = 13.dp),
                 horizontalArrangement = Arrangement.spacedBy(9.dp)

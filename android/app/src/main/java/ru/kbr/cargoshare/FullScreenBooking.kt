@@ -38,8 +38,9 @@ import java.util.UUID
 fun FullScreenVehicleBooking(
     vehicle: Vehicle,
     canBook: Boolean,
+    offlineTraining: Boolean,
     onDismiss: () -> Unit,
-    onTryLiveDemo: () -> Unit,
+    onTryLiveDemo: (Int) -> Unit,
     onQuote: suspend (ZonedDateTime, ZonedDateTime) -> Pair<Int, Boolean>,
     onBook: suspend (ZonedDateTime, ZonedDateTime, String) -> Boolean,
 ) {
@@ -62,6 +63,16 @@ fun FullScreenVehicleBooking(
         quotedPrice = null
         checking = true
         note = null
+        if (offlineTraining) {
+            // No scheduled reservation or real availability check in offline LIVE mode.
+            val days = hours / 24
+            val remainder = hours % 24
+            quotedPrice = days * vehicle.dailyPriceRub +
+                minOf(remainder * vehicle.hourlyPriceRub, vehicle.dailyPriceRub)
+            available = true
+            checking = false
+            return@LaunchedEffect
+        }
         val valid = validDemoWindow(start.toInstant(), end.toInstant(), Instant.now())
         if (!valid) {
             checking = false
@@ -149,6 +160,7 @@ fun FullScreenVehicleBooking(
                 Surface(color = Color.White, shape = RoundedCornerShape(22.dp)) {
                     Column(Modifier.fillMaxWidth().padding(16.dp),
                         verticalArrangement = Arrangement.spacedBy(13.dp)) {
+                        if (!offlineTraining) {
                         Text("Дата и время получения", fontSize = 17.sp,
                             color = PremiumTheme.Text, fontWeight = FontWeight.Bold)
                         Row(horizontalArrangement = Arrangement.spacedBy(9.dp)) {
@@ -183,10 +195,11 @@ fun FullScreenVehicleBooking(
                                     fontSize = 12.sp)
                             }
                         }
-                        Text("Продолжительность", fontSize = 15.sp,
+                        }
+                        Text(if (offlineTraining) "Срок учебной аренды" else "Продолжительность", fontSize = 15.sp,
                             fontWeight = FontWeight.Bold, color = PremiumTheme.Text)
                         Row(horizontalArrangement = Arrangement.spacedBy(7.dp)) {
-                            listOf(2,4,8,24).forEach { h ->
+                            (if (offlineTraining) listOf(2,4,8) else listOf(2,4,8,24)).forEach { h ->
                                 FilterChip(
                                     selected = hours == h,
                                     onClick = { hours = h },
@@ -212,7 +225,8 @@ fun FullScreenVehicleBooking(
                                 color = PremiumTheme.GreenDark, modifier = Modifier.weight(1f))
                             Icon(Icons.Outlined.ReceiptLong, null, tint = PremiumTheme.Green)
                         }
-                        Text(if (checking) "Проверяем стоимость и доступность…"
+                        Text(if (offlineTraining) "Расчёт учебного тарифа · списания нет"
+                             else if (checking) "Проверяем стоимость и доступность…"
                              else if (!available) "Недоступно на это время"
                              else "Стоимость рассчитана для выбранного времени",
                             color = PremiumTheme.Muted, fontSize = 11.sp)
@@ -220,7 +234,8 @@ fun FullScreenVehicleBooking(
                 }
                 if (note != null) Text(note.orEmpty(), fontSize = 12.sp,
                     color = Color(0xFF9A4739))
-                Text("Учебные данные: бронь, документы, замки и списания не являются реальными.",
+                Text(if (offlineTraining) "Далее — учебный вход, автоматическая проверка образцов, карта и осмотр. Без ожидания диспетчера."
+                     else "Для реального бронирования нужны проверка допуска и серверное подтверждение.",
                     fontSize = 11.sp, color = PremiumTheme.Muted, lineHeight = 16.sp)
             }
             Surface(color = Color.White, shadowElevation = 12.dp) {
@@ -236,6 +251,20 @@ fun FullScreenVehicleBooking(
                         }
                         Text("Без залога", fontSize = 12.sp, color = PremiumTheme.Green)
                     }
+                    if (offlineTraining) {
+                        Button(
+                            onClick = { onTryLiveDemo(hours) },
+                            enabled = canBook && !checking && quotedPrice != null,
+                            modifier = Modifier.fillMaxWidth().height(54.dp),
+                            shape = RoundedCornerShape(16.dp),
+                            colors = ButtonDefaults.buttonColors(containerColor = PremiumTheme.Green)
+                        ) {
+                            Icon(Icons.Outlined.VerifiedUser, null, modifier = Modifier.size(18.dp))
+                            Spacer(Modifier.width(8.dp))
+                            Text("Продолжить к автопроверке · ДЕМО",
+                                fontSize = 13.sp, fontWeight = FontWeight.Bold, maxLines = 1)
+                        }
+                    } else {
                     Button(
                         onClick = {
                             if (!submitting) {
@@ -262,12 +291,15 @@ fun FullScreenVehicleBooking(
                         Spacer(Modifier.width(7.dp))
                         Icon(Icons.Outlined.ArrowForward, null, modifier = Modifier.size(17.dp))
                     }
-                    OutlinedButton(onClick = onTryLiveDemo,
-                        modifier = Modifier.fillMaxWidth().height(45.dp),
-                        shape = RoundedCornerShape(15.dp)) {
-                        Icon(Icons.Outlined.PlayArrow, null, Modifier.size(17.dp))
-                        Spacer(Modifier.width(6.dp))
-                        Text("Пройти полный LIVE-сценарий", fontSize = 12.sp)
+                    }
+                    if (!offlineTraining) {
+                        OutlinedButton(onClick = { onTryLiveDemo(hours.coerceAtMost(8)) },
+                            modifier = Modifier.fillMaxWidth().height(45.dp),
+                            shape = RoundedCornerShape(15.dp)) {
+                            Icon(Icons.Outlined.PlayArrow, null, Modifier.size(17.dp))
+                            Spacer(Modifier.width(6.dp))
+                            Text("Пройти учебный сценарий", fontSize = 12.sp)
+                        }
                     }
                 }
             }

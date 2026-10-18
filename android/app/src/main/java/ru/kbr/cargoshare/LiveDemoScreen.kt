@@ -462,11 +462,12 @@ fun LiveDemoScreen(
 }
 
 @Composable private fun LiveHeader(step: String, heading: String, detail: String) {
-    Surface(color = Color.White, shape = RoundedCornerShape(18.dp)) {
-        Column(Modifier.fillMaxWidth().padding(18.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-            Text("ЭТАП $step / 14", fontSize = 10.sp, color = LiveGreen, fontWeight = FontWeight.Bold)
-            Text(heading, fontSize = 22.sp, fontWeight = FontWeight.Bold, color = LiveInk)
-            Text(detail, fontSize = 12.sp, lineHeight = 17.sp, color = LiveGray)
+    Surface(color = LiveGreen, shape = RoundedCornerShape(22.dp)) {
+        Column(Modifier.fillMaxWidth().padding(19.dp), verticalArrangement = Arrangement.spacedBy(11.dp)) {
+            Text("ГРУЗШЕР · ЭТАП $step / 14", fontSize = 10.sp, color = Color.White.copy(alpha = .85f), fontWeight = FontWeight.Bold)
+            LinearProgressIndicator(progress = { ((step.toIntOrNull() ?: 1) / 14f).coerceIn(0f, 1f) }, modifier = Modifier.fillMaxWidth().height(5.dp).clip(RoundedCornerShape(4.dp)), color = Color.White, trackColor = Color.White.copy(alpha = .24f))
+            Text(heading, fontSize = 22.sp, fontWeight = FontWeight.ExtraBold, color = Color.White)
+            Text(detail, fontSize = 12.sp, lineHeight = 17.sp, color = Color.White.copy(alpha = .82f))
         }
     }
 }

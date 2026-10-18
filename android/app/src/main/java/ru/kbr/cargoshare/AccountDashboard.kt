@@ -78,6 +78,7 @@ fun TripsDashboard(
     offline: Boolean,
     onRefresh: () -> Unit,
     onResume: (Booking) -> Unit,
+    onTrain: (Booking) -> Unit,
     onBrowse: () -> Unit,
     onCancel: (String) -> Unit,
     onTimeline: suspend (String) -> List<BookingTimelineEvent>,
@@ -128,7 +129,7 @@ fun TripsDashboard(
             }
         }
         if (offline) {
-            Text("Статусы обновляются автоматически по мере прохождения LIVE Демо.",
+            Text("LIVE-поездки обновляются по этапам. Учебные бронирования на дату не подтверждаются оператором.",
                 modifier = Modifier.padding(start = 18.dp, end = 18.dp, bottom = 12.dp),
                 color = Quiet, fontSize = 11.sp)
         }
@@ -175,7 +176,8 @@ fun TripsDashboard(
                                         color = if (b.status == "CANCELLED" || b.status == "EXPIRED")
                                             Color(0xFFFFEDE9) else Pale,
                                     ) {
-                                        Text(ticketLabel(b, live),
+                                        Text(if (offline && b.status == "PENDING" && !isLive)
+                                                "Учебная заявка · без подтверждения" else ticketLabel(b, live),
                                             modifier = Modifier.padding(horizontal = 9.dp, vertical = 5.dp),
                                             fontSize = 11.sp, fontWeight = FontWeight.SemiBold,
                                             color = if (b.status == "CANCELLED" || b.status == "EXPIRED") ErrorRed else Jade)
@@ -200,6 +202,26 @@ fun TripsDashboard(
                             if (b.status !in setOf("CANCELLED", "EXPIRED")) {
                                 Text("Бронирование  →  Осмотр  →  Поездка  →  Возврат",
                                     color = Quiet, fontSize = 10.sp, maxLines = 2)
+                            }
+                            if (offline && b.status == "PENDING" && !isLive) {
+                                Surface(color = Pale, shape = RoundedCornerShape(15.dp)) {
+                                    Row(Modifier.fillMaxWidth().padding(12.dp),
+                                        verticalAlignment = Alignment.Top) {
+                                        Icon(Icons.Outlined.Info, null,
+                                            tint = Jade, modifier = Modifier.size(18.dp))
+                                        Spacer(Modifier.width(9.dp))
+                                        Text("Это пробная заявка на указанную дату. Машина не бронируется на самом деле. Можно отдельно пройти все этапы аренды в LIVE-демо.",
+                                            color = Dark, fontSize = 11.sp, lineHeight = 16.sp)
+                                    }
+                                }
+                                Button(onClick = { onTrain(b) },
+                                    modifier = Modifier.fillMaxWidth().height(48.dp),
+                                    shape = RoundedCornerShape(15.dp)) {
+                                    Icon(Icons.Outlined.PlayArrow, null, Modifier.size(19.dp))
+                                    Spacer(Modifier.width(8.dp))
+                                    Text("Пройти LIVE-демо на этом грузовике",
+                                        fontSize = 12.sp, maxLines = 1)
+                                }
                             }
                             if (isCurrent(b) && isLive) {
                                 Button(onClick = { onResume(b) },

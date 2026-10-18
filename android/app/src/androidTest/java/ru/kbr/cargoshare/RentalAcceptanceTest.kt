@@ -22,11 +22,23 @@ class RentalAcceptanceTest {
             runCatching { UiScrollable(UiSelector().scrollable(true)).scrollIntoView(UiSelector().text(text)) }
         }
         val node=device.wait(Until.findObject(selector),timeout)
+        if (node == null) {
+            // Preserve genuine emulator evidence rather than guessing why navigation stopped.
+            screen("failure")
+            runCatching {
+                val tree = File(context.filesDir,"acceptance/failure_hierarchy.xml")
+                device.dumpWindowHierarchy(tree)
+            }
+        }
         assertNotNull("Missing action: $text",node)
-        node.click()
+        val target = node!!
+        // UiAutomator often selects the text child of a clickable Compose Card.
+        // Prefer the accessible clickable ancestor, matching a real touch on the card.
+        val clickable = generateSequence(target) { it.parent }.firstOrNull { it.isClickable } ?: target
+        clickable.click()
     }
     private fun screen(name:String) {
-        val file=File(context.getExternalFilesDir(null),"acceptance/$name.png")
+        val file=File(context.filesDir,"acceptance/$name.png")
         file.parentFile!!.mkdirs()
         val bitmap=instrumentation.uiAutomation.takeScreenshot()
         assertNotNull(bitmap)

@@ -440,14 +440,16 @@ fun LiveDemoScreen(
 @Composable private fun LiveRouteMap(car: Vehicle?, fraction: Float, mode: String) {
     val context = LocalContext.current
     val origin = remember(car?.id) { GeoPoint(car?.latitude ?: 43.4853, car?.longitude ?: 43.6071) }
-    val route = remember(origin) {
-        listOf(origin,
+    val route = remember(origin, mode) {
+        if (mode == "пешком") listOf(
+            GeoPoint(origin.latitude + 0.0012, origin.longitude - 0.0018), origin
+        ) else listOf(origin,
             GeoPoint(origin.latitude + 0.0023, origin.longitude + 0.0040),
             GeoPoint(origin.latitude + 0.0063, origin.longitude + 0.0045),
             GeoPoint(origin.latitude + 0.0091, origin.longitude - 0.0012),
             GeoPoint(origin.latitude + 0.0122, origin.longitude + 0.0008))
     }
-    val map = remember(context, car?.id) {
+    val map = remember(context, car?.id, mode) {
         Configuration.getInstance().userAgentValue = context.packageName
         MapView(context).apply {
             setTileSource(TileSourceFactory.MAPNIK)

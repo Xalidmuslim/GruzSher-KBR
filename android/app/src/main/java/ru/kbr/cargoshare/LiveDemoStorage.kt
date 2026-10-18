@@ -28,6 +28,9 @@ class LiveDemoStorage(context: Context) {
             damageRecorded = j.optBoolean("damageRecorded"),
             unlockingAt = j.optLong("unlockingAt"),
             drivingAt = j.optLong("drivingAt"),
+            returnRequestedAt = j.optLong("returnRequestedAt"),
+            returnStartFraction = j.optDouble("returnStartFraction", 0.0).toFloat(),
+            finishedAt = j.optLong("finishedAt"),
             returnPhotoAt = j.optLong("returnPhotoAt"),
             lockingAt = j.optLong("lockingAt"),
             locked = j.optBoolean("locked"),
@@ -57,6 +60,9 @@ class LiveDemoStorage(context: Context) {
             put("damageRecorded", s.damageRecorded)
             put("unlockingAt", s.unlockingAt)
             put("drivingAt", s.drivingAt)
+            put("returnRequestedAt", s.returnRequestedAt)
+            put("returnStartFraction", s.returnStartFraction.toDouble())
+            put("finishedAt", s.finishedAt)
             put("returnPhotoAt", s.returnPhotoAt)
             put("lockingAt", s.lockingAt)
             put("locked", s.locked)

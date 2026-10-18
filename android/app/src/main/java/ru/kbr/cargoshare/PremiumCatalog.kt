@@ -231,7 +231,7 @@ private fun PremiumTruckCard(vehicle: Vehicle, onClick: () -> Unit) {
 }
 
 @Composable
-private fun NalchikMap(cars: List<Vehicle>, onSelect: (Vehicle) -> Unit, modifier: Modifier = Modifier) {
+internal fun NalchikMap(cars: List<Vehicle>, onSelect: (Vehicle) -> Unit, modifier: Modifier = Modifier) {
     val context = LocalContext.current
     val map = remember(context) {
         Configuration.getInstance().userAgentValue = context.packageName

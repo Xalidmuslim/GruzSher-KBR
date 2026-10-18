@@ -13,6 +13,7 @@ data class LiveDemoSession(
     val codeRequestedAt: Long = 0L,
     val passportStartedAt: Long = 0L,
     val licenceStartedAt: Long = 0L,
+    val documentIssue: String = "", // optional simulated validation failure; never real OCR
     val paymentStartedAt: Long = 0L,
     val durationHours: Int = 2,
     val approvalStartedAt: Long = 0L,
@@ -38,7 +39,7 @@ data class LiveDemoSession(
 )
 
 enum class LiveEvent {
-    PICK_CAR, REQUEST_CODE, VERIFY_CODE, SCAN_PASSPORT, SCAN_LICENCE, START_PAYMENT,
+    PICK_CAR, REQUEST_CODE, VERIFY_CODE, SCAN_PASSPORT, SCAN_LICENCE, FAIL_DOCUMENT_CHECK, RETRY_DOCUMENT_CHECK, START_PAYMENT,
     SET_DURATION, REQUEST_BOOKING, CAPTURE_ANGLE, REPORT_DAMAGE, UNLOCK, START_DRIVE,
     EXTEND, TOGGLE_WAIT, ASK_SUPPORT, REPORT_INCIDENT, REQUEST_RETURN, TAKE_RETURN_PHOTO, LOCK_DOORS,
     FINISH, SET_RATING, RESET
@@ -87,12 +88,14 @@ fun demoFare(s: LiveDemoSession, hourlyPriceRub: Int, now: Long): Int =
 
 /** Idempotent time transitions: resilient to Android lifecycle pauses and device restarts. */
 fun advanceLive(s: LiveDemoSession, now: Long): LiveDemoSession = when {
-    s.phase == LivePhase.DOCUMENTS && s.passportStartedAt > 0L &&
-      s.licenceStartedAt > 0L && now >= maxOf(s.passportStartedAt, s.licenceStartedAt) + LIVE_OPERATION_MS ->
-        s.copy(phase = LivePhase.PAYMENT)
+    s.phase == LivePhase.DOCUMENTS && s.documentIssue.isEmpty() &&
+      s.passportStartedAt > 0L && s.licenceStartedAt > 0L &&
+      now >= maxOf(s.passportStartedAt, s.licenceStartedAt) + LIVE_OPERATION_MS ->
+        s.copy(phase = LivePhase.PAYMENT, events = (s.events + "Демопроверка образцов пройдена автоматически").takeLast(30))
     s.phase == LivePhase.PAYMENT && s.paymentStartedAt > 0L && now >= s.paymentStartedAt + LIVE_OPERATION_MS ->
         s.copy(phase = LivePhase.CONFIRM)
-    s.phase == LivePhase.APPROVAL && now >= s.approvalStartedAt + 4_000L ->
+    // Migrate saved v3.3 sessions: no approval wait remains in v3.4.
+    s.phase == LivePhase.APPROVAL ->
         s.copy(phase = LivePhase.WALK, approachStartedAt = now)
     s.phase == LivePhase.WALK && now >= s.approachStartedAt + LIVE_APPROACH_MS ->
         s.copy(phase = LivePhase.INSPECT)
@@ -116,13 +119,20 @@ fun applyLive(s: LiveDemoSession, event: LiveEvent, now: Long, value: String = "
             else valid(c.copy(phone = value, codeRequestedAt = now), "Имитируем доставку SMS — код появится через 3 секунды")
         LiveEvent.VERIFY_CODE -> if (c.phase != LivePhase.PHONE || c.codeRequestedAt == 0L || now - c.codeRequestedAt < 3000L || value != "2468")
             invalid(c, "Дождитесь учебного SMS и введите показанный код")
-            else valid(c.copy(phase = LivePhase.DOCUMENTS), "Учебный номер подтверждён")
-        LiveEvent.SCAN_PASSPORT -> if (c.phase != LivePhase.DOCUMENTS || c.passportStartedAt != 0L)
-            invalid(c, "Сканирование недоступно")
-            else valid(c.copy(passportStartedAt = now), "Обрабатываем образец паспорта…")
-        LiveEvent.SCAN_LICENCE -> if (c.phase != LivePhase.DOCUMENTS || c.licenceStartedAt != 0L)
-            invalid(c, "Сканирование недоступно")
-            else valid(c.copy(licenceStartedAt = now), "Обрабатываем образец водительских прав…")
+            else valid(c.copy(phase = LivePhase.DOCUMENTS, passportStartedAt = now,
+                licenceStartedAt = now, documentIssue = ""), "Учебный номер подтверждён · началась автоматическая демопроверка образцов")
+        // Legacy manual triggers are disabled. Real document scans are not performed in offline demo.
+        LiveEvent.SCAN_PASSPORT, LiveEvent.SCAN_LICENCE ->
+            invalid(c, "Демопроверка запускается автоматически; реальные документы не используются")
+        LiveEvent.FAIL_DOCUMENT_CHECK ->
+            if (c.phase != LivePhase.DOCUMENTS || value !in setOf("Нечитаемый документ", "Истёк срок", "Неверная категория"))
+                invalid(c, "Тестовый сценарий недоступен")
+            else valid(c.copy(documentIssue = value), "Тест: $value. Повторите проверку")
+        LiveEvent.RETRY_DOCUMENT_CHECK ->
+            if (c.phase != LivePhase.DOCUMENTS || c.documentIssue.isBlank())
+                invalid(c, "Повторная проверка не требуется")
+            else valid(c.copy(documentIssue = "", passportStartedAt = now, licenceStartedAt = now),
+                "Демопроверка запущена повторно")
         LiveEvent.START_PAYMENT -> if (c.phase != LivePhase.PAYMENT || c.paymentStartedAt != 0L)
             invalid(c, "Демонстрационная карта уже проверяется")
             else valid(c.copy(paymentStartedAt = now), "Проверяем виртуальную карту •••• 0000…")
@@ -131,8 +141,9 @@ fun applyLive(s: LiveDemoSession, event: LiveEvent, now: Long, value: String = "
             else valid(c.copy(durationHours = value.toInt()), "Длительность обновлена")
         LiveEvent.REQUEST_BOOKING -> if (c.phase != LivePhase.CONFIRM)
             invalid(c, "Завершите регистрацию и проверку")
-            else valid(c.copy(phase = LivePhase.APPROVAL, approvalStartedAt = now, bookingId = "SIM-${now.toString().takeLast(7)}"),
-                "Запрос отправлен учебному оператору")
+            else valid(c.copy(phase = LivePhase.WALK, approvalStartedAt = now, approachStartedAt = now,
+                bookingId = "SIM-${now.toString().takeLast(7)}"),
+                "Учебная бронь подтверждена автоматически. Идём к машине")
         LiveEvent.CAPTURE_ANGLE -> if (c.phase != LivePhase.INSPECT || value !in setOf("Спереди", "Сзади", "Слева", "Справа"))
             invalid(c, "Выберите сторону грузовика")
             else valid(c.copy(inspected = c.inspected + value), "Симуляция снимка: $value")

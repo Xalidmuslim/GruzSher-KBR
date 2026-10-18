@@ -77,6 +77,7 @@ private fun AppScreen() {
     var bookings by remember { mutableStateOf(restoredDemo.first) }
     var demoState by remember { mutableStateOf(restoredDemo.second) }
     var demoNotice by remember { mutableStateOf<String?>(null) }
+    var liveOverview by remember { mutableStateOf(LiveDemoStorage(context.applicationContext).load()) }
     var token by remember { mutableStateOf<String?>(null) }
     var busy by remember { mutableStateOf(!BuildConfig.DEBUG) }
     var error by remember { mutableStateOf<String?>(null) }
@@ -84,6 +85,9 @@ private fun AppScreen() {
     var tab by remember { mutableIntStateOf(0) }
     var liveSelectedCarId by remember { mutableStateOf<String?>(null) }
     var selected by remember { mutableStateOf<Vehicle?>(null) }
+    LaunchedEffect(tab) {
+        if (tab == 1 || tab == 2) liveOverview = LiveDemoStorage(context.applicationContext).load()
+    }
     // Volatile simulator state is intentionally never synchronized to the API or stored on disk.
     val offlineIntentKeys = remember { mutableStateMapOf<String, String>() }
     val offlineCreatedAt = remember { mutableStateMapOf<String, String>() }
@@ -168,7 +172,7 @@ private fun AppScreen() {
         containerColor = Cream,
         bottomBar = {
             NavigationBar(containerColor = Color.White) {
-                val titles = listOf("Карта", "Поездки", "Профиль", "LIVE Демо")
+                val titles = listOf("Автомобили", "Поездки", "Профиль", "LIVE Демо")
                 val icons = listOf(Icons.Outlined.LocalShipping, Icons.Outlined.ReceiptLong, Icons.Outlined.AccountCircle, Icons.Outlined.CheckCircle)
                 titles.forEachIndexed { index, title ->
                     NavigationBarItem(selected = tab == index, onClick = { tab = index },
@@ -192,8 +196,10 @@ private fun AppScreen() {
             }
             when (tab) {
                 0 -> CarshareHome(vehicles, busy, onSelect = { selected = it }, onRefresh = { reloadVehicles() }, onLiveDemo = { liveSelectedCarId = null; tab = 3 })
-                1 -> BookingsPage(bookings, vehicles,
-                    onDemoSelect = { chooseTrip(it) },
+                1 -> TripsDashboard(bookings = bookings, cars = vehicles,
+                    live = liveOverview, offline = offlineDemo,
+                    onResume = { chooseTrip(it) },
+                    onBrowse = { tab = 0 },
                     onTimeline = { id ->
                         if (offlineDemo && BuildConfig.DEBUG) {
                             val current = bookings.find { it.id == id }
@@ -217,12 +223,14 @@ private fun AppScreen() {
                     }
                     }
                 })
-                2 -> ProfilePage()
+                2 -> DriverDashboard(live = liveOverview, bookings = bookings,
+                    onLive = { tab = 3 }, onTrips = { tab = 1 })
                 else -> LiveDemoScreen(
                     cars = vehicles,
                     selectedCarId = liveSelectedCarId,
                     onBackToMap = { tab = 0 },
                     onTripChanged = { live ->
+                        liveOverview = live
                         if (offlineDemo && live.bookingId.isNotBlank() && live.carId.isNotBlank()) {
                             val current = vehicles.firstOrNull { it.id == live.carId }
                             val phaseStatus = when (live.phase) {

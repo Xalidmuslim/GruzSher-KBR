@@ -33,10 +33,10 @@ fun PremiumTripDashboard(
 
     // Compact dashboard instead of 14-step tutorial header above the map.
     Surface(color = PremiumTheme.GreenDark, shape = RoundedCornerShape(24.dp)) {
-        Row(Modifier.fillMaxWidth().padding(17.dp), verticalAlignment = Alignment.CenterVertically) {
+        Row(Modifier.fillMaxWidth().padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
             Surface(color = Color(0xFF1B725B), shape = RoundedCornerShape(13.dp)) {
                 Icon(Icons.Outlined.LocalShipping, null, tint = Color.White,
-                    modifier = Modifier.padding(11.dp).size(27.dp))
+                    modifier = Modifier.padding(9.dp).size(23.dp))
             }
             Spacer(Modifier.width(12.dp))
             Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(3.dp)) {
@@ -51,10 +51,10 @@ fun PremiumTripDashboard(
         }
     }
     Box(
-        Modifier.fillMaxWidth().height(295.dp).clip(RoundedCornerShape(24.dp))
+        Modifier.fillMaxWidth().height(232.dp).clip(RoundedCornerShape(24.dp))
             .background(PremiumTheme.Mint)
     ) {
-        LiveRouteMap(car, fraction, "грузовик")
+        LiveRouteMap(car, fraction, "грузовик", Modifier.fillMaxSize())
         Surface(
             modifier = Modifier.align(Alignment.TopStart).padding(12.dp),
             color = Color.White, shadowElevation = 4.dp, shape = RoundedCornerShape(14.dp)
@@ -129,7 +129,7 @@ private fun TripMetric(
     name: String, value: String, modifier: Modifier
 ) {
     Surface(modifier, color = Color.White, shape = RoundedCornerShape(18.dp)) {
-        Column(Modifier.padding(horizontal = 9.dp, vertical = 12.dp),
+        Column(Modifier.padding(horizontal = 9.dp, vertical = 9.dp),
             verticalArrangement = Arrangement.spacedBy(6.dp)) {
             Icon(symbol, null, tint = PremiumTheme.Green, modifier = Modifier.size(18.dp))
             Text(name, fontSize = 10.sp, color = PremiumTheme.Muted)
@@ -147,10 +147,10 @@ private fun TripAction(
     Surface(onClick = onClick, modifier = modifier,
         shape = RoundedCornerShape(17.dp), color = Color.White,
         shadowElevation = 1.dp) {
-        Column(Modifier.fillMaxWidth().padding(vertical = 13.dp),
+        Column(Modifier.fillMaxWidth().padding(vertical = 10.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(6.dp)) {
-            Icon(icon, null, tint = PremiumTheme.Green, modifier = Modifier.size(24.dp))
+            Icon(icon, null, tint = PremiumTheme.Green, modifier = Modifier.size(22.dp))
             Text(label, fontSize = 11.sp, color = PremiumTheme.Text,
                 fontWeight = FontWeight.SemiBold, maxLines = 1)
         }

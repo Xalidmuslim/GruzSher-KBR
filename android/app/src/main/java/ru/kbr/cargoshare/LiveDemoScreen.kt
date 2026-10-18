@@ -455,7 +455,7 @@ fun LiveDemoScreen(
             setTileSource(TileSourceFactory.MAPNIK)
             setMultiTouchControls(true)
             controller.setZoom(13.8)
-            controller.setCenter(route[route.size / 2])
+            controller.setCenter(route[centerIndexForRoute(route.size)])
             minZoomLevel = 9.0
             maxZoomLevel = 18.0
             overlays.add(Polyline().apply {

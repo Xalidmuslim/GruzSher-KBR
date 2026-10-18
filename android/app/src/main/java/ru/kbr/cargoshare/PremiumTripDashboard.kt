@@ -31,9 +31,17 @@ fun PremiumTripDashboard(
     val fare = demoFare(session,car?.hourlyPriceRub ?: 650,now)
     val parked = session.pauseStartedAt != 0L
 
-    StageBanner(if(parked) "Ожидание на стоянке" else "Движение к стоянке", "Учебный маршрут · Нальчик")
+    Row(Modifier.fillMaxWidth().padding(vertical = 5.dp),
+        verticalAlignment = Alignment.CenterVertically) {
+        Icon(Icons.Outlined.Navigation, null, tint = PremiumTheme.Green)
+        Spacer(Modifier.width(8.dp))
+        Text(if (parked) "Ожидание на стоянке" else "Движение к стоянке",
+            modifier = Modifier.weight(1f), color = PremiumTheme.Text,
+            fontWeight = FontWeight.Bold, fontSize = 20.sp)
+        Text("ДЕМО", color = PremiumTheme.Green, fontSize = 11.sp)
+    }
     Box(
-        Modifier.fillMaxWidth().height(190.dp).clip(RoundedCornerShape(24.dp))
+        Modifier.fillMaxWidth().height(203.dp).clip(RoundedCornerShape(24.dp))
             .background(PremiumTheme.Mint)
     ) {
         LiveRouteMap(car, fraction, "грузовик", Modifier.fillMaxSize())

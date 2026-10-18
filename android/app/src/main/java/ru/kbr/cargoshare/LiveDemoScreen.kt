@@ -82,7 +82,7 @@ fun LiveDemoScreen(
     LaunchedEffect(Unit) {
         while (isActive) {
             now = System.currentTimeMillis()
-            delay(500L)
+            delay(1000L)
         }
     }
     LaunchedEffect(now, session) {
@@ -111,7 +111,6 @@ fun LiveDemoScreen(
         verticalArrangement = Arrangement.spacedBy(if (session.phase == LivePhase.DRIVING) 9.dp else 14.dp)
     ) {
         Spacer(Modifier.height(6.dp))
-        DemoNotice()
         PremiumBrandHeader()
         if(session.phase in setOf(LivePhase.PHONE,LivePhase.DOCUMENTS,LivePhase.PAYMENT,LivePhase.CONFIRM)) TextButton(onClick={perform(LiveEvent.RESET)}) {Icon(Icons.Outlined.ArrowBack,null);Text("Изменить автомобиль") }
         if (message != null) {

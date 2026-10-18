@@ -4,6 +4,7 @@ import android.content.Intent
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectTransformGestures
+import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -33,11 +34,27 @@ import coil.compose.AsyncImage
     var zoom by remember { mutableFloatStateOf(1f) }
     var panX by remember { mutableFloatStateOf(0f) }
     var panY by remember { mutableFloatStateOf(0f) }
+    // Reset transform when changing the expanded picture.
+    LaunchedEffect(index) { zoom = 1f; panX = 0f; panY = 0f }
     val context=LocalContext.current
     val prefs=remember { context.getSharedPreferences("gruzsher_preferences",0) }
     var favourite by remember(car.id) { mutableStateOf(prefs.getBoolean("favourite_${car.id}",false)) }
     Column(verticalArrangement=Arrangement.spacedBy(7.dp)) {
-        Box(Modifier.fillMaxWidth().height(193.dp).clip(RoundedCornerShape(19.dp))) {
+        Box(Modifier.fillMaxWidth().height(193.dp).clip(RoundedCornerShape(19.dp))
+            .pointerInput(car.id, index) {
+                var swipe = 0f
+                detectHorizontalDragGestures(
+                    onDragEnd = {
+                        if (swipe > 65f) index = (index + 5) % 6
+                        if (swipe < -65f) index = (index + 1) % 6
+                        swipe = 0f
+                    },
+                    onHorizontalDrag = { change, drag ->
+                        swipe += drag
+                        change.consume()
+                    }
+                )
+            }) {
             TruckArtwork(car, Modifier.fillMaxSize().clickable { expanded=true }, views[index])
             IconButton(onClick={index=(index+5)%6}, modifier=Modifier.align(Alignment.CenterStart).padding(5.dp).background(Color.White, RoundedCornerShape(50.dp))) { Icon(Icons.Outlined.ChevronLeft,"Предыдущее фото") }
             IconButton(onClick={index=(index+1)%6}, modifier=Modifier.align(Alignment.CenterEnd).padding(5.dp).background(Color.White, RoundedCornerShape(50.dp))) { Icon(Icons.Outlined.ChevronRight,"Следующее фото") }
@@ -57,7 +74,10 @@ import coil.compose.AsyncImage
     if(expanded) Dialog(onDismissRequest={expanded=false;zoom=1f;panX=0f;panY=0f},properties=DialogProperties(usePlatformDefaultWidth=false)) {
         Box(Modifier.fillMaxSize().background(Color.Black)) {
             AsyncImage(artworkSource(car,views[index]),"${car.name}, фото ${index+1}. Масштабирование двумя пальцами",contentScale=ContentScale.Fit,
-                modifier=Modifier.fillMaxSize().pointerInput(index) { detectTransformGestures { _, pan, scale, _ -> zoom=(zoom*scale).coerceIn(1f,4f);panX+=pan.x;panY+=pan.y } }.graphicsLayer(scaleX=zoom,scaleY=zoom,translationX=panX,translationY=panY))
+                modifier=Modifier.fillMaxSize().pointerInput(index) { detectTransformGestures { _, pan, scale, _ -> zoom=(zoom*scale).coerceIn(1f,4f)
+                    val limit = (zoom-1f)*260f
+                    panX=(panX+pan.x).coerceIn(-limit,limit)
+                    panY=(panY+pan.y).coerceIn(-limit,limit) } }.graphicsLayer(scaleX=zoom,scaleY=zoom,translationX=panX,translationY=panY))
             IconButton(onClick={expanded=false},modifier=Modifier.align(Alignment.TopEnd).statusBarsPadding()) { Icon(Icons.Outlined.Close,"Закрыть галерею",tint=Color.White) }
             Text("${index+1} / 6 · Сгенерированное демофото",color=Color.White,modifier=Modifier.align(Alignment.BottomCenter).navigationBarsPadding().padding(20.dp))
         }

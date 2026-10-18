@@ -106,7 +106,6 @@ fun TripsDashboard(
 
     Column(Modifier.fillMaxSize().background(Paper)) {
         Column(Modifier.padding(horizontal = 14.dp, vertical = 8.dp), verticalArrangement = Arrangement.spacedBy(9.dp)) {
-            if (offline) DemoNotice()
             PremiumBrandHeader()
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text("Мои поездки", fontSize = 28.sp, fontWeight = FontWeight.ExtraBold,
@@ -168,9 +167,9 @@ fun TripsDashboard(
                         elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
                         modifier = Modifier.fillMaxWidth(),
                     ) {
-                        Column(Modifier.fillMaxWidth().padding(17.dp), verticalArrangement = Arrangement.spacedBy(11.dp)) {
+                        Column(Modifier.fillMaxWidth().padding(13.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                             if (isCurrent(b) && car != null) {
-                                Box(Modifier.fillMaxWidth().height(145.dp)) {
+                                Box(Modifier.fillMaxWidth().height(98.dp)) {
                                     TruckArtwork(car, Modifier.fillMaxSize())
                                     Surface(modifier = Modifier.align(Alignment.TopStart).padding(8.dp),
                                         color = Pale, shape = RoundedCornerShape(12.dp)) {
@@ -183,7 +182,7 @@ fun TripsDashboard(
                             Row(verticalAlignment = Alignment.Top, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                                 if (!isCurrent(b) && car != null) TruckArtwork(car, Modifier.size(78.dp, 70.dp))
                                 Column(Modifier.weight(1f)) {
-                                    Text(name, fontSize = 19.sp, fontWeight = FontWeight.Bold, color = Dark)
+                                    Text(name, fontSize = 17.sp, fontWeight = FontWeight.Bold, color = Dark)
                                     Spacer(Modifier.height(5.dp))
                                     Surface(
                                         shape = RoundedCornerShape(10.dp),
@@ -366,181 +365,153 @@ fun TripsDashboard(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun DriverDashboard(
-    live: LiveDemoSession,
-    bookings: List<Booking>,
-    onLive: () -> Unit,
-    onTrips: () -> Unit,
-) {
+fun DriverDashboard(live: LiveDemoSession, bookings: List<Booking>,
+                    onLive: () -> Unit, onTrips: () -> Unit) {
+    val context = LocalContext.current
+    val prefs = remember(context) {
+        context.getSharedPreferences("gruzsher_preferences", 0)
+    }
     val completed = bookings.count { it.status == "COMPLETED" }
     val active = bookings.count(::isCurrent)
-    val loginPassed = live.phase !in setOf(LivePhase.CHOOSE, LivePhase.PHONE)
-    val documentPassed = live.phase !in setOf(LivePhase.CHOOSE, LivePhase.PHONE, LivePhase.DOCUMENTS)
-    val cardPassed = live.phase !in setOf(LivePhase.CHOOSE, LivePhase.PHONE, LivePhase.DOCUMENTS, LivePhase.PAYMENT)
-    var showDetails by remember { mutableStateOf(false) }
     var panel by rememberSaveable { mutableStateOf<String?>(null) }
-    val context = LocalContext.current
-    val prefs = remember(context) { context.getSharedPreferences("gruzsher_preferences", 0) }
-    var notifications by remember { mutableStateOf(prefs.getBoolean("notifications_enabled", true)) }
-    var language by remember { mutableStateOf(prefs.getString("language", "ru") ?: "ru") }
-    var message by rememberSaveable { mutableStateOf("") }
+    var draft by rememberSaveable { mutableStateOf("") }
     var journal by remember { mutableStateOf(prefs.getString("account_journal", "[]") ?: "[]") }
+    val hasActiveTrip = live.bookingId.isNotBlank() &&
+        live.phase !in setOf(LivePhase.CHOOSE, LivePhase.RECEIPT)
+
     Column(Modifier.fillMaxSize().background(Paper)) {
-        Column(Modifier.padding(horizontal = 14.dp, vertical = 8.dp), verticalArrangement = Arrangement.spacedBy(9.dp)) {
-            DemoNotice()
-            PremiumBrandHeader()
+        Row(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 11.dp),
+            verticalAlignment = Alignment.CenterVertically) {
+            Text("ГРУЗШЕР", color = PremiumTheme.GreenDark, fontSize = 24.sp,
+                fontWeight = FontWeight.ExtraBold, modifier = Modifier.weight(1f))
+            DemoPill()
         }
-        LazyColumn(
-            modifier = Modifier.weight(1f),
-            contentPadding = PaddingValues(start = 14.dp, end = 14.dp, top = 5.dp, bottom = 22.dp),
-            verticalArrangement = Arrangement.spacedBy(13.dp),
-        ) {
-        item {
-            Box(Modifier.fillMaxWidth().height(128.dp).clip(RoundedCornerShape(22.dp)).background(Jade)) {
-                AsyncImage("file:///android_asset/premium/live_banner.webp", null,
-                    contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize())
-                Row(Modifier.fillMaxSize().background(Brush.horizontalGradient(listOf(
-                    PremiumTheme.GreenDark, PremiumTheme.GreenDark.copy(alpha = .75f), Color.Transparent)))
-                    .padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
-                    Surface(shape = CircleShape, color = Pale) {
-                        Icon(Icons.Outlined.PersonOutline, "Нейтральный аватар демоводителя",
-                            modifier = Modifier.padding(14.dp).size(32.dp), tint = Jade)
-                    }
-                    Spacer(Modifier.width(12.dp))
-                    Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                        Text("Демо-водитель", fontSize = 21.sp, fontWeight = FontWeight.ExtraBold, color = Color.White)
-                        Text("Реальная регистрация\nещё не подключена", fontSize = 11.sp,
-                            lineHeight = 15.sp, color = Color.White)
-                        Text("● ДЕМО-РЕЖИМ", color = Color(0xFFC8F7D9), fontWeight = FontWeight.Bold, fontSize = 10.sp)
-                    }
-                }
-            }
-        }
-        item {
-            Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                DashboardMetric("Текущие", active.toString(), Modifier.weight(1f).clickable(onClick = onTrips))
-                DashboardMetric("Завершено", completed.toString(), Modifier.weight(1f).clickable(onClick = onTrips))
-            }
-        }
-        if (live.bookingId.isNotBlank() && live.phase !in setOf(LivePhase.CHOOSE, LivePhase.RECEIPT)) {
+        LazyColumn(modifier = Modifier.fillMaxSize(),
+            contentPadding = PaddingValues(start = 14.dp, end = 14.dp, bottom = 25.dp),
+            verticalArrangement = Arrangement.spacedBy(11.dp)) {
             item {
-                Surface(color = Pale, shape = RoundedCornerShape(20.dp)) {
-                    Column(Modifier.fillMaxWidth().padding(16.dp), verticalArrangement = Arrangement.spacedBy(9.dp)) {
-                        StageBanner("Ваша поездка", liveLabel(live))
-                        Button(onClick = onLive, modifier = Modifier.fillMaxWidth(),
-                            shape = RoundedCornerShape(14.dp)) {
-                            Text("Продолжить поездку")
+                Text("Профиль", fontSize = 25.sp, fontWeight = FontWeight.Bold,
+                    color = Dark)
+            }
+            item {
+                Surface(shape = RoundedCornerShape(19.dp), color = Color.White) {
+                    Row(Modifier.fillMaxWidth().padding(14.dp),
+                        verticalAlignment = Alignment.CenterVertically) {
+                        Surface(shape = CircleShape, color = Pale) {
+                            Icon(Icons.Outlined.PersonOutline, null,
+                                modifier = Modifier.padding(13.dp).size(29.dp), tint = Jade)
+                        }
+                        Spacer(Modifier.width(12.dp))
+                        Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(3.dp)) {
+                            Text("Демо-пользователь", color = Dark,
+                                fontSize = 17.sp, fontWeight = FontWeight.Bold)
+                            Text("Учебный режим · регистрация не подключена",
+                                color = Quiet, fontSize = 11.sp)
                         }
                     }
                 }
             }
-        }
-        item {
-            DashboardSection("Доступ к аренде") {
-                AccountStatusLine("Вход по SMS", if (loginPassed) "Учебный вход пройден" else "Не пройден",
-                    loginPassed, Icons.Outlined.Sms, onLive)
-                HorizontalDivider(color = Pale)
-                AccountStatusLine("Права и паспорт",
-                    if (documentPassed) "Проверены только образцы" else "Демопроверка не пройдена",
-                    documentPassed, Icons.Outlined.Badge, onLive)
-                HorizontalDivider(color = Pale)
-                AccountStatusLine("Способ оплаты",
-                    if (cardPassed) "Виртуальная карта •••• 0000" else "Демо-карта не подключена",
-                    cardPassed, Icons.Outlined.CreditCard, onLive)
-            }
-        }
-        item {
-            DashboardSection("Мои действия") {
-                AccountAction("История поездок", "Все поездки и события аренды", Icons.Outlined.History, onTrips)
-                HorizontalDivider(color = Pale)
-                AccountAction("Тренажёр аренды", "Полный учебный сценарий", Icons.Outlined.PlayArrow, onLive)
-                HorizontalDivider(color = Pale)
-                AccountAction("Настройки", "Уведомления и язык", Icons.Outlined.Settings) { panel = "Настройки" }
-                HorizontalDivider(color = Pale)
-                AccountAction("Поддержка", "Локальный учебный чат", Icons.Outlined.SupportAgent) { panel = "Поддержка" }
-                HorizontalDivider(color = Pale)
-                AccountAction("Сообщить о происшествии", "Запись в деможурнал", Icons.Outlined.ReportProblem) { panel = "Происшествие" }
-            }
-        }
-        item {
-            DashboardSection("О приложении") {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Column(Modifier.weight(1f)) {
-                        Text("Что работает в деморежиме?", color = Dark,
-                            fontWeight = FontWeight.SemiBold, fontSize = 14.sp)
-                        Text("Условия, безопасность и ограничения", color = Quiet, fontSize = 11.sp)
-                    }
-                    IconButton(onClick = { showDetails = !showDetails }) {
-                        Icon(if (showDetails) Icons.Outlined.ExpandLess else Icons.Outlined.ExpandMore,
-                            contentDescription = "Показать ограничения", tint = Jade)
-                    }
-                }
-                if (showDetails) {
-                    Text("SMS-код создаётся внутри приложения. Паспорт и права не отправляются на проверку. Карта виртуальная; реальные деньги не списываются. GPS грузовика и управление замками не подключены. Все данные поездок учебные.",
-                        color = Quiet, fontSize = 12.sp, lineHeight = 19.sp)
+            item {
+                Row(horizontalArrangement = Arrangement.spacedBy(9.dp)) {
+                    DashboardMetric("Текущие", active.toString(), Modifier.weight(1f))
+                    DashboardMetric("Завершено", completed.toString(), Modifier.weight(1f))
                 }
             }
-        }
+            if (hasActiveTrip) item {
+                Surface(shape = RoundedCornerShape(18.dp), color = Pale) {
+                    Row(Modifier.fillMaxWidth().clickable(onClick = onLive).padding(14.dp),
+                        verticalAlignment = Alignment.CenterVertically) {
+                        Icon(Icons.Outlined.LocalShipping, null, tint = Jade)
+                        Spacer(Modifier.width(10.dp))
+                        Column(Modifier.weight(1f)) {
+                            Text("Продолжить поездку", fontWeight = FontWeight.Bold, color = Dark)
+                            Text(liveLabel(live), color = Quiet, fontSize = 12.sp)
+                        }
+                        Icon(Icons.Outlined.ChevronRight, null, tint = Jade)
+                    }
+                }
+            }
+            item {
+                DashboardSection("Мой аккаунт") {
+                    AccountAction("Мои документы", "Учебные образцы · не проверены реально",
+                        Icons.Outlined.Badge) { panel = "Документы" }
+                    HorizontalDivider(color = Pale)
+                    AccountAction("Способ оплаты", "Виртуальная карта · списаний нет",
+                        Icons.Outlined.CreditCard) { panel = "Оплата" }
+                    HorizontalDivider(color = Pale)
+                    AccountAction("История поездок", "Заявки и учебные чеки",
+                        Icons.Outlined.History, onTrips)
+                }
+            }
+            item {
+                DashboardSection("Помощь и настройки") {
+                    AccountAction("Поддержка", "Локальные учебные сообщения",
+                        Icons.Outlined.SupportAgent) { panel = "Поддержка" }
+                    HorizontalDivider(color = Pale)
+                    AccountAction("Настройки", "Русский язык · демонстрационная версия",
+                        Icons.Outlined.Settings) { panel = "Настройки" }
+                    HorizontalDivider(color = Pale)
+                    AccountAction("О приложении", "Возможности и ограничения",
+                        Icons.Outlined.Info) { panel = "О приложении" }
+                }
+            }
         }
     }
     panel?.let { title ->
         ModalBottomSheet(onDismissRequest = { panel = null }, containerColor = Paper) {
             Column(Modifier.fillMaxWidth().verticalScroll(rememberScrollState())
-                .padding(horizontal = 20.dp).padding(bottom = 28.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
-                Text(title, color = Dark, fontSize = 24.sp, fontWeight = FontWeight.Bold)
-                if (title == "Настройки") {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Column(Modifier.weight(1f)) {
-                            Text("Учебные уведомления", color = Dark, fontWeight = FontWeight.SemiBold)
-                            Text("Предпочтение хранится на устройстве", color = Quiet, fontSize = 11.sp)
-                        }
-                        Switch(checked = notifications, onCheckedChange = {
-                            notifications = it
-                            prefs.edit().putBoolean("notifications_enabled", it).apply()
-                        })
+                .padding(horizontal = 20.dp).padding(bottom = 32.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                Text(title, fontSize = 23.sp, fontWeight = FontWeight.Bold, color = Dark)
+                when (title) {
+                    "Документы" -> {
+                        Text("Это учебная проверка образцов паспорта и водительских прав. " +
+                            "Настоящие документы не загружаются и не проверяются.",
+                            fontSize = 13.sp, lineHeight = 19.sp, color = Quiet)
+                        Button(onClick = { panel = null; onLive() },
+                            modifier = Modifier.fillMaxWidth()) { Text("Открыть тренажёр") }
                     }
-                    Text("Язык", color = Dark, fontWeight = FontWeight.SemiBold)
-                    listOf("ru" to "Русский", "en" to "English").forEach { (code, label) ->
-                        Row(Modifier.fillMaxWidth().clickable {
-                            language = code
-                            prefs.edit().putString("language", code).apply()
-                        }, verticalAlignment = Alignment.CenterVertically) {
-                            RadioButton(selected = language == code, onClick = {
-                                language = code
-                                prefs.edit().putString("language", code).apply()
-                            })
-                            Text(label, color = Dark)
-                        }
+                    "Оплата" -> Text("Платежи отключены. Демо-карта •••• 0000 используется " +
+                        "только в учебном сценарии. Реальных списаний нет.",
+                        fontSize = 13.sp, lineHeight = 19.sp, color = Quiet)
+                    "Настройки" -> {
+                        Text("Язык интерфейса: русский", color = Dark)
+                        Text("Переключение языка и реальные уведомления будут доступны " +
+                            "после внедрения соответствующих функций.",
+                            fontSize = 12.sp, color = Quiet)
                     }
-                    Text("Выбор языка сохранён. Учебные сценарии пока доступны на русском.", color = Quiet, fontSize = 12.sp)
-                } else {
-                    Text("Учебный журнал на этом устройстве. Сообщения не отправляются оператору или экстренным службам.", color = Quiet, fontSize = 12.sp)
-                    OutlinedTextField(value = message, onValueChange = { message = it.take(500) },
-                        label = { Text(if (title == "Поддержка") "Ваш вопрос" else "Что произошло?") },
-                        modifier = Modifier.fillMaxWidth(), minLines = 2)
-                    Button(onClick = {
-                        val entries = runCatching { JSONArray(prefs.getString("account_journal", "[]")) }.getOrDefault(JSONArray())
-                        entries.put(JSONObject().put("type", title).put("message", message.trim())
-                            .put("at", OffsetDateTime.now().toString()))
-                        val recent = JSONArray()
-                        for (i in maxOf(0, entries.length() - 50) until entries.length()) recent.put(entries.getJSONObject(i))
-                        journal = recent.toString()
-                        prefs.edit().putString("account_journal", journal).apply()
-                        message = ""
-                    }, enabled = message.isNotBlank(), modifier = Modifier.fillMaxWidth()) {
-                        Text("Сохранить в деможурнал")
-                    }
-                    val entries = runCatching { JSONArray(journal) }.getOrDefault(JSONArray())
-                    for (i in entries.length() - 1 downTo maxOf(0, entries.length() - 10)) {
-                        val entry = entries.optJSONObject(i) ?: continue
-                        Surface(color = Color.White, shape = RoundedCornerShape(14.dp)) {
-                            Column(Modifier.fillMaxWidth().padding(12.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                                Text(entry.optString("type") + " · " + readableDate(entry.optString("at")), color = Jade, fontSize = 11.sp)
-                                Text(entry.optString("message"), color = Dark, fontSize = 13.sp)
-                                Text("Сохранено локально · Демо", color = Quiet, fontSize = 10.sp)
+                    "Поддержка" -> {
+                        Text("Сообщения сохраняются только на этом устройстве и не " +
+                            "отправляются оператору или экстренным службам.",
+                            color = Quiet, fontSize = 12.sp, lineHeight = 18.sp)
+                        OutlinedTextField(value = draft, onValueChange = { draft = it.take(500) },
+                            label = { Text("Учебная заметка") },
+                            modifier = Modifier.fillMaxWidth(), minLines = 2)
+                        Button(enabled = draft.isNotBlank(), onClick = {
+                            val saved = runCatching { JSONArray(journal) }.getOrDefault(JSONArray())
+                            saved.put(JSONObject().put("type", "Поддержка")
+                                .put("message", draft.trim())
+                                .put("at", OffsetDateTime.now().toString()))
+                            val latest = JSONArray()
+                            for (k in maxOf(0, saved.length() - 50) until saved.length())
+                                latest.put(saved.getJSONObject(k))
+                            journal = latest.toString()
+                            prefs.edit().putString("account_journal", journal).apply()
+                            draft = ""
+                        }, modifier = Modifier.fillMaxWidth()) { Text("Сохранить на устройстве") }
+                        val messages = runCatching { JSONArray(journal) }.getOrDefault(JSONArray())
+                        for (n in messages.length() - 1 downTo maxOf(0, messages.length() - 5)) {
+                            val item = messages.optJSONObject(n) ?: continue
+                            Surface(shape = RoundedCornerShape(12.dp), color = Color.White) {
+                                Text(item.optString("message"), modifier = Modifier.padding(12.dp),
+                                    color = Dark, fontSize = 12.sp)
                             }
                         }
                     }
+                    else -> Text("ГрузШер ${BuildConfig.VERSION_NAME} · демонстрационная версия. " +
+                        "SMS, платежи, замки, GPS машин и обращения к оператору сейчас " +
+                        "имитируются. Реальная аренда недоступна.",
+                        fontSize = 13.sp, lineHeight = 19.sp, color = Quiet)
                 }
             }
         }

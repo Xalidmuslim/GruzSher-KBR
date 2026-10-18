@@ -58,7 +58,7 @@ class RentalAcceptanceTest {
         context.startActivity(context.packageManager.getLaunchIntentForPackage(context.packageName)!!.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK))
         assertTrue(device.wait(Until.hasObject(By.text("Найти грузовик")),30_000))
         screen("01_home_fleet")
-        tap("Выбрать →")
+        tap("Выбрать")
         // Wait for the full-screen booking Dialog before capturing it.
         // Compose navigation is asynchronous; an immediate screenshot captures the old home.
         assertTrue("Booking screen did not appear",
@@ -96,8 +96,8 @@ class RentalAcceptanceTest {
         screen("05_active_trip")
         tap("Продлить +2 ч")
         device.pressBack()
-        assertTrue(device.wait(Until.hasObject(By.text("Вернуться к поездке")),10_000))
-        tap("Вернуться к поездке")
+        assertTrue(device.wait(Until.hasObject(By.text("Тренажёр аренды")),10_000))
+        tap("Тренажёр аренды")
         assertTrue(device.wait(Until.hasObject(By.text("Продолжить")),10_000))
         tap("Продолжить")
         tap("Завершить поездку")

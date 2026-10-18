@@ -84,13 +84,21 @@ fun PremiumCatalog(
         }
         OutlinedButton(
             onClick = onLiveDemo,
-            modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 5.dp).height(48.dp),
-            shape = RoundedCornerShape(15.dp),
+            modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 5.dp)
+                .defaultMinSize(minHeight = 68.dp),
+            shape = RoundedCornerShape(16.dp),
+            contentPadding = PaddingValues(horizontal = 14.dp, vertical = 10.dp),
             colors = ButtonDefaults.outlinedButtonColors(containerColor = Fog),
         ) {
-            Icon(Icons.Outlined.PlayCircle, contentDescription = null, tint = Forest)
-            Spacer(Modifier.width(7.dp))
-            Text("Пройти настоящую последовательность аренды • DEMO", fontSize = 12.sp, color = Forest)
+            Icon(Icons.Outlined.PlayCircle, contentDescription = null, tint = Forest, modifier = Modifier.size(24.dp))
+            Spacer(Modifier.width(11.dp))
+            Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(3.dp)) {
+                Text("Пройти аренду — LIVE Демо", fontSize = 14.sp,
+                    color = Forest, fontWeight = FontWeight.Bold, maxLines = 2, lineHeight = 18.sp)
+                Text("От выбора машины до возврата", fontSize = 11.sp,
+                    color = Muted, maxLines = 2, lineHeight = 14.sp)
+            }
+            Icon(Icons.Outlined.ChevronRight, null, tint = Forest, modifier = Modifier.size(20.dp))
         }
         LazyRow(
             contentPadding = PaddingValues(horizontal = 16.dp),
@@ -307,8 +315,20 @@ private fun NalchikMap(cars: List<Vehicle>, onSelect: (Vehicle) -> Unit, modifie
                         position = GeoPoint(lat, lon)
                         title = vehicle.name
                         snippet = "${vehicle.hourlyPriceRub} ₽ / ч · Демоданные"
+                        icon = truckMapMarker(context, vehicle.hourlyPriceRub)
                         setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_BOTTOM)
-                        setOnMarkerClickListener { _, _ -> currentOnSelect(vehicle); true }
+                        setOnMarkerClickListener { tapped, _ ->
+                            view.overlays.filterIsInstance<Marker>().forEach { previous ->
+                                val original = cars.firstOrNull { it.name == previous.title }
+                                if (original != null) {
+                                    previous.icon = truckMapMarker(context, original.hourlyPriceRub,
+                                        selected = previous === tapped)
+                                }
+                            }
+                            view.invalidate()
+                            currentOnSelect(vehicle)
+                            true
+                        }
                     }
                     view.overlays.add(marker)
                 }

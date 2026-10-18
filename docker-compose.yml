@@ -1,0 +1,15 @@
+# Bind exclusively to localhost. Do not expose the demo API publicly.
+services:
+  api:
+    build: ./backend
+    environment:
+      CARGOSHARE_DEMO_MODE: 'true'
+      CARGOSHARE_DATABASE_URL: 'sqlite:////data/demo.db'
+      CARGOSHARE_SESSION_SECRET: '${CARGOSHARE_SESSION_SECRET:?Set CARGOSHARE_SESSION_SECRET in shell}'
+      CARGOSHARE_ADMIN_KEY: '${CARGOSHARE_ADMIN_KEY:?Set CARGOSHARE_ADMIN_KEY in shell}'
+    ports:
+      - '127.0.0.1:8000:8000'
+    volumes:
+      - demo-data:/data
+volumes:
+  demo-data:

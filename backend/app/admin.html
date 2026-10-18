@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow"><title>ГрузШер КБР — управление автопарком (демо)</title>
+<style>
+:root{font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;color:#263a36;background:#f4f5f0;--green:#24594c;--light:#e9f0e9;--border:#dde4dd}
+*{box-sizing:border-box}body{margin:0}button,input,textarea,select{font:inherit}button{cursor:pointer}
+header{padding:25px max(18px,calc((100% - 1170px)/2));background:#183f36;color:#fff;display:flex;justify-content:space-between;align-items:center;gap:16px}h1{font-size:24px;margin:4px 0 0}.tag{background:#d7e9df;color:#225043;border-radius:999px;padding:5px 10px;font-size:11px;font-weight:800}
+main{max-width:1170px;margin:auto;padding:24px 18px 45px}.notice{background:#fff8e4;border:1px solid #ecdfb1;padding:13px 16px;border-radius:13px;font-size:13px;line-height:1.5;margin-bottom:17px}
+.auth{display:flex;gap:10px;flex-wrap:wrap;align-items:end;background:#fff;border:1px solid var(--border);padding:15px;border-radius:16px;margin-bottom:16px}.auth label{flex:1;min-width:200px}
+button{border:0;background:var(--green);color:#fff;padding:11px 17px;border-radius:11px;font-weight:650}button:hover{filter:brightness(1.1)}button.secondary{color:var(--green);background:var(--light)}button.danger{background:#7b332d}button:disabled{opacity:.5;cursor:not-allowed}
+.layout{display:grid;grid-template-columns:minmax(260px,.9fr) minmax(320px,1.1fr);gap:16px}.panel{border-radius:17px;background:#fff;padding:19px;border:1px solid var(--border);box-shadow:0 5px 20px #102e2510}
+.title-row{display:flex;justify-content:space-between;align-items:center;gap:8px}h2{font-size:18px;margin:0 0 15px}.car{border:1px solid var(--border);border-radius:13px;padding:12px 14px;margin:9px 0;display:flex;justify-content:space-between;align-items:center;gap:12px}.car.active{border-color:#88b09a;background:#f4f9f5}.car span{font-size:12px;color:#697b70}.car strong{display:block;margin-bottom:3px}.car button{flex:0 0 auto}
+label{display:flex;flex-direction:column;gap:5px;font-size:12px;color:#586c63;font-weight:700}input,select,textarea{width:100%;padding:11px;border:1px solid #cfdbd2;border-radius:10px;background:#fff;color:#233b30;outline-color:#346a59;min-width:0}textarea{resize:vertical;min-height:70px}.fields{display:grid;grid-template-columns:1fr 1fr;gap:13px}.wide{grid-column:1/-1}.toggle{display:flex;align-items:center;flex-direction:row;gap:10px}.toggle input{width:auto;accent-color:#24594c}.actions{display:flex;gap:8px;margin-top:18px;flex-wrap:wrap}.muted{color:#75857b;font-size:12px;line-height:1.55}.empty{padding:30px;text-align:center;color:#78887b}.status{margin-top:12px;font-size:13px;min-height:16px;color:#255746}.status.error{color:#ad2525}
+@media(max-width:750px){.layout{grid-template-columns:1fr}h1{font-size:20px}main{padding:15px 12px}.fields{gap:10px}.panel{padding:16px}header{padding:18px}}
+@media(max-width:370px){.fields{grid-template-columns:1fr}.wide{grid-column:1}}
+</style>
+</head>
+<body>
+<header><div><small style="opacity:.8">Нальчик и КБР</small><h1>ГрузШер · Редактирование автопарка</h1></div><span class="tag">ДЕМО</span></header>
+<main>
+<div class="notice">Внимание: это локальная демонстрационная панель. Все автомобили, характеристики и тарифы — примерные. Не загружайте настоящие паспорта, документы клиентов, ключи или другую конфиденциальную информацию. Оплата и реальная аренда не подключены.</div>
+<div class="auth"><label>Ключ администратора (только на время открытой вкладки)<input id="key" type="password" autocomplete="off" placeholder="Ключ из CARGOSHARE_ADMIN_KEY"></label><button id="connect">Открыть автопарк</button></div>
+<div class="layout">
+<section class="panel"><div class="title-row"><h2>Автомобили</h2><button class="secondary" id="add" disabled>+ Добавить</button></div><div id="cars"><p class="empty">Введите ключ администратора</p></div><p class="muted">Скрытая машина не показывается клиентам, но ранее оформленные бронирования сохраняются.</p></section>
+<section class="panel"><h2 id="formTitle">Характеристики автомобиля</h2><form id="edit" hidden>
+<div class="fields">
+<label class="wide">Название модели<input id="name" maxlength="100" required placeholder="Например: ГАЗель NEXT"></label>
+<label class="wide">Тип кузова<input id="type" maxlength="120" required placeholder="Например: Тентованный фургон"></label>
+<label>Грузоподъёмность, кг<input id="payloadKg" type="number" min="1" max="50000" required></label>
+<label>Объём кузова, м³<input id="cargoVolumeM3" type="number" min="0" max="500" required></label>
+<label>Цена за час, ₽<input id="hourlyPriceRub" type="number" min="1" required></label>
+<label>Цена за сутки, ₽<input id="dailyPriceRub" type="number" min="1" required></label>
+<label class="wide">КПП<input id="transmission" maxlength="40" required placeholder="Механика"></label>
+<label class="wide">Пункт выдачи<input id="pickupLocation" maxlength="180" required placeholder="Нальчик · ..."></label>
+<label class="wide">Описание (необязательно)<textarea id="description" maxlength="1500" placeholder="Особенности автомобиля"></textarea></label>
+<label class="wide">Ссылка на фотографию HTTPS (необязательно)<input id="imageUrl" type="url" maxlength="1000" placeholder="https://..."></label>
+<label>Широта (GPS, необязательно)<input id="latitude" type="number" step="any" min="-90" max="90" placeholder="43.48"></label>
+<label>Долгота (GPS, необязательно)<input id="longitude" type="number" step="any" min="-180" max="180" placeholder="43.60"></label>
+<p class="muted wide">Обе координаты обязательны одновременно. Точка на карте статическая и не означает, что подключён GPS автомобиля.</p>
+<label class="wide toggle"><input id="isPublished" type="checkbox" checked> Показывать в клиентском каталоге</label>
+</div><div class="actions"><button type="submit" id="save">Сохранить изменения</button><button type="button" class="secondary" id="cancel">Отмена</button></div>
+</form><div id="formEmpty" class="empty">Выберите автомобиль слева или добавьте новый</div><div class="status" id="status" role="status" aria-live="polite"></div></section>
+</div>
+<section class="panel" style="margin-top:16px">
+<div class="title-row"><h2>История поездок и бронирований</h2><button type="button" class="secondary" id="refreshBookings" disabled>Обновить</button></div>
+<div id="bookings"><p class="empty">Сначала подключитесь как администратор</p></div>
+<p class="muted">В демоверсии администратор вручную переводит заявку между статусами: подтверждение → выдача → возврат. Это не управление замком, не проверка документов и не списание денег. Показаны последние 100 бронирований.</p>
+</section></main>
+<script src="/admin.js" defer></script>
+</body></html>

@@ -1,0 +1,15 @@
+*.py[cod]
+__pycache__/
+.pytest_cache/
+.venv/
+.env
+*.db
+*.db-journal
+.DS_Store
+.gradle/
+build/
+**/build/
+*.xcuserstate
+xcuserdata/
+.idea/
+local.properties

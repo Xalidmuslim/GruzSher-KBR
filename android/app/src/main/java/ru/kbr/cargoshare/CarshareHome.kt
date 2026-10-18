@@ -56,7 +56,7 @@ fun CarshareHome(
         item(key = "hero") {
             Column(
                 Modifier.fillMaxWidth().padding(start = 18.dp, end = 18.dp, top = 16.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp)
+                verticalArrangement = Arrangement.spacedBy(9.dp)
             ) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Column(Modifier.weight(1f)) {
@@ -75,19 +75,17 @@ fun CarshareHome(
                         }
                     }
                 }
-                Text("Грузовик рядом.\nАренда за минуты.", fontSize = 29.sp,
-                    lineHeight = 34.sp, fontWeight = FontWeight.ExtraBold, color = Night)
-                Text("Выберите грузовик, проверьте условия и пройдите учебную аренду от брони до возврата.",
-                    color = MutedHome, fontSize = 12.sp, lineHeight = 17.sp)
+                Text("Аренда грузовиков в Нальчике", fontSize = 21.sp,
+                    lineHeight = 26.sp, fontWeight = FontWeight.ExtraBold, color = Night)
                 Card(
                     onClick = onLiveDemo, shape = RoundedCornerShape(22.dp),
                     colors = CardDefaults.cardColors(containerColor = Pine),
                     modifier = Modifier.fillMaxWidth()
                 ) {
-                    Row(Modifier.padding(17.dp), verticalAlignment = Alignment.CenterVertically) {
+                    Row(Modifier.padding(13.dp), verticalAlignment = Alignment.CenterVertically) {
                         Surface(shape = RoundedCornerShape(15.dp), color = Color.White.copy(alpha = .14f)) {
                             Icon(Icons.Outlined.PlayArrow, contentDescription = null, tint = Color.White,
-                                modifier = Modifier.padding(10.dp).size(25.dp))
+                                modifier = Modifier.padding(8.dp).size(22.dp))
                         }
                         Spacer(Modifier.width(13.dp))
                         Column(Modifier.weight(1f)) {
@@ -197,7 +195,7 @@ private fun HomeVehicleCard(vehicle: Vehicle, onClick: () -> Unit) {
                     val demoImg = when (vehicle.id) {
                         "gazelle-next" -> "file:///android_asset/truck_g01.webp"
                         "ford-transit" -> "file:///android_asset/truck_g02.webp"
-                        "largus-van" -> "file:///android_asset/truck_g03.webp"
+                        "largus-van" -> null // Previous truck image was not a LADA Largus
                         else -> null
                     }
                     if (demoImg != null || vehicle.imageUrl.startsWith("https://")) {
@@ -205,7 +203,13 @@ private fun HomeVehicleCard(vehicle: Vehicle, onClick: () -> Unit) {
                             contentDescription = "Демонстрационное изображение ${vehicle.name}",
                             modifier = Modifier.fillMaxSize().padding(5.dp),
                             contentScale = ContentScale.Fit)
-                    } else Icon(Icons.Outlined.LocalShipping, null, Modifier.size(62.dp), tint = Pine)
+                    } else {
+                        Column(horizontalAlignment = Alignment.CenterHorizontally,
+                            verticalArrangement = Arrangement.spacedBy(3.dp)) {
+                            Icon(Icons.Outlined.DirectionsCar, null, Modifier.size(54.dp), tint = Pine)
+                            Text("Фото уточняется", color = MutedHome, fontSize = 10.sp)
+                        }
+                    }
                 }
                 Spacer(Modifier.width(12.dp))
                 Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(5.dp)) {

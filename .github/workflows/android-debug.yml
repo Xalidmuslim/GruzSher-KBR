@@ -9,6 +9,7 @@ on:
       - 'backend/**'
       - '.github/workflows/android-debug.yml'
       - 'tools/compare_references.py'
+      - 'tools/run_android_acceptance.sh'
 
 permissions:
   contents: read

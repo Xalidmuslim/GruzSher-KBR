@@ -312,17 +312,18 @@ fun DriverDashboard(
     val documentPassed = live.phase !in setOf(LivePhase.CHOOSE, LivePhase.PHONE, LivePhase.DOCUMENTS)
     val cardPassed = live.phase !in setOf(LivePhase.CHOOSE, LivePhase.PHONE, LivePhase.DOCUMENTS, LivePhase.PAYMENT)
     var showDetails by remember { mutableStateOf(false) }
-    LazyColumn(
-        modifier = Modifier.fillMaxSize().background(Paper),
-        contentPadding = PaddingValues(horizontal = 18.dp, vertical = 18.dp),
-        verticalArrangement = Arrangement.spacedBy(13.dp),
-    ) {
-        item {
-            Column(verticalArrangement = Arrangement.spacedBy(3.dp)) {
-                Text("Профиль", fontSize = 28.sp, fontWeight = FontWeight.ExtraBold, color = Dark)
-                Text("Учебная учётная запись · Нальчик", color = Quiet, fontSize = 12.sp)
-            }
+    Column(Modifier.fillMaxSize().background(Paper)) {
+        // Keep the page title pinned while long account sections scroll.
+        Column(Modifier.fillMaxWidth().padding(horizontal = 18.dp, vertical = 14.dp),
+            verticalArrangement = Arrangement.spacedBy(3.dp)) {
+            Text("Профиль", fontSize = 28.sp, fontWeight = FontWeight.ExtraBold, color = Dark)
+            Text("Учебная учётная запись · Нальчик", color = Quiet, fontSize = 12.sp)
         }
+        LazyColumn(
+            modifier = Modifier.weight(1f),
+            contentPadding = PaddingValues(start = 18.dp, end = 18.dp, top = 5.dp, bottom = 22.dp),
+            verticalArrangement = Arrangement.spacedBy(13.dp),
+        ) {
         item {
             Surface(color = Dark, shape = RoundedCornerShape(23.dp)) {
                 Row(Modifier.fillMaxWidth().padding(18.dp), verticalAlignment = Alignment.CenterVertically) {
@@ -412,6 +413,7 @@ fun DriverDashboard(
                         color = Quiet, fontSize = 12.sp, lineHeight = 19.sp)
                 }
             }
+        }
         }
     }
 }

@@ -111,3 +111,38 @@ fun returnZoneMapMarker(context: Context): Drawable {
     canvas.drawText("P", 22f, 30f, paint)
     return BitmapDrawable(context.resources, bitmap)
 }
+
+/** Small, accurate hit target for nearby vehicles; prices shown in the detail sheet. */
+fun compactTruckMarker(context: Context, selected: Boolean = false): Drawable {
+    val density = context.resources.displayMetrics.density
+    val size = (49f * density).roundToInt().coerceAtLeast(1)
+    val bitmap = Bitmap.createBitmap(size, size, Bitmap.Config.ARGB_8888)
+    val canvas = Canvas(bitmap)
+    canvas.scale(density, density)
+    val p = Paint(Paint.ANTI_ALIAS_FLAG)
+    val green = if (selected) Color.rgb(20, 118, 88) else Color.rgb(24, 79, 63)
+    p.color = if (selected) Color.rgb(228, 246, 235) else Color.WHITE
+    canvas.drawCircle(24.5f, 24.5f, 22f, p)
+    p.color = green
+    p.style = Paint.Style.STROKE
+    p.strokeWidth = if (selected) 3.5f else 2.5f
+    canvas.drawCircle(24.5f, 24.5f, 21f, p)
+    p.style = Paint.Style.FILL
+    canvas.drawRoundRect(RectF(11f, 17.5f, 26f, 30f), 2f, 2f, p)
+    canvas.drawRoundRect(RectF(27f, 22f, 38f, 30f), 1.8f, 1.8f, p)
+    val wind = Path().apply {
+        moveTo(29f, 18f)
+        lineTo(33.5f, 18f)
+        lineTo(38f, 23f)
+        lineTo(38f, 30f)
+        lineTo(27f, 30f)
+        close()
+    }
+    canvas.drawPath(wind, p)
+    p.color = Color.WHITE
+    canvas.drawRoundRect(RectF(30f, 19.3f, 32.5f, 23f), 0.5f, 0.5f, p)
+    p.color = green
+    canvas.drawCircle(16f, 32.5f, 3.4f, p)
+    canvas.drawCircle(33f, 32.5f, 3.4f, p)
+    return BitmapDrawable(context.resources, bitmap)
+}

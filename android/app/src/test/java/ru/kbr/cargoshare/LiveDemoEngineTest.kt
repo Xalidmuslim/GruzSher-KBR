@@ -130,6 +130,24 @@ class LiveDemoEngineTest {
         assertEquals(demoFare(s, 650, base + 15_000L), demoFare(s, 650, base + 600_000L))
     }
 
+    @Test fun simulatedDistanceAndSpeedStayConsistent() {
+        val startedAt = base
+        val session = LiveDemoSession(phase = LivePhase.DRIVING, drivingAt = startedAt)
+        assertEquals(0.0, demoDistanceKm(session, startedAt), 0.001)
+        assertEquals(0.3, demoDistanceKm(session, startedAt + LIVE_ROUTE_MS / 2), 0.001)
+        assertEquals(LIVE_ROUTE_DISTANCE_KM, demoDistanceKm(session, startedAt + LIVE_ROUTE_MS), 0.001)
+        assertEquals(29, demoSpeedKmh(session))
+        assertEquals(0, demoSpeedKmh(session.copy(pauseStartedAt = startedAt + 1_000L)))
+    }
+
+    @Test fun noTravelDuringDemoWaiting() {
+        val session = LiveDemoSession(phase = LivePhase.DRIVING, drivingAt = base)
+        val waiting = applyLive(session, LiveEvent.TOGGLE_WAIT, base + 15_000L).state
+        assertEquals(demoDistanceKm(waiting, base + 15_000L),
+            demoDistanceKm(waiting, base + 25_000L), 0.001)
+        assertEquals(0, demoSpeedKmh(waiting))
+    }
+
     @Test fun invalidOperationsDoNotModifySession() {
         val s = LiveDemoSession()
         for (event in listOf(LiveEvent.UNLOCK, LiveEvent.START_DRIVE,

@@ -3,10 +3,12 @@ name: GruzSher Preview - Android APK
 on:
   workflow_dispatch:
   push:
-    branches: [main, 'redesign/gruzsher-premium-v3', 'redesign/gruzsher-v3-1-structural', 'redesign/gruzsher-v3-2-layout-fixes', 'fix/gruzsher-v3-3-booking-training-ux', 'feature/gruzsher-v3-4-native-auto-onboarding']
+    branches: [main, 'redesign/gruzsher-premium-v3', 'redesign/gruzsher-v3-1-structural', 'redesign/gruzsher-v3-2-layout-fixes', 'fix/gruzsher-v3-3-booking-training-ux', 'feature/gruzsher-v3-4-native-auto-onboarding', 'feature/gruzsher-reference-accurate-premium']
     paths:
       - 'android/**'
       - 'backend/**'
+      - '.github/workflows/android-debug.yml'
+      - 'tools/compare_references.py'
 
 permissions:
   contents: read
@@ -54,9 +56,78 @@ jobs:
       - name: Upload Android APK and checksum
         uses: actions/upload-artifact@v4
         with:
-          name: GruzSher-KBR-v2.3-preview-APK
+          name: ${{ github.ref_name == 'feature/gruzsher-reference-accurate-premium' && 'GruzSher-reference-preview-APK' || 'GruzSher-KBR-v2.3-preview-APK' }}
           path: |
             android/app/build/outputs/apk/debug/app-debug.apk
             android/app/build/outputs/apk/debug/SHA256SUMS.txt
           retention-days: 30
           if-no-files-found: error
+
+  android-runtime-acceptance:
+    name: Run APK on Android emulator and capture screens
+    if: github.ref_name == 'feature/gruzsher-reference-accurate-premium'
+    needs: android-preview
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: android-actions/setup-android@v4
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.9'
+      - name: Enable hardware virtualization when available
+        run: |
+          if [ -e /dev/kvm ]; then sudo chmod 666 /dev/kvm; else echo 'WARNING: no /dev/kvm on this runner'; fi
+      - name: Diagnose access to public OSM tiles
+        run: |
+          curl --max-time 15 -L -sS -o /dev/null -w 'OSM HTTP status: %{http_code}\n' \
+            -A 'GruzSherReferenceQA/3.5 (Android visual acceptance)' \
+            https://tile.openstreetmap.org/0/0/0.png || true
+      - name: Run instrumented tests against a booted Android device
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 35
+          target: google_apis
+          arch: x86_64
+          profile: pixel_6
+          script: |
+            set +e
+            cd android
+            gradle --no-daemon connectedDebugAndroidTest
+            test_status=$?
+            cd ..
+            mkdir -p runtime-screens
+            adb pull /sdcard/Android/data/ru.kbr.cargoshare.referencepreview/files/acceptance runtime-screens/ || true
+            exit "$test_status"
+      - name: Compare actual APK screenshots against 10 references
+        if: always()
+        run: |
+          python3 -m pip install Pillow
+          python3 tools/compare_references.py runtime-screens/acceptance
+          python3 - <<'PY'
+          from pathlib import Path
+          refs = sorted(Path('design/references').glob('*.png'))
+          actual = Path('runtime-screens/acceptance')
+          missing = [p.name for p in refs if not (actual / p.name).is_file()]
+          if missing:
+              raise SystemExit('FAIL: missing REAL APK screenshots: ' + ', '.join(missing))
+          print(f'All {len(refs)} real APK screenshots were captured. Visual review remains manual.')
+          PY
+      - name: Upload real screenshots, diffs, and instrumentation reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: GruzSher-reference-runtime-evidence
+          path: |
+            runtime-screens/
+            design/review/**/actual.png
+            design/review/**/side-by-side.png
+            design/review/**/diff.png
+            android/app/build/outputs/androidTest-results/
+            android/app/build/reports/androidTests/
+          if-no-files-found: warn
+          retention-days: 30

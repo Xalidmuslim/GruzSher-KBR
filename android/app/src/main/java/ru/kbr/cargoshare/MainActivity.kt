@@ -187,7 +187,7 @@ private fun AppScreen() {
                 }
             }
             when (tab) {
-                0 -> PremiumCatalog(vehicles, busy, onSelect = { selected = it }, onRefresh = { reloadVehicles() }, onLiveDemo = { liveSelectedCarId = null; tab = 3 })
+                0 -> CarshareHome(vehicles, busy, onSelect = { selected = it }, onRefresh = { reloadVehicles() }, onLiveDemo = { liveSelectedCarId = null; tab = 3 })
                 1 -> BookingsPage(bookings, vehicles,
                     onDemoSelect = { chooseTrip(it) },
                     onTimeline = { id ->
@@ -223,7 +223,7 @@ private fun AppScreen() {
                             val current = vehicles.firstOrNull { it.id == live.carId }
                             val phaseStatus = when (live.phase) {
                                 LivePhase.RECEIPT -> "COMPLETED"
-                                LivePhase.DRIVING, LivePhase.RETURN -> "ACTIVE"
+                                LivePhase.DRIVING, LivePhase.RETURNING, LivePhase.RETURN -> "ACTIVE"
                                 LivePhase.WALK, LivePhase.INSPECT, LivePhase.UNLOCK, LivePhase.READY -> "CONFIRMED"
                                 else -> "PENDING"
                             }

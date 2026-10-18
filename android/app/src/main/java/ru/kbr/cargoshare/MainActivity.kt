@@ -224,7 +224,7 @@ private fun AppScreen() {
                             val phaseStatus = when (live.phase) {
                                 LivePhase.RECEIPT -> "COMPLETED"
                                 LivePhase.DRIVING, LivePhase.RETURN -> "ACTIVE"
-                                LivePhase.INSPECT, LivePhase.UNLOCK, LivePhase.READY -> "CONFIRMED"
+                                LivePhase.WALK, LivePhase.INSPECT, LivePhase.UNLOCK, LivePhase.READY -> "CONFIRMED"
                                 else -> "PENDING"
                             }
                             if (current != null) {

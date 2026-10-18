@@ -326,9 +326,33 @@ fun LiveDemoScreen(
             LivePhase.RETURN -> {
                 LiveHeader("13", "Возврат грузовика", "Вы приехали в учебную зону завершения. Сделайте фото, закройте машину и завершите аренду.")
                 LiveRouteMap(car, 1f, "грузовик")
-                LiveMetricRow("Учебная зона возврата", "Разрешено")
+                Surface(color = LivePale, shape = RoundedCornerShape(15.dp)) {
+                    Row(Modifier.fillMaxWidth().padding(13.dp), verticalAlignment = Alignment.CenterVertically) {
+                        Icon(Icons.Outlined.LocalParking, null,
+                            tint = LiveGreen, modifier = Modifier.size(22.dp))
+                        Spacer(Modifier.width(8.dp))
+                        Column {
+                            Text("Учебная зона возврата", color = LiveGreen,
+                                fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                            Text("Маркер условный. Геозона не проверяется по GPS.",
+                                fontSize = 11.sp, color = LiveGray)
+                        }
+                    }
+                }
                 val photoDone = session.returnPhotoAt > 0L && now >= session.returnPhotoAt + LIVE_OPERATION_MS
                 val lockDone = session.lockingAt > 0L && now >= session.lockingAt + LIVE_OPERATION_MS
+                Surface(color = Color.White, shape = RoundedCornerShape(21.dp)) {
+                    Column(Modifier.fillMaxWidth().padding(16.dp),
+                        verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                        Text("Чек-лист возврата", color = LiveInk,
+                            fontWeight = FontWeight.Bold, fontSize = 17.sp)
+                        PremiumReturnStep(1, "Фотоосмотр автомобиля",
+                            session.returnPhotoAt != 0L)
+                        PremiumReturnStep(2, "Закрытие дверей",
+                            lockDone)
+                        PremiumReturnStep(3, "Завершение аренды", false)
+                    }
+                }
                 if (session.returnPhotoAt == 0L) {
                     LiveNote("Шаг 1 из 3 · Сделайте учебный фотоосмотр машины, затем подтвердите закрытие дверей.")
                 } else if (!photoDone) LiveWait("Сохраняем учебный фотоотчёт…",
@@ -343,20 +367,49 @@ fun LiveDemoScreen(
             }
             LivePhase.RECEIPT -> {
                 LiveHeader("14", "Поездка завершена", "Пример электронного отчёта с реальными показаниями таймера симуляции.")
-                Surface(color = Color.White, shape = RoundedCornerShape(20.dp)) {
-                    Column(Modifier.fillMaxWidth().padding(20.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                        Icon(Icons.Outlined.CheckCircle, null, tint = LiveGreen, modifier = Modifier.size(44.dp))
-                        Text("Учебный чек • ${session.bookingId}", fontSize = 18.sp, fontWeight = FontWeight.Bold)
+                Surface(color = LivePale, shape = RoundedCornerShape(21.dp)) {
+                    Row(Modifier.fillMaxWidth().padding(17.dp), verticalAlignment = Alignment.CenterVertically) {
+                        Icon(Icons.Outlined.CheckCircle, null, tint = LiveGreen,
+                            modifier = Modifier.size(39.dp))
+                        Spacer(Modifier.width(13.dp))
+                        Column {
+                            Text("Поездка завершена", color = LiveInk,
+                                fontSize = 20.sp, fontWeight = FontWeight.ExtraBold)
+                            Text("Все операции были учебными", fontSize = 11.sp, color = LiveGray)
+                        }
+                    }
+                }
+                Surface(color = Color.White, shape = RoundedCornerShape(23.dp),
+                    shadowElevation = 2.dp) {
+                    Column(Modifier.fillMaxWidth().padding(18.dp), verticalArrangement = Arrangement.spacedBy(13.dp)) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Icon(Icons.Outlined.ReceiptLong, null, tint = LiveGreen,
+                                modifier = Modifier.size(25.dp))
+                            Spacer(Modifier.width(9.dp))
+                            Text("Учебный чек", fontSize = 20.sp, fontWeight = FontWeight.Bold,
+                                color = LiveInk)
+                        }
+                        Text("№ ${session.bookingId}", color = LiveGray, fontSize = 12.sp)
+                        HorizontalDivider(color = PremiumTheme.Stroke)
                         LiveMetricRow("Грузовик", car?.name ?: "Автомобиль")
                         LiveMetricRow("Тариф", "${session.durationHours + session.extraHours} ч")
                         LiveMetricRow("Пройдено", "${String.format(Locale.US, "%.2f", demoDistanceKm(session, now))} км (демо)")
-                        HorizontalDivider()
-                        LiveMetricRow("Расчётная стоимость", "${demoFare(session, car?.hourlyPriceRub ?: 650, now)} ₽")
-                        Text("СПИСАНО НА САМОМ ДЕЛЕ: 0 ₽", fontSize = 15.sp, fontWeight = FontWeight.Bold, color = LiveGreen)
-                        Text("Не является кассовым чеком", color = LiveGray, fontSize = 11.sp)
+                        HorizontalDivider(color = PremiumTheme.Stroke)
+                        LiveMetricRow("Стоимость аренды", "${demoFare(session, car?.hourlyPriceRub ?: 650, now)} ₽")
+                        Surface(color = LivePale, shape = RoundedCornerShape(13.dp)) {
+                            Row(Modifier.fillMaxWidth().padding(12.dp)) {
+                                Text("Списано на самом деле", color = LiveGreen,
+                                    modifier = Modifier.weight(1f), fontSize = 13.sp)
+                                Text("0 ₽", color = LiveGreen,
+                                    fontWeight = FontWeight.ExtraBold, fontSize = 18.sp)
+                            }
+                        }
+                        Text("Демодокумент · не является кассовым чеком",
+                            color = LiveGray, fontSize = 11.sp)
                     }
                 }
-                Text("Как прошла поездка?", fontWeight = FontWeight.Bold)
+                Text("Как прошла поездка?", fontSize = 19.sp,
+                    fontWeight = FontWeight.Bold, color = LiveInk)
                 Row(horizontalArrangement = Arrangement.spacedBy(7.dp)) {
                     (1..5).forEach { star ->
                         IconButton(onClick = { perform(LiveEvent.SET_RATING, star.toString()) }) {
@@ -366,7 +419,11 @@ fun LiveDemoScreen(
                     }
                 }
                 LiveButton("Начать новую учебную поездку", Icons.Outlined.Refresh) { perform(LiveEvent.RESET) }
-                OutlinedButton(onClick = onBackToMap, modifier = Modifier.fillMaxWidth()) { Text("Вернуться к карте") }
+                OutlinedButton(onClick = onBackToMap,
+                    shape = RoundedCornerShape(17.dp),
+                    modifier = Modifier.fillMaxWidth().height(50.dp)) {
+                    Text("Вернуться к автомобилям")
+                }
             }
         }
         if (session.phase !in setOf(LivePhase.CHOOSE, LivePhase.RECEIPT)) {
@@ -591,4 +648,22 @@ fun LiveDemoScreen(
         })
     Text("Учебная траектория • движение маркера не соответствует GPS или дорогам",
         color = LiveGray, fontSize = 10.sp)
+}
+
+@Composable
+private fun PremiumReturnStep(number: Int, label: String, completed: Boolean) {
+    Row(verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(9.dp)) {
+        Surface(color = if (completed) LiveGreen else LivePale,
+            shape = RoundedCornerShape(12.dp)) {
+            Box(Modifier.size(33.dp), contentAlignment = Alignment.Center) {
+                if (completed) Icon(Icons.Outlined.Check, null,
+                    tint = Color.White, modifier = Modifier.size(18.dp))
+                else Text(number.toString(), color = LiveGreen,
+                    fontWeight = FontWeight.Bold, fontSize = 13.sp)
+            }
+        }
+        Text(label, fontSize = 13.sp, color = LiveInk,
+            fontWeight = if (completed) FontWeight.SemiBold else FontWeight.Normal)
+    }
 }

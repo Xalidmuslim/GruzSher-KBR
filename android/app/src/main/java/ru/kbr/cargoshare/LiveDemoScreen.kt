@@ -284,44 +284,90 @@ fun LiveDemoScreen(
                 LiveWait("Восстанавливаем демобронь без ожидания оператора…", 0L, 1f)
             }
             LivePhase.WALK -> {
-                LiveHeader("07", "Идите к автомобилю", "Демо-пешеход приближается к выбранному грузовику. Таймер идёт по настоящим секундам.")
+                LiveHeader("06", "Идите к автомобилю", "Демо-пешеход приближается к выбранному грузовику. Таймер идёт по настоящим секундам.")
                 LiveRouteMap(car, ((now - session.approachStartedAt).toFloat() / LIVE_APPROACH_MS).coerceIn(0f, 1f), "пешком")
                 LiveMetricRow("До автомобиля", "${ceil(((LIVE_APPROACH_MS - (now - session.approachStartedAt)).coerceAtLeast(0L) / 1000.0)).toInt()} сек")
                 LinearProgressIndicator(progress = { ((now - session.approachStartedAt).toFloat() / LIVE_APPROACH_MS).coerceIn(0f, 1f) },
                     modifier = Modifier.fillMaxWidth(), color = LiveGreen)
             }
             LivePhase.INSPECT -> {
-                LiveHeader("08", "Осмотрите автомобиль", "Не галочки: нажимайте стороны машины, выполняйте учебную фотосъёмку и фиксируйте повреждения.")
-                if (car != null) LiveVehicleCard(car)
-                Text("Фото до поездки: ${session.inspected.size} из 4", fontWeight = FontWeight.SemiBold)
-                listOf("Спереди", "Сзади", "Слева", "Справа").chunked(2).forEach { angles ->
-                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        angles.forEach { angle ->
-                            val captured = angle in session.inspected
-                            OutlinedButton(onClick = { perform(LiveEvent.CAPTURE_ANGLE, angle) },
-                                modifier = Modifier.weight(1f),
-                                colors = ButtonDefaults.outlinedButtonColors(containerColor = if (captured) LivePale else Color.White)) {
-                                Icon(if (captured) Icons.Outlined.CheckCircle else Icons.Outlined.PhotoCamera, null, Modifier.size(17.dp))
-                                Spacer(Modifier.width(5.dp))
-                                Text(angle, fontSize = 12.sp)
+                LiveHeader("07", "Осмотр перед поездкой",
+                    "Проверьте 4 стороны грузовика. В деморежиме фото имитируются и не загружаются.")
+                Surface(color = Color.White, shape = RoundedCornerShape(22.dp)) {
+                    Column(Modifier.fillMaxWidth().padding(16.dp),
+                        verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Icon(Icons.Outlined.PhotoCamera, null, tint = LiveGreen,
+                                modifier = Modifier.size(25.dp))
+                            Spacer(Modifier.width(10.dp))
+                            Column(Modifier.weight(1f)) {
+                                Text("Фото до поездки", fontWeight = FontWeight.Bold,
+                                    fontSize = 17.sp, color = LiveInk)
+                                Text("${session.inspected.size} из 4 выполнено · только ДЕМО",
+                                    fontSize = 11.sp, color = LiveGray)
+                            }
+                        }
+                        LinearProgressIndicator(
+                            progress = { session.inspected.size / 4f },
+                            modifier = Modifier.fillMaxWidth().height(6.dp)
+                                .clip(RoundedCornerShape(6.dp)),
+                            color = LiveGreen, trackColor = LivePale)
+                        listOf("Спереди", "Сзади", "Слева", "Справа").chunked(2).forEach { rowAngles ->
+                            Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                                rowAngles.forEach { angle ->
+                                    val captured = angle in session.inspected
+                                    Surface(
+                                        modifier = Modifier.weight(1f).height(112.dp),
+                                        onClick = { if (!captured) perform(LiveEvent.CAPTURE_ANGLE, angle) },
+                                        color = if (captured) LivePale else PremiumTheme.Paper,
+                                        shape = RoundedCornerShape(17.dp)) {
+                                        Column(
+                                            Modifier.fillMaxSize().padding(12.dp),
+                                            horizontalAlignment = Alignment.CenterHorizontally,
+                                            verticalArrangement = Arrangement.Center) {
+                                            Icon(if (captured) Icons.Outlined.CheckCircle
+                                                 else Icons.Outlined.AddAPhoto, null,
+                                                tint = LiveGreen, modifier = Modifier.size(29.dp))
+                                            Spacer(Modifier.height(9.dp))
+                                            Text(angle, fontSize = 13.sp, color = LiveInk,
+                                                fontWeight = FontWeight.SemiBold)
+                                            Text(if (captured) "Учебный снимок готов" else "Добавить демофото",
+                                                fontSize = 10.sp, color = LiveGray)
+                                        }
+                                    }
+                                }
                             }
                         }
                     }
                 }
-                OutlinedButton(onClick = { perform(LiveEvent.REPORT_DAMAGE) }, modifier = Modifier.fillMaxWidth()) {
-                    Text(if (session.damageRecorded) "Повреждение добавлено в учебный акт" else "Нашёл повреждение — добавить в акт")
+                Surface(color = LivePale, shape = RoundedCornerShape(16.dp)) {
+                    Row(Modifier.fillMaxWidth().padding(13.dp),
+                        verticalAlignment = Alignment.CenterVertically) {
+                        Icon(Icons.Outlined.Info, null, tint = LiveGreen)
+                        Spacer(Modifier.width(9.dp))
+                        Text("Проверьте кузов, колёса, салон и грузовой отсек перед началом поездки.",
+                            fontSize = 12.sp, lineHeight = 17.sp, color = LiveInk)
+                    }
                 }
-                LiveButton("Закончить осмотр и открыть двери", Icons.Outlined.LockOpen,
-                    enabled = session.inspected.size == 4) { perform(LiveEvent.UNLOCK) }
+                OutlinedButton(onClick = { perform(LiveEvent.REPORT_DAMAGE) },
+                    modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(17.dp)) {
+                    Text(if (session.damageRecorded)
+                        "Повреждение сохранено в учебном акте"
+                        else "Нашёл повреждение — добавить в акт", fontSize = 13.sp)
+                }
+                LiveButton("Подтвердить осмотр и открыть двери",
+                    Icons.Outlined.LockOpen, enabled = session.inspected.size == 4) {
+                    perform(LiveEvent.UNLOCK)
+                }
             }
             LivePhase.UNLOCK -> {
-                LiveHeader("09", "Открываем двери", "В настоящем каршеринге ждём подтверждения телематического блока автомобиля.")
+                LiveHeader("08", "Открываем двери", "В настоящем каршеринге ждём подтверждения телематического блока автомобиля.")
                 LiveWait("Отправка и подтверждение виртуальной команды…",
                     ((LIVE_OPERATION_MS - (now - session.unlockingAt)).coerceAtLeast(0L)) / 1000L,
                     (now - session.unlockingAt).toFloat() / 1000f)
             }
             LivePhase.READY -> {
-                LiveHeader("10", "Автомобиль открыт", "Осмотр подтверждён. В реальном сервисе здесь водитель садится в автомобиль.")
+                LiveHeader("09", "Автомобиль открыт", "Осмотр подтверждён. В реальном сервисе здесь водитель садится в автомобиль.")
                 Icon(Icons.Outlined.LockOpen, null, tint = LiveGreen, modifier = Modifier.size(80.dp).align(Alignment.CenterHorizontally))
                 LiveMetricRow("Статус", "Двери открыты (симуляция)")
                 LiveButton("Начать поездку", Icons.Outlined.PlayArrow) { perform(LiveEvent.START_DRIVE) }
@@ -341,14 +387,14 @@ fun LiveDemoScreen(
             LivePhase.RETURNING -> {
                 val progress = routeFraction(session, now)
                 val seconds = ((LIVE_RETURN_MS - (now - session.returnRequestedAt)).coerceAtLeast(0L) / 1000L)
-                LiveHeader("12", "Едем к стоянке", "Вы выбрали завершение поездки. Машина направляется в учебную зону возврата.")
+                LiveHeader("11", "Едем к стоянке", "Вы выбрали завершение поездки. Машина направляется в учебную зону возврата.")
                 LiveRouteMap(car, progress, "грузовик")
                 LiveMetricRow("Прибытие", "Через ${seconds} сек")
                 LinearProgressIndicator(progress = { progress }, modifier = Modifier.fillMaxWidth(), color = LiveGreen)
                 LiveNote("Маршрут и геозона условные. После прибытия потребуется фотоосмотр, закрытие дверей и подтверждение окончания.")
             }
             LivePhase.RETURN -> {
-                LiveHeader("13", "Возврат грузовика", "Вы приехали в учебную зону завершения. Сделайте фото, закройте машину и завершите аренду.")
+                LiveHeader("12", "Возврат грузовика", "Вы приехали в учебную зону завершения. Сделайте фото, закройте машину и завершите аренду.")
                 LiveRouteMap(car, 1f, "грузовик")
                 Surface(color = LivePale, shape = RoundedCornerShape(15.dp)) {
                     Row(Modifier.fillMaxWidth().padding(13.dp), verticalAlignment = Alignment.CenterVertically) {
@@ -390,7 +436,7 @@ fun LiveDemoScreen(
                 else LiveNote("Шаг 3 из 3 · Двери закрыты. Подтвердите завершение и получите чек.")
             }
             LivePhase.RECEIPT -> {
-                LiveHeader("14", "Поездка завершена", "Пример электронного отчёта с реальными показаниями таймера симуляции.")
+                LiveHeader("13", "Поездка завершена", "Пример электронного отчёта с реальными показаниями таймера симуляции.")
                 Surface(color = LivePale, shape = RoundedCornerShape(21.dp)) {
                     Row(Modifier.fillMaxWidth().padding(17.dp), verticalAlignment = Alignment.CenterVertically) {
                         Icon(Icons.Outlined.CheckCircle, null, tint = LiveGreen,
@@ -549,10 +595,10 @@ fun LiveDemoScreen(
 @Composable private fun LiveHeader(step: String, heading: String, detail: String) {
     Surface(color = Color.White, shape = RoundedCornerShape(23.dp), shadowElevation = 1.dp) {
         Column(Modifier.fillMaxWidth().padding(17.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-            Text("ЭТАП $step / 14 · LIVE ДЕМО",
+            Text("ЭТАП $step / 13 · LIVE ДЕМО",
                 fontSize = 10.sp, color = LiveGreen, fontWeight = FontWeight.Bold)
             LinearProgressIndicator(
-                progress = { ((step.toIntOrNull() ?: 1) / 14f).coerceIn(0f, 1f) },
+                progress = { ((step.toIntOrNull() ?: 1) / 13f).coerceIn(0f, 1f) },
                 modifier = Modifier.fillMaxWidth().height(5.dp).clip(RoundedCornerShape(5.dp)),
                 color = LiveGreen, trackColor = LivePale)
             Text(heading, fontSize = 23.sp, lineHeight = 27.sp,

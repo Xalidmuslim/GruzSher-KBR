@@ -92,6 +92,12 @@ class LiveDemoEngineTest {
         assertTrue(demoFare(s, 650, base + 31_000L) > 4 * 650)
     }
 
+    @Test fun receiptTotalFreezesAfterArrival() {
+        val s = LiveDemoSession(phase = LivePhase.RECEIPT, drivingAt = base, durationHours = 2)
+        assertEquals(demoFare(s, 650, base + LIVE_ROUTE_MS),
+            demoFare(s, 650, base + LIVE_ROUTE_MS + 600_000L))
+    }
+
     @Test fun invalidOperationsDoNotModifySession() {
         val s = LiveDemoSession()
         for (event in listOf(LiveEvent.UNLOCK, LiveEvent.START_DRIVE,

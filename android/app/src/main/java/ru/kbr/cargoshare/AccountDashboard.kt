@@ -30,6 +30,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import kotlinx.coroutines.CancellationException
 import java.time.OffsetDateTime
+import java.time.Instant
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import java.util.Locale
@@ -103,6 +104,8 @@ fun TripsDashboard(
         rows.sortedByDescending { it.startAt }
     }
     val activeCount = bookings.count(::isCurrent)
+    val context = LocalContext.current
+    val demoStorage = remember(context) { LiveDemoStorage(context.applicationContext) }
 
     Column(Modifier.fillMaxSize().background(Paper)) {
         Column(Modifier.padding(horizontal = 14.dp, vertical = 8.dp), verticalArrangement = Arrangement.spacedBy(9.dp)) {
@@ -159,6 +162,13 @@ fun TripsDashboard(
             ) {
                 items(visible, key = { it.id }) { b ->
                     val isLive = b.id == live.bookingId && live.bookingId.isNotBlank()
+                    // Each finished training rental keeps its own persisted receipt.
+                    // Never substitute current-trip stats for older bookings.
+                    val savedReceipt = remember(b.id, live.phase, live.bookingId) {
+                        if (isLive && live.phase == LivePhase.RECEIPT) live
+                        else demoStorage.receipt(b.id)
+                    }
+                    val facts = remember(savedReceipt) { demoTripHistoryFacts(savedReceipt) }
                     val car = cars.firstOrNull { it.id == b.vehicleId }
                     val name = car?.name ?: "Грузовой автомобиль"
                     Card(
@@ -217,6 +227,29 @@ fun TripsDashboard(
                                 Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                                     Text("Плановый возврат", color = Quiet, fontSize = 11.sp)
                                     Text(readableDate(b.endAt), color = Dark, fontSize = 12.sp)
+                                }
+                            }
+                            if (b.status == "COMPLETED") {
+                                HorizontalDivider(color = Pale)
+                                if (facts != null) {
+                                    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(14.dp)) {
+                                        Column(Modifier.weight(1f)) {
+                                            Text("Пробег (демо)", fontSize = 11.sp, color = Quiet)
+                                            Text(facts.distanceKm?.let { String.format(Locale.forLanguageTag("ru-RU"), "%.2f км", it) }
+                                                ?: "Нет данных", fontSize = 15.sp, fontWeight = FontWeight.Bold, color = Dark)
+                                        }
+                                        Column(Modifier.weight(1f)) {
+                                            Text("Время движения", fontSize = 11.sp, color = Quiet)
+                                            Text(facts.drivingSeconds?.let(::formatRideDuration) ?: "Нет данных",
+                                                fontSize = 15.sp, fontWeight = FontWeight.Bold, color = Dark)
+                                        }
+                                    }
+                                    Text("Тариф: ${facts.plannedHours + facts.addedHours} ч · " +
+                                        "Аренда завершена · учебные показатели",
+                                        fontSize = 11.sp, color = Quiet)
+                                } else {
+                                    Text("Пробег и время движения для этой поездки не сохранены.",
+                                        fontSize = 11.sp, color = Quiet)
                                 }
                             }
                             if (b.status !in setOf("CANCELLED", "EXPIRED")) {
@@ -279,7 +312,7 @@ fun TripsDashboard(
                                 verticalAlignment = Alignment.CenterVertically) {
                                 OutlinedButton(onClick = { showing = b }, modifier = Modifier.weight(1f),
                                     shape = RoundedCornerShape(14.dp)) {
-                                    Text("События", fontSize = 12.sp)
+                                    Text("Подробности", fontSize = 12.sp)
                                 }
                                 if ((b.status == "PENDING" && !isLive) || (isLive && live.phase in setOf(LivePhase.WALK,LivePhase.INSPECT,LivePhase.UNLOCK,LivePhase.READY))) {
                                     TextButton(onClick = { cancelPending = b }, modifier = Modifier.weight(1f)) {
@@ -297,7 +330,11 @@ fun TripsDashboard(
     showing?.let { b ->
         var timeline by remember(b.id) { mutableStateOf<List<BookingTimelineEvent>?>(null) }
         var error by remember(b.id) { mutableStateOf<String?>(null) }
-        val localEvents = if (b.id == live.bookingId) live.events else emptyList()
+        val car = cars.firstOrNull { it.id == b.vehicleId }
+        val receipt = if (b.id == live.bookingId && live.phase == LivePhase.RECEIPT)
+            live else demoStorage.receipt(b.id)
+        val facts = demoTripHistoryFacts(receipt)
+        val localEvents = receipt?.events ?: if (b.id == live.bookingId) live.events else emptyList()
         LaunchedEffect(b.id) {
             try {
                 timeline = onTimeline(b.id)
@@ -311,8 +348,50 @@ fun TripsDashboard(
             Column(Modifier.fillMaxWidth().verticalScroll(rememberScrollState())
                 .padding(horizontal = 20.dp).padding(bottom = 28.dp),
                 verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                Text("События аренды", color = Dark, fontSize = 23.sp, fontWeight = FontWeight.Bold)
-                Text(ticketLabel(b, live), color = Jade, fontSize = 12.sp)
+                Text("Подробности поездки", color = Dark, fontSize = 23.sp, fontWeight = FontWeight.Bold)
+                Text(ticketLabel(b, live) + " · ДЕМО", color = Jade, fontSize = 12.sp)
+                Surface(color = Color.White, shape = RoundedCornerShape(18.dp)) {
+                    Column(Modifier.fillMaxWidth().padding(15.dp),
+                        verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        HistoryFactRow("Автомобиль", car?.name ?: "Данных нет")
+                        car?.let {
+                            HistoryFactRow("Тип", it.type)
+                            HistoryFactRow("Тариф", "${it.hourlyPriceRub} ₽/ч")
+                            HistoryFactRow("Точка выдачи", it.pickupLocation)
+                        }
+                        HistoryFactRow("Начало (план)", readableDate(b.startAt))
+                        HistoryFactRow("Возврат (план)", readableDate(b.endAt))
+                        facts?.let { f ->
+                            HistoryFactRow("Пакет аренды", "${f.plannedHours} ч" +
+                                if (f.addedHours > 0) " + ${f.addedHours} ч продление" else "")
+                            HistoryFactRow("Пробег", f.distanceKm?.let {
+                                String.format(Locale.forLanguageTag("ru-RU"), "%.2f км (демо)", it)
+                            } ?: "Не записан")
+                            HistoryFactRow("Время в движении",
+                                f.drivingSeconds?.let(::formatRideDuration) ?: "Не записано")
+                            HistoryFactRow("Ожидание / пауза", formatRideDuration(f.pausedSeconds))
+                            HistoryFactRow("Завершение", f.completedAtMillis?.let {
+                                Instant.ofEpochMilli(it).atZone(Moscow).format(DateRu)
+                            } ?: "Нет времени завершения")
+                            HistoryFactRow("Осмотр при выдаче", if (f.pickupInspected) "Выполнен (демо)" else "Нет отметки")
+                            HistoryFactRow("Осмотр при возврате", if (f.returnInspected) "Выполнен (демо)" else "Нет отметки")
+                            HistoryFactRow("Закрытие дверей", if (f.doorsLocked) "Подтверждено (демо)" else "Нет отметки")
+                            HistoryFactRow("Обращение в поддержку", if (f.assistanceRequested) "Учебное обращение" else "Не отмечено")
+                            HistoryFactRow("Инцидент", if (f.incidentReported) "Учебный инцидент" else "Не отмечен")
+                            if (f.rating > 0) HistoryFactRow("Оценка", "${f.rating} из 5")
+                        }
+                        if (facts == null) {
+                            Text("Пробег, время движения и фактический возврат не сохранились " +
+                                "для этой записи. Эти показатели не рассчитываются задним числом.",
+                                color = Quiet, fontSize = 11.sp, lineHeight = 16.sp)
+                        }
+                        HorizontalDivider(color = Pale)
+                        HistoryFactRow("Стоимость", "${b.totalRub} ₽ (демо)")
+                        Text("Реальных списаний нет. Показатели движения учебные, а не GPS.",
+                            color = Quiet, fontSize = 10.sp, lineHeight = 15.sp)
+                    }
+                }
+                Text("События и этапы", fontSize = 17.sp, color = Dark, fontWeight = FontWeight.Bold)
                 if (localEvents.isNotEmpty()) {
                     // Events are stored without timestamps: never invent times for local operations.
                     localEvents.asReversed().take(14).forEach { event ->
@@ -579,5 +658,15 @@ fun DriverDashboard(live: LiveDemoSession, bookings: List<Booking>,
         Icon(if (complete) Icons.Outlined.CheckCircle else Icons.Outlined.ChevronRight,
             contentDescription = null, tint = if (complete) Jade else Quiet,
             modifier = Modifier.size(20.dp))
+    }
+}
+
+@Composable
+private fun HistoryFactRow(label: String, value: String) {
+    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp),
+        verticalAlignment = Alignment.Top) {
+        Text(label, modifier = Modifier.weight(1f), color = Quiet, fontSize = 12.sp)
+        Text(value, modifier = Modifier.weight(1.25f), color = Dark, fontSize = 12.sp,
+            fontWeight = FontWeight.SemiBold)
     }
 }

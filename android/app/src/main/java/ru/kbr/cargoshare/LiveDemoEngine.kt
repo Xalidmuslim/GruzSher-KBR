@@ -4,7 +4,7 @@ import kotlin.math.min
 import kotlin.math.roundToInt
 
 /** Offline training. Clock-based simulation, never sends SMS, charges cards or commands vehicles. */
-enum class LivePhase { CHOOSE, PHONE, DOCUMENTS, PAYMENT, CONFIRM, APPROVAL, WALK, INSPECT, UNLOCK, READY, DRIVING, RETURN, RECEIPT }
+enum class LivePhase { CHOOSE, PHONE, DOCUMENTS, PAYMENT, CONFIRM, APPROVAL, WALK, INSPECT, UNLOCK, READY, DRIVING, RETURNING, RETURN, RECEIPT }
 
 data class LiveDemoSession(
     val phase: LivePhase = LivePhase.CHOOSE,
@@ -21,6 +21,9 @@ data class LiveDemoSession(
     val damageRecorded: Boolean = false,
     val unlockingAt: Long = 0L,
     val drivingAt: Long = 0L,
+    val returnRequestedAt: Long = 0L,
+    val returnStartFraction: Float = 0f,
+    val finishedAt: Long = 0L,
     val returnPhotoAt: Long = 0L,
     val lockingAt: Long = 0L,
     val locked: Boolean = false,
@@ -37,7 +40,7 @@ data class LiveDemoSession(
 enum class LiveEvent {
     PICK_CAR, REQUEST_CODE, VERIFY_CODE, SCAN_PASSPORT, SCAN_LICENCE, START_PAYMENT,
     SET_DURATION, REQUEST_BOOKING, CAPTURE_ANGLE, REPORT_DAMAGE, UNLOCK, START_DRIVE,
-    EXTEND, TOGGLE_WAIT, ASK_SUPPORT, REPORT_INCIDENT, TAKE_RETURN_PHOTO, LOCK_DOORS,
+    EXTEND, TOGGLE_WAIT, ASK_SUPPORT, REPORT_INCIDENT, REQUEST_RETURN, TAKE_RETURN_PHOTO, LOCK_DOORS,
     FINISH, SET_RATING, RESET
 }
 
@@ -49,11 +52,18 @@ private fun invalid(s: LiveDemoSession, text: String): LiveOutcome = LiveOutcome
 const val LIVE_ROUTE_MS = 75_000L
 const val LIVE_APPROACH_MS = 12_000L
 const val LIVE_OPERATION_MS = 2_500L
+const val LIVE_RETURN_MS = 16_000L
 
-fun routeFraction(s: LiveDemoSession, now: Long): Float =
-    if (s.drivingAt == 0L) 0f else
-        ((now - s.drivingAt - s.pausedSeconds * 1000L -
-            if (s.pauseStartedAt > 0) now - s.pauseStartedAt else 0L).coerceAtLeast(0L).toFloat() / LIVE_ROUTE_MS).coerceIn(0f, 1f)
+fun routeFraction(s: LiveDemoSession, now: Long): Float {
+    if (s.drivingAt == 0L) return 0f
+    if (s.phase == LivePhase.RETURN || s.phase == LivePhase.RECEIPT) return 1f
+    if (s.phase == LivePhase.RETURNING && s.returnRequestedAt > 0L) {
+        val portion = ((now - s.returnRequestedAt).toFloat() / LIVE_RETURN_MS).coerceIn(0f, 1f)
+        return (s.returnStartFraction + (1f - s.returnStartFraction) * portion).coerceIn(0f, 1f)
+    }
+    return ((now - s.drivingAt - s.pausedSeconds * 1000L -
+        if (s.pauseStartedAt > 0) now - s.pauseStartedAt else 0L).coerceAtLeast(0L).toFloat() / LIVE_ROUTE_MS).coerceIn(0f, 1f)
+}
 
 fun elapsedRideSeconds(s: LiveDemoSession, now: Long): Long =
     if (s.drivingAt == 0L) 0L else
@@ -62,7 +72,10 @@ fun elapsedRideSeconds(s: LiveDemoSession, now: Long): Long =
 
 fun demoFare(s: LiveDemoSession, hourlyPriceRub: Int, now: Long): Int {
     val base = (s.durationHours + s.extraHours) * hourlyPriceRub
-    val drivingSurcharge = (min(elapsedRideSeconds(s, now), LIVE_ROUTE_MS / 1000L).toDouble() * hourlyPriceRub / 3600.0).roundToInt()
+    val billedSeconds = if (s.finishedAt > 0L) elapsedRideSeconds(s, s.finishedAt)
+        else if (s.phase == LivePhase.RECEIPT) min(elapsedRideSeconds(s, now), LIVE_ROUTE_MS / 1000L)
+        else elapsedRideSeconds(s, now)
+    val drivingSurcharge = (billedSeconds.toDouble() * hourlyPriceRub / 3600.0).roundToInt()
     return base + drivingSurcharge
 }
 
@@ -79,6 +92,8 @@ fun advanceLive(s: LiveDemoSession, now: Long): LiveDemoSession = when {
         s.copy(phase = LivePhase.INSPECT)
     s.phase == LivePhase.UNLOCK && now >= s.unlockingAt + LIVE_OPERATION_MS ->
         s.copy(phase = LivePhase.READY)
+    s.phase == LivePhase.RETURNING && now >= s.returnRequestedAt + LIVE_RETURN_MS ->
+        s.copy(phase = LivePhase.RETURN, pauseStartedAt = 0L)
     s.phase == LivePhase.DRIVING && routeFraction(s, now) >= 1f ->
         s.copy(phase = LivePhase.RETURN, pauseStartedAt = 0L)
     else -> s
@@ -133,6 +148,16 @@ fun applyLive(s: LiveDemoSession, event: LiveEvent, now: Long, value: String = "
             else valid(c.copy(assistance = true), "Учебный оператор: «Здравствуйте! Чем помочь?»")
         LiveEvent.REPORT_INCIDENT -> if (c.phase != LivePhase.DRIVING) invalid(c, "Нет поездки")
             else valid(c.copy(incident = true), "Учебное обращение о происшествии сохранено")
+        LiveEvent.REQUEST_RETURN -> if (c.phase != LivePhase.DRIVING)
+            invalid(c, "Вернуться на стоянку можно только во время учебной поездки")
+            else {
+                val fraction = routeFraction(c, now)
+                val pauseSeconds = if (c.pauseStartedAt > 0L) ((now - c.pauseStartedAt) / 1000L).coerceAtLeast(0L) else 0L
+                valid(c.copy(phase = LivePhase.RETURNING, returnRequestedAt = now,
+                    returnStartFraction = fraction, pausedSeconds = c.pausedSeconds + pauseSeconds,
+                    pauseStartedAt = 0L),
+                    "Прокладываем демонстрационный маршрут к зоне возврата — прибытие примерно через 16 секунд")
+            }
         LiveEvent.TAKE_RETURN_PHOTO -> if (c.phase != LivePhase.RETURN || c.returnPhotoAt != 0L) invalid(c, "Дождитесь точки возврата")
             else valid(c.copy(returnPhotoAt = now), "Фиксируем фото при возврате…")
         LiveEvent.LOCK_DOORS -> if (c.phase != LivePhase.RETURN || c.returnPhotoAt == 0L || now < c.returnPhotoAt + LIVE_OPERATION_MS)
@@ -140,7 +165,7 @@ fun applyLive(s: LiveDemoSession, event: LiveEvent, now: Long, value: String = "
             else valid(c.copy(lockingAt = now), "Отправляем учебную команду закрытия…")
         LiveEvent.FINISH -> if (c.phase != LivePhase.RETURN || c.lockingAt == 0L || now < c.lockingAt + LIVE_OPERATION_MS)
             invalid(c, "Проверьте фото и дождитесь закрытия дверей")
-            else valid(c.copy(phase = LivePhase.RECEIPT, locked = true), "Учебная поездка завершена; реального списания нет")
+            else valid(c.copy(phase = LivePhase.RECEIPT, locked = true, finishedAt = now), "Учебная поездка завершена; реального списания нет")
         LiveEvent.SET_RATING -> if (c.phase != LivePhase.RECEIPT || value.toIntOrNull() !in 1..5)
             invalid(c, "Укажите оценку")
             else valid(c.copy(rating = value.toInt()), "Спасибо за отзыв!")

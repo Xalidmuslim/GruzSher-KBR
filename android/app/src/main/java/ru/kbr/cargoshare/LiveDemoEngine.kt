@@ -79,14 +79,11 @@ fun elapsedRideSeconds(s: LiveDemoSession, now: Long): Long =
         ((now - s.drivingAt - s.pausedSeconds * 1000L -
             if (s.pauseStartedAt > 0) now - s.pauseStartedAt else 0L).coerceAtLeast(0L) / 1000L)
 
-fun demoFare(s: LiveDemoSession, hourlyPriceRub: Int, now: Long): Int {
-    val base = (s.durationHours + s.extraHours) * hourlyPriceRub
-    val billedSeconds = if (s.finishedAt > 0L) elapsedRideSeconds(s, s.finishedAt)
-        else if (s.phase == LivePhase.RECEIPT) min(elapsedRideSeconds(s, now), LIVE_ROUTE_MS / 1000L)
-        else elapsedRideSeconds(s, now)
-    val drivingSurcharge = (billedSeconds.toDouble() * hourlyPriceRub / 3600.0).roundToInt()
-    return base + drivingSurcharge
-}
+/** Fixed demo package price. Driving seconds are included, not billed a second time.
+ * The clock is intentionally a simulator clock and is not connected to banking.
+ */
+fun demoFare(s: LiveDemoSession, hourlyPriceRub: Int, now: Long): Int =
+    (s.durationHours + s.extraHours) * hourlyPriceRub
 
 /** Idempotent time transitions: resilient to Android lifecycle pauses and device restarts. */
 fun advanceLive(s: LiveDemoSession, now: Long): LiveDemoSession = when {

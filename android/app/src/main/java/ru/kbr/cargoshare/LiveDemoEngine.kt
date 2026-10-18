@@ -62,7 +62,7 @@ fun elapsedRideSeconds(s: LiveDemoSession, now: Long): Long =
 
 fun demoFare(s: LiveDemoSession, hourlyPriceRub: Int, now: Long): Int {
     val base = (s.durationHours + s.extraHours) * hourlyPriceRub
-    val drivingSurcharge = (elapsedRideSeconds(s, now).toDouble() * hourlyPriceRub / 3600.0).roundToInt()
+    val drivingSurcharge = (min(elapsedRideSeconds(s, now), LIVE_ROUTE_MS / 1000L).toDouble() * hourlyPriceRub / 3600.0).roundToInt()
     return base + drivingSurcharge
 }
 

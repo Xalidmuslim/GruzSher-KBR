@@ -455,7 +455,7 @@ fun LiveDemoScreen(
             setTileSource(TileSourceFactory.MAPNIK)
             setMultiTouchControls(true)
             controller.setZoom(13.8)
-            controller.setCenter(route[2])
+            controller.setCenter(route[route.size / 2])
             minZoomLevel = 9.0
             maxZoomLevel = 18.0
             overlays.add(Polyline().apply {
@@ -485,7 +485,7 @@ fun LiveDemoScreen(
             val end = route[low + 1]
             val point = GeoPoint(start.latitude + (end.latitude - start.latitude) * part,
                 start.longitude + (end.longitude - start.longitude) * part)
-            val moving = view.overlays[1] as Marker
+            val moving = view.overlays.filterIsInstance<Marker>().firstOrNull() ?: return@AndroidView
             moving.position = point
             moving.title = if (mode == "пешком") "Учебный пешеход" else "Учебный грузовик"
             view.invalidate()

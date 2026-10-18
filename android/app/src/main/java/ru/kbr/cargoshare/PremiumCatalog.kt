@@ -55,6 +55,7 @@ fun PremiumCatalog(
     loading: Boolean,
     onSelect: (Vehicle) -> Unit,
     onRefresh: () -> Unit,
+    onLiveDemo: () -> Unit,
 ) {
     var filter by remember { mutableStateOf("Все") }
     val filtered = remember(cars, filter) { cars.filter { categoryMatches(it.type, filter) } }
@@ -80,6 +81,16 @@ fun PremiumCatalog(
                     Text("Без залога", color = Forest, fontSize = 12.sp, fontWeight = FontWeight.Bold)
                 }
             }
+        }
+        OutlinedButton(
+            onClick = onLiveDemo,
+            modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 5.dp).height(48.dp),
+            shape = RoundedCornerShape(15.dp),
+            colors = ButtonDefaults.outlinedButtonColors(containerColor = Fog),
+        ) {
+            Icon(Icons.Outlined.PlayCircle, contentDescription = null, tint = Forest)
+            Spacer(Modifier.width(7.dp))
+            Text("Пройти настоящую последовательность аренды • DEMO", fontSize = 12.sp, color = Forest)
         }
         LazyRow(
             contentPadding = PaddingValues(horizontal = 16.dp),

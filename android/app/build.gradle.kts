@@ -11,8 +11,8 @@ android {
         applicationId = "ru.kbr.cargoshare.referencepreview.uifix"
         minSdk = 26
         targetSdk = 35
-        versionCode = 37
-        versionName = "3.5.1-ui-fixes"
+        versionCode = 38
+        versionName = "3.5.2-compact-optimized"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
     buildFeatures {

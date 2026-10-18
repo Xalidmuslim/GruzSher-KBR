@@ -118,8 +118,8 @@ fun FullScreenVehicleBooking(
                 }
             }
             Column(Modifier.weight(1f).verticalScroll(rememberScrollState())
-                .padding(horizontal = 17.dp).padding(top = 14.dp, bottom = 25.dp),
-                verticalArrangement = Arrangement.spacedBy(14.dp)) {
+                .padding(horizontal = 17.dp).padding(top = 12.dp, bottom = 14.dp),
+                verticalArrangement = Arrangement.spacedBy(10.dp)) {
                 if (offlineTraining) {
                     Surface(color = PremiumTheme.Mint, shape = RoundedCornerShape(12.dp)) {
                         Row(Modifier.fillMaxWidth().padding(10.dp),
@@ -182,8 +182,8 @@ fun FullScreenVehicleBooking(
                     PremiumFeature("Учебная аренда", Icons.Outlined.Info, Modifier.weight(1f))
                 }
                 Surface(color = Color.White, shape = RoundedCornerShape(22.dp)) {
-                    Column(Modifier.fillMaxWidth().padding(16.dp),
-                        verticalArrangement = Arrangement.spacedBy(13.dp)) {
+                    Column(Modifier.fillMaxWidth().padding(13.dp),
+                        verticalArrangement = Arrangement.spacedBy(9.dp)) {
                         if (!offlineTraining) {
                         Text("Дата и время получения", fontSize = 17.sp,
                             color = PremiumTheme.Text, fontWeight = FontWeight.Bold)
@@ -229,7 +229,7 @@ fun FullScreenVehicleBooking(
                                     shape = RoundedCornerShape(16.dp),
                                     color = if (selected) PremiumTheme.Green else Color.White,
                                     border = BorderStroke(1.dp, if (selected) PremiumTheme.Green else PremiumTheme.Stroke)) {
-                                    Column(Modifier.padding(horizontal = 3.dp, vertical = 14.dp),
+                                    Column(Modifier.padding(horizontal = 3.dp, vertical = 10.dp),
                                         horizontalAlignment = Alignment.CenterHorizontally,
                                         verticalArrangement = Arrangement.spacedBy(5.dp)) {
                                         Text(if (h == 24) "Сутки" else "$h ч", fontSize = 19.sp,
@@ -275,14 +275,18 @@ fun FullScreenVehicleBooking(
                     fontSize = 11.sp, color = PremiumTheme.Muted, lineHeight = 16.sp)
             }
             Surface(color = Color.White, shadowElevation = 12.dp) {
-                Column(Modifier.fillMaxWidth().padding(horizontal = 17.dp, vertical = 12.dp),
-                    verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                // The fullscreen Dialog window may report zero navigation-bar insets on
+                // gesture-navigation devices. Reserve a physical white footer area
+                // *after* the CTA so the gesture pill can never be drawn across it.
+                Column(Modifier.fillMaxWidth()
+                    .padding(start = 17.dp, end = 17.dp, top = 10.dp, bottom = 62.dp),
+                    verticalArrangement = Arrangement.spacedBy(7.dp)) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Column(Modifier.weight(1f)) {
                             Text("Итого за ${hours} ч", fontSize = 12.sp, color = PremiumTheme.Muted)
                             Text(if (checking) "Рассчитываем…" else if (available && quotedPrice != null)
                                     "${quotedPrice} ₽" else "Нет тарифа",
-                                fontSize = 29.sp, fontWeight = FontWeight.ExtraBold,
+                                fontSize = 27.sp, fontWeight = FontWeight.ExtraBold,
                                 color = PremiumTheme.GreenDark)
                         }
                         Text("Без залога", fontSize = 12.sp, color = PremiumTheme.Green)

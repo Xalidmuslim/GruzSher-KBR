@@ -605,6 +605,9 @@ fun LiveDemoScreen(
     AndroidView(factory = { map }, modifier = Modifier.fillMaxSize(),
         update = { view ->
             val f = fraction.coerceIn(0f, 1f)
+            // Avoid needless osmdroid marker updates while a mini-map is static.
+            if (view.tag == f) return@AndroidView
+            view.tag = f
             val segment = (f * (route.size - 1)).coerceAtMost((route.size - 1).toFloat())
             val low = segment.toInt().coerceAtMost(route.size - 2)
             val part = (segment - low).coerceIn(0f, 1f)

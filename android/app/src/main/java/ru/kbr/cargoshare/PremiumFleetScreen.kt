@@ -27,11 +27,16 @@ private fun fleetClass(v: Vehicle) = if(v.type.contains("тент",true)) "Те�
     var mapMode by rememberSaveable { mutableStateOf(true) }
     var filter by rememberSaveable { mutableStateOf("Все") }
     var selectedId by rememberSaveable { mutableStateOf("") }
-    val shown=cars.filter {filter=="Все" || fleetClass(it)==filter}
+    // A stable filtered collection avoids allocations every time the carousel or map selects a vehicle.
+    val shown = remember(cars, filter) {
+        cars.filter { filter == "Все" || fleetClass(it) == filter }
+    }
     val carousel=rememberLazyListState()
     val scroll=rememberLazyListState()
     val scope=rememberCoroutineScope()
-    LaunchedEffect(carousel.firstVisibleItemIndex,filter) { shown.getOrNull(carousel.firstVisibleItemIndex)?.let {selectedId=it.id} }
+    LaunchedEffect(carousel.firstVisibleItemIndex, shown) {
+        shown.getOrNull(carousel.firstVisibleItemIndex)?.let { selectedId = it.id }
+    }
     LazyColumn(state=scroll,modifier=Modifier.fillMaxSize().background(PremiumTheme.Paper),contentPadding=PaddingValues(14.dp),verticalArrangement=Arrangement.spacedBy(8.dp)) {
         item { PremiumBrandHeader() }
         if(active) item {Button(onClick=onLiveDemo,modifier=Modifier.fillMaxWidth(),shape=RoundedCornerShape(16.dp)) {Icon(Icons.Outlined.PlayArrow,null);Text("Вернуться к поездке")}}
@@ -63,7 +68,7 @@ private fun fleetClass(v: Vehicle) = if(v.type.contains("тент",true)) "Те�
         }}
         if(shown.isEmpty()) item { Text("В этой категории нет автомобилей. Измените фильтр.",modifier=Modifier.padding(20.dp)) }
         else if(mapMode) item {LazyRow(state=carousel,horizontalArrangement=Arrangement.spacedBy(9.dp)) {items(shown,key={it.id}) {car ->
-            PremiumFleetCard(car,Modifier.width(225.dp),selectedId==car.id) {onSelect(car)}
+            PremiumFleetCard(car,Modifier.width(205.dp),selectedId==car.id) {onSelect(car)}
         }}}
         else items(shown,key={it.id}) {car -> PremiumFleetCard(car,Modifier.fillMaxWidth(),false) {onSelect(car)} }
     }
@@ -71,22 +76,22 @@ private fun fleetClass(v: Vehicle) = if(v.type.contains("тент",true)) "Те�
 
 @Composable private fun PremiumFleetCard(car:Vehicle,modifier:Modifier,selected:Boolean,onClick:()->Unit) {
     Card(onClick=onClick,modifier=modifier,shape=RoundedCornerShape(18.dp),colors=CardDefaults.cardColors(containerColor=Color.White),elevation=CardDefaults.cardElevation(1.dp),border=if(selected) androidx.compose.foundation.BorderStroke(2.dp,PremiumTheme.Green) else null) {
-        Column(Modifier.padding(6.dp),verticalArrangement=Arrangement.spacedBy(4.dp)) {
+        Column(Modifier.padding(5.dp),verticalArrangement=Arrangement.spacedBy(3.dp)) {
             Box {
-                TruckArtwork(car,Modifier.fillMaxWidth().height(112.dp))
-                Surface(Modifier.padding(4.dp),shape=RoundedCornerShape(18.dp),color=Color(0xFFDAFFE2)) {Text("● ДОСТУПЕН · ДЕМО",fontSize=9.sp,color=PremiumTheme.Green,modifier=Modifier.padding(horizontal=7.dp,vertical=3.dp))}
+                TruckArtwork(car,Modifier.fillMaxWidth().height(96.dp))
+                Surface(Modifier.padding(4.dp),shape=RoundedCornerShape(18.dp),color=Color(0xFFDAFFE2)) {Text("● ДОСТУПЕН · ДЕМО",fontSize=8.sp,color=PremiumTheme.Green,modifier=Modifier.padding(horizontal=7.dp,vertical=3.dp))}
             }
-            Text(car.name,fontSize=17.sp,fontWeight=FontWeight.ExtraBold,color=PremiumTheme.Text,modifier=Modifier.padding(horizontal=3.dp))
-            Text(car.type,fontSize=10.sp,color=PremiumTheme.Muted,modifier=Modifier.padding(horizontal=3.dp))
+            Text(car.name,fontSize=15.sp,lineHeight=18.sp,maxLines=2,fontWeight=FontWeight.ExtraBold,color=PremiumTheme.Text,modifier=Modifier.padding(horizontal=3.dp))
+            Text(car.type,fontSize=10.sp,maxLines=1,overflow=androidx.compose.ui.text.style.TextOverflow.Ellipsis,color=PremiumTheme.Muted,modifier=Modifier.padding(horizontal=3.dp))
             Row(verticalAlignment=Alignment.CenterVertically) {
                 Icon(Icons.Outlined.Inventory2,null,Modifier.size(15.dp),tint=PremiumTheme.Muted)
-                Text(" ${car.payloadKg} кг    ◇ ${car.cargoVolumeM3} м³",fontSize=10.sp,color=PremiumTheme.Muted)
+                Text(" ${car.payloadKg} кг   ◇ ${car.cargoVolumeM3} м³",fontSize=10.sp,maxLines=1,color=PremiumTheme.Muted)
             }
-            Text("⌖ Нальчик · учебная точка",fontSize=10.sp,color=PremiumTheme.Muted)
+            Text("⌖ Нальчик · учебная точка",fontSize=9.sp,maxLines=1,color=PremiumTheme.Muted)
             Row(Modifier.fillMaxWidth().padding(top=3.dp),verticalAlignment=Alignment.CenterVertically) {
                 Text("от ",fontSize=11.sp,color=PremiumTheme.GreenDark)
-                Text("${car.hourlyPriceRub} ₽/ч",fontSize=19.sp,fontWeight=FontWeight.ExtraBold,color=PremiumTheme.GreenDark,modifier=Modifier.weight(1f))
-                Surface(color=PremiumTheme.Green,shape=RoundedCornerShape(20.dp)) {Text("Выбрать →",color=Color.White,fontSize=11.sp,modifier=Modifier.padding(10.dp))}
+                Text("${car.hourlyPriceRub} ₽/ч",fontSize=16.sp,maxLines=1,fontWeight=FontWeight.ExtraBold,color=PremiumTheme.GreenDark,modifier=Modifier.weight(1f))
+                Surface(color=PremiumTheme.Green,shape=RoundedCornerShape(20.dp)) {Text("Выбрать →",color=Color.White,fontSize=10.sp,modifier=Modifier.padding(horizontal=9.dp,vertical=8.dp))}
             }
         }
     }

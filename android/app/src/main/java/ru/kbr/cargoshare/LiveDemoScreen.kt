@@ -107,6 +107,7 @@ fun LiveDemoScreen(
         verticalArrangement = Arrangement.spacedBy(14.dp)
     ) {
         Spacer(Modifier.height(6.dp))
+        if (session.phase !in setOf(LivePhase.DRIVING, LivePhase.RETURNING, LivePhase.RETURN, LivePhase.RECEIPT)) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Column(Modifier.weight(1f)) {
                 Text("ГРУЗШЕР", fontSize = 27.sp, fontWeight = FontWeight.Black,
@@ -127,13 +128,15 @@ fun LiveDemoScreen(
                     color = LiveGreen, fontSize = 11.sp, lineHeight = 15.sp)
             }
         }
+        }
         if (message != null) {
             Surface(color = Color.White, shape = RoundedCornerShape(12.dp)) {
                 Text(message!!, color = LiveInk, fontSize = 12.sp, modifier = Modifier.fillMaxWidth().padding(12.dp))
             }
         }
-        if (session.phase != LivePhase.CHOOSE && car != null) {
-            LiveVehicleCard(car, session.phase == LivePhase.DRIVING)
+        if (session.phase !in setOf(LivePhase.CHOOSE, LivePhase.DRIVING,
+                LivePhase.RETURNING, LivePhase.RETURN, LivePhase.RECEIPT) && car != null) {
+            LiveVehicleCard(car)
         }
         when (session.phase) {
             LivePhase.CHOOSE -> {
@@ -279,40 +282,16 @@ fun LiveDemoScreen(
                 LiveButton("Начать поездку", Icons.Outlined.PlayArrow) { perform(LiveEvent.START_DRIVE) }
             }
             LivePhase.DRIVING -> {
-                val progress = routeFraction(session, now)
-                val elapsed = elapsedRideSeconds(session, now)
-                val fare = demoFare(session, car?.hourlyPriceRub ?: 650, now)
-                LiveHeader("11", "Поездка идёт", "Маркер движется по учебной траектории в Нальчике. Данные автомобиля полностью симулируются.")
-                LiveRouteMap(car, progress, "грузовик")
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    LiveNumber("Время", "${elapsed / 60}:${(elapsed % 60).toString().padStart(2, '0')}", Modifier.weight(1f))
-                    LiveNumber("Путь", "${String.format(Locale.US, "%.2f", demoDistanceKm(session, now))} км", Modifier.weight(1f))
-                    LiveNumber("Стоимость", "$fare ₽", Modifier.weight(1f))
-                }
-                LinearProgressIndicator(progress = { progress }, modifier = Modifier.fillMaxWidth(), color = LiveGreen)
-                LiveMetricRow("Скорость (учебная)", "${demoSpeedKmh(session)} км/ч")
-                LiveMetricRow("Учебный маршрут", "${((LIVE_ROUTE_MS * (1 - progress)) / 1000f).roundToInt()} сек до стоянки")
-                if (session.pauseStartedAt > 0L) LiveNote("Режим ожидания: движение и учебный таймер маршрута остановлены.")
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    OutlinedButton(onClick = { perform(LiveEvent.TOGGLE_WAIT) }, modifier = Modifier.weight(1f)) {
-                        Text(if (session.pauseStartedAt > 0L) "Продолжить" else "Ожидание", fontSize = 12.sp)
-                    }
-                    OutlinedButton(onClick = { perform(LiveEvent.EXTEND) }, modifier = Modifier.weight(1f)) {
-                        Text("Продлить +2 ч", fontSize = 12.sp)
-                    }
-                }
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    OutlinedButton(onClick = { perform(LiveEvent.ASK_SUPPORT) }, modifier = Modifier.weight(1f)) { Text("Поддержка", fontSize = 12.sp) }
-                    OutlinedButton(onClick = { perform(LiveEvent.REPORT_INCIDENT) }, modifier = Modifier.weight(1f)) { Text("Происшествие", fontSize = 12.sp) }
-                }
+                PremiumTripDashboard(session, car, now) { perform(it) }
                 if (session.assistance) {
                     LiveNote("Учебная поддержка: «Здравствуйте! Мы видим вашу тестовую поездку. Какой у вас вопрос?»")
                     if (sentSupport != null) LiveNote("Вы: $sentSupport\nДемо-оператор: «Спасибо. В настоящем сервисе с вами свяжется сотрудник»")
                     OutlinedTextField(supportText, onValueChange = { supportText = it.take(140) },
                         modifier = Modifier.fillMaxWidth(), label = { Text("Сообщение") })
-                    OutlinedButton(onClick = { sentSupport = supportText; supportText = "" }, enabled = supportText.isNotBlank()) { Text("Отправить в демо-чат") }
+                    OutlinedButton(onClick = { sentSupport = supportText; supportText = "" },
+                        enabled = supportText.isNotBlank()) { Text("Отправить в демо-чат") }
                 }
-                if (session.incident) LiveNote("Учебный инцидент №1 отмечен в журнале. Никому не отправлен.")
+                if (session.incident) LiveNote("Демо-инцидент внесён в журнал. Никому не отправлен.")
             }
             LivePhase.RETURNING -> {
                 val progress = routeFraction(session, now)
@@ -587,7 +566,7 @@ fun LiveDemoScreen(
 }
 
 /** Map tiles are real OSM. All route geometry and simulated marker coordinates are illustrative. */
-@Composable private fun LiveRouteMap(car: Vehicle?, fraction: Float, mode: String) {
+@Composable internal fun LiveRouteMap(car: Vehicle?, fraction: Float, mode: String) {
     val context = LocalContext.current
     val origin = remember(car?.id) { GeoPoint(car?.latitude ?: 43.4853, car?.longitude ?: 43.6071) }
     val route = remember(origin, mode) {

@@ -315,14 +315,15 @@ internal fun NalchikMap(cars: List<Vehicle>, onSelect: (Vehicle) -> Unit, modifi
                         position = GeoPoint(lat, lon)
                         title = vehicle.name
                         snippet = "${vehicle.hourlyPriceRub} ₽ / ч · Демоданные"
-                        icon = truckMapMarker(context, vehicle.hourlyPriceRub)
-                        setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_BOTTOM)
+                        // Compact, centered truck symbols do not overlap like wide price balloons.
+                        // The precise price remains in the vehicle detail sheet on tap.
+                        icon = truckMapMarker(context)
+                        setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_CENTER)
                         setOnMarkerClickListener { tapped, _ ->
                             view.overlays.filterIsInstance<Marker>().forEach { previous ->
                                 val original = cars.firstOrNull { it.name == previous.title }
                                 if (original != null) {
-                                    previous.icon = truckMapMarker(context, original.hourlyPriceRub,
-                                        selected = previous === tapped)
+                                    previous.icon = truckMapMarker(context, selected = previous === tapped)
                                 }
                             }
                             view.invalidate()

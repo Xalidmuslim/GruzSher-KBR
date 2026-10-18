@@ -91,3 +91,23 @@ fun walkingMapMarker(context: Context): Drawable {
     canvas.drawLine(22f, 28f, 29f, 35f, p)
     return BitmapDrawable(context.resources, bitmap)
 }
+
+/** A parking zone icon, clearly separate from the vehicle on the demonstration map. */
+fun returnZoneMapMarker(context: Context): Drawable {
+    val scale = context.resources.displayMetrics.density
+    val bitmap = Bitmap.createBitmap((44 * scale).roundToInt(), (44 * scale).roundToInt(), Bitmap.Config.ARGB_8888)
+    val canvas = Canvas(bitmap).apply { scale(scale, scale) }
+    val paint = Paint(Paint.ANTI_ALIAS_FLAG)
+    paint.color = Color.WHITE
+    canvas.drawCircle(22f, 22f, 20f, paint)
+    paint.color = Color.rgb(24, 79, 63)
+    paint.strokeWidth = 2.5f
+    paint.style = Paint.Style.STROKE
+    canvas.drawCircle(22f, 22f, 18f, paint)
+    paint.style = Paint.Style.FILL
+    paint.textAlign = Paint.Align.CENTER
+    paint.textSize = 22f
+    paint.isFakeBoldText = true
+    canvas.drawText("P", 22f, 30f, paint)
+    return BitmapDrawable(context.resources, bitmap)
+}

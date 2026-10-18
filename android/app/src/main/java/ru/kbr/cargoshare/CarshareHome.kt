@@ -45,6 +45,14 @@ fun CarshareHome(
 ) {
     var choice by remember { mutableStateOf("Все") }
     var showMap by remember { mutableStateOf(false) }
+    val availableTypes = remember(cars) {
+        listOf("Фургоны", "Бортовые", "Рефрижераторы").filter { category ->
+            cars.any { homeFilter(it.type, category) }
+        }
+    }
+    LaunchedEffect(availableTypes, choice) {
+        if (choice != "Все" && choice !in availableTypes) choice = "Все"
+    }
     val results = remember(cars, choice) { cars.filter { homeFilter(it.type, choice) } }
     val located = remember(results) { results.filter { it.latitude != null && it.longitude != null } }
     // One scroll container, no nested LazyColumn — all vehicles remain reachable.
@@ -109,12 +117,12 @@ fun CarshareHome(
             }
         }
 
-        item(key = "filters") {
+        if (availableTypes.size > 1) item(key = "filters") {
             LazyRow(
                 contentPadding = PaddingValues(horizontal = 18.dp),
                 horizontalArrangement = Arrangement.spacedBy(7.dp),
             ) {
-                items(listOf("Все", "Фургоны", "Бортовые", "Рефрижераторы")) { label ->
+                items(listOf("Все") + availableTypes) { label ->
                     FilterChip(selected = choice == label, onClick = { choice = label },
                         label = { Text(label, fontSize = 12.sp, maxLines = 1) },
                         colors = FilterChipDefaults.filterChipColors(selectedContainerColor = Pine,

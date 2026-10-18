@@ -301,11 +301,23 @@ private fun AppScreen() {
     }
     selected?.let { vehicle ->
         VehicleBookingSheet(vehicle = vehicle, canBook = token != null || (offlineDemo && BuildConfig.DEBUG),
+            offlineTraining = offlineDemo && BuildConfig.DEBUG,
             onDismiss = { selected = null },
-            onTryLiveDemo = {
-                liveSelectedCarId = vehicle.id
-                selected = null
-                tab = 3
+            onTryLiveDemo = { requestedHours ->
+                val liveStore = LiveDemoStorage(context.applicationContext)
+                val current = liveStore.load()
+                if (current.phase != LivePhase.CHOOSE && current.phase != LivePhase.RECEIPT) {
+                    selected = null
+                    liveSelectedCarId = null
+                    tab = 3
+                    error = "Другая учебная аренда уже начата. Продолжите её или нажмите «Сначала» в LIVE-демо."
+                } else {
+                    if (current.phase == LivePhase.RECEIPT) liveStore.save(LiveDemoSession(durationHours = requestedHours))
+                    else liveStore.save(current.copy(durationHours = requestedHours))
+                    liveSelectedCarId = vehicle.id
+                    selected = null
+                    tab = 3
+                }
             },
             onQuote = { start, end ->
                 if (offlineDemo && BuildConfig.DEBUG) {
@@ -434,13 +446,14 @@ private fun TruckCard(v: Vehicle, onClick: () -> Unit) {
 private fun VehicleBookingSheet(
     vehicle: Vehicle,
     canBook: Boolean,
+    offlineTraining: Boolean,
     onDismiss: () -> Unit,
-    onTryLiveDemo: () -> Unit,
+    onTryLiveDemo: (Int) -> Unit,
     onQuote: suspend (ZonedDateTime, ZonedDateTime) -> Pair<Int, Boolean>,
     onBook: suspend (ZonedDateTime, ZonedDateTime, String) -> Boolean,
 ) {
     FullScreenVehicleBooking(
-        vehicle = vehicle, canBook = canBook,
+        vehicle = vehicle, canBook = canBook, offlineTraining = offlineTraining,
         onDismiss = onDismiss,
         onTryLiveDemo = onTryLiveDemo,
         onQuote = onQuote, onBook = onBook

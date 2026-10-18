@@ -8,11 +8,11 @@ android {
     namespace = "ru.kbr.cargoshare"
     compileSdk = 35
     defaultConfig {
-        applicationId = "ru.kbr.cargoshare.liveui28"
+        applicationId = "ru.kbr.cargoshare.liveui29"
         minSdk = 26
         targetSdk = 35
-        versionCode = 28
-        versionName = "2.8.0-ux-fixes"
+        versionCode = 29
+        versionName = "2.9.0-trips-profile"
     }
     buildFeatures {
         compose = true

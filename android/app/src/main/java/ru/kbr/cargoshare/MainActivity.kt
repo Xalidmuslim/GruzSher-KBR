@@ -59,7 +59,7 @@ class MainActivity : ComponentActivity() {
         androidx.core.view.WindowInsetsControllerCompat(window, window.decorView)
             .isAppearanceLightStatusBars = true
         setContent {
-            MaterialTheme(colorScheme = lightColorScheme(primary = Green, background = Cream, surface = Color.White, onSurface = Ink)) {
+            MaterialTheme(colorScheme = lightColorScheme(primary = PremiumTheme.Green, onPrimary = Color.White, background = PremiumTheme.Paper, surface = Color.White, onSurface = PremiumTheme.Text)) {
                 AppScreen()
             }
         }
@@ -169,14 +169,20 @@ private fun AppScreen() {
     }
 
     Scaffold(
-        containerColor = Cream,
+        containerColor = PremiumTheme.Paper,
         bottomBar = {
-            NavigationBar(containerColor = Color.White) {
+            NavigationBar(containerColor = Color.White, tonalElevation = 0.dp) {
                 val titles = listOf("Автомобили", "Поездки", "Профиль", "LIVE Демо")
-                val icons = listOf(Icons.Outlined.LocalShipping, Icons.Outlined.ReceiptLong, Icons.Outlined.AccountCircle, Icons.Outlined.CheckCircle)
+                val icons = listOf(Icons.Outlined.LocalShipping, Icons.Outlined.ReceiptLong, Icons.Outlined.AccountCircle, Icons.Outlined.PlayCircleOutline)
                 titles.forEachIndexed { index, title ->
                     NavigationBarItem(selected = tab == index, onClick = { tab = index },
-                        icon = { Icon(icons[index], contentDescription = null) }, label = { Text(title) })
+                        icon = { Icon(icons[index], contentDescription = null) }, label = { Text(title, fontSize = 10.sp, maxLines = 1) },
+                        colors = NavigationBarItemDefaults.colors(
+                            selectedIconColor = PremiumTheme.Green,
+                            selectedTextColor = PremiumTheme.Green,
+                            indicatorColor = PremiumTheme.Lavender,
+                            unselectedIconColor = PremiumTheme.Muted,
+                            unselectedTextColor = PremiumTheme.Muted))
                 }
             }
         }
@@ -184,7 +190,7 @@ private fun AppScreen() {
         Column(Modifier.padding(padding).fillMaxSize()) {
             if (BuildConfig.DEBUG) {
                 Text(if (offlineDemo) "ОФЛАЙН-СИМУЛЯЦИЯ • Без реальной брони и оплаты" else "ДЕМО-СЕРВЕР • Пример автомобилей и тарифов", fontSize = 11.sp,
-                    color = Green, modifier = Modifier.fillMaxWidth().background(SoftGreen).padding(10.dp))
+                    color = PremiumTheme.Green, modifier = Modifier.fillMaxWidth().background(PremiumTheme.Mint).padding(horizontal = 14.dp, vertical = 7.dp))
             }
             if (error != null) {
                 Surface(color = Color(0xFFFFEBE7), modifier = Modifier.fillMaxWidth()) {
@@ -195,7 +201,7 @@ private fun AppScreen() {
                 }
             }
             when (tab) {
-                0 -> CarshareHome(vehicles, busy, onSelect = { selected = it }, onRefresh = { reloadVehicles() }, onLiveDemo = { liveSelectedCarId = null; tab = 3 })
+                0 -> PremiumFleetScreen(vehicles, busy, onSelect = { selected = it }, onRefresh = { reloadVehicles() }, onLiveDemo = { liveSelectedCarId = null; tab = 3 })
                 1 -> TripsDashboard(bookings = bookings, cars = vehicles,
                     live = liveOverview, offline = offlineDemo,
                     onResume = { chooseTrip(it) },

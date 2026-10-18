@@ -94,15 +94,7 @@ jobs:
           target: google_apis
           arch: x86_64
           profile: pixel_6
-          script: |
-            set +e
-            cd android
-            gradle --no-daemon connectedDebugAndroidTest
-            test_status=$?
-            cd ..
-            mkdir -p runtime-screens
-            adb pull /sdcard/Android/data/ru.kbr.cargoshare.referencepreview/files/acceptance runtime-screens/ || true
-            exit "$test_status"
+          script: bash tools/run_android_acceptance.sh
       - name: Compare actual APK screenshots against 10 references
         if: always()
         run: |

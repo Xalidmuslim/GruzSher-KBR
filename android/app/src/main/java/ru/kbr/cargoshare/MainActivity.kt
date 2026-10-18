@@ -87,6 +87,8 @@ private fun AppScreen() {
     var error by remember { mutableStateOf<String?>(null) }
     var offlineDemo by remember { mutableStateOf(BuildConfig.DEBUG) }
     var tab by rememberSaveable { mutableIntStateOf(0) }
+    // Tab 3 is the compact More hub; an explicit action opens the retained LIVE demo.
+    var showLiveDemo by rememberSaveable { mutableStateOf(false) }
     var liveSelectedCarId by rememberSaveable { mutableStateOf<String?>(null) }
     var selectedCarKey by rememberSaveable { mutableStateOf<String?>(null) }
     val selected = vehicles.firstOrNull { it.id == selectedCarKey }
@@ -106,13 +108,13 @@ private fun AppScreen() {
     }
     fun chooseTrip(booking: Booking) {
         if (LiveDemoStorage(context.applicationContext).receipt(booking.id) != null) {
-            receiptId = booking.id; tab = 3; return
+            receiptId = booking.id; showLiveDemo = true; tab = 3; return
         }
         receiptId = null
         val liveTrip = LiveDemoStorage(context.applicationContext).load()
         if (liveTrip.bookingId == booking.id && booking.id.isNotBlank()) {
             liveSelectedCarId = booking.vehicleId
-            tab = 3
+            showLiveDemo = true; tab = 3
         } else {
             error = "Эта заявка относится к прежнему офлайн-сценарию. Текущую поездку можно продолжить через LIVE Демо."
         }
@@ -129,12 +131,12 @@ private fun AppScreen() {
         val current = LiveDemoStorage(context.applicationContext).load()
         if (current.phase != LivePhase.CHOOSE) {
             liveSelectedCarId = null
-            tab = 3
+            showLiveDemo = true; tab = 3
             error = "Уже открыт другой учебный сценарий. Завершите его или нажмите «Сначала» в LIVE Демо, затем выберите грузовик. Заявка на дату останется без изменений."
             return
         }
         liveSelectedCarId = booking.vehicleId
-        tab = 3
+        showLiveDemo = true; tab = 3
     }
 
     fun runDemoAction(action: DemoAction) {
@@ -204,22 +206,27 @@ private fun AppScreen() {
     // nested bottom-navigation destinations return to the fleet home.
     BackHandler(enabled = selected == null && tab != 0) {
         receiptId = null
-        tab = 0
+        if (tab == 3 && showLiveDemo) showLiveDemo = false
+        else tab = 0
     }
     Scaffold(
         snackbarHost = { SnackbarHost(hostState = snackbar) },
         containerColor = PremiumTheme.Paper,
         bottomBar = {
             NavigationBar(containerColor = Color.White, tonalElevation = 0.dp) {
-                val titles = listOf("Автомобили", "Поездки", "Профиль", "LIVE Демо")
-                val icons = listOf(Icons.Outlined.LocalShipping, Icons.Outlined.ReceiptLong, Icons.Outlined.AccountCircle, Icons.Outlined.PlayArrow)
+                val titles = listOf("Автомобили", "Поездки", "Профиль", "Ещё")
+                val icons = listOf(Icons.Outlined.LocalShipping, Icons.Outlined.ReceiptLong, Icons.Outlined.AccountCircle, Icons.Outlined.Tune)
                 titles.forEachIndexed { index, title ->
-                    NavigationBarItem(selected = tab == index, onClick = { receiptId = null; tab = index },
+                    NavigationBarItem(selected = tab == index, onClick = {
+                        receiptId = null
+                        showLiveDemo = false
+                        tab = index
+                    },
                         icon = { Icon(icons[index], contentDescription = null) }, label = { Text(title, fontSize = 10.sp, maxLines = 1) },
                         colors = NavigationBarItemDefaults.colors(
-                            selectedIconColor = PremiumTheme.Purple,
-                            selectedTextColor = PremiumTheme.Purple,
-                            indicatorColor = PremiumTheme.Lavender,
+                            selectedIconColor = PremiumTheme.GreenDark,
+                            selectedTextColor = PremiumTheme.GreenDark,
+                            indicatorColor = PremiumTheme.Mint,
                             unselectedIconColor = PremiumTheme.Muted,
                             unselectedTextColor = PremiumTheme.Muted))
                 }
@@ -237,7 +244,7 @@ private fun AppScreen() {
             }
             tabStates.SaveableStateProvider(tab) {
             when (tab) {
-                0 -> PremiumFleetScreen(vehicles.filterNot { it.id==liveOverview.carId && liveOverview.phase in setOf(LivePhase.WALK,LivePhase.INSPECT,LivePhase.UNLOCK,LivePhase.READY,LivePhase.DRIVING,LivePhase.RETURNING,LivePhase.RETURN) }, busy, onSelect = { selectedCarKey = it.id }, onRefresh = { reloadVehicles() }, onLiveDemo = { receiptId=null; liveSelectedCarId = null; tab = 3 }, active=liveOverview.phase !in setOf(LivePhase.CHOOSE,LivePhase.RECEIPT))
+                0 -> PremiumFleetScreen(vehicles.filterNot { it.id==liveOverview.carId && liveOverview.phase in setOf(LivePhase.WALK,LivePhase.INSPECT,LivePhase.UNLOCK,LivePhase.READY,LivePhase.DRIVING,LivePhase.RETURNING,LivePhase.RETURN) }, busy, onSelect = { selectedCarKey = it.id }, onRefresh = { reloadVehicles() }, onLiveDemo = { receiptId=null; liveSelectedCarId = null; showLiveDemo = true; tab = 3 }, active=liveOverview.phase !in setOf(LivePhase.CHOOSE,LivePhase.RECEIPT))
                 1 -> TripsDashboard(bookings = bookings, cars = vehicles,
                     live = liveOverview, offline = offlineDemo,
                     onResume = { chooseTrip(it) },
@@ -274,12 +281,17 @@ private fun AppScreen() {
                     }
                 })
                 2 -> DriverDashboard(live = liveOverview, bookings = bookings,
-                    onLive = { receiptId=null; tab = 3 }, onTrips = { tab = 1 })
-                else -> LiveDemoScreen(
+                    onLive = { receiptId=null; showLiveDemo = true; tab = 3 }, onTrips = { tab = 1 })
+                else -> if (!showLiveDemo) GruzSherMoreScreen(
+                    onDemo = { receiptId = null; showLiveDemo = true },
+                    onFleet = { tab = 0 },
+                    onTrips = { tab = 1 },
+                    onProfile = { tab = 2 }
+                ) else LiveDemoScreen(
                     cars = vehicles,
                     selectedCarId = liveSelectedCarId,
                     selectedBookingId = receiptId,
-                    onBackToMap = { receiptId=null; tab = 0 },
+                    onBackToMap = { receiptId=null; showLiveDemo=false; tab = 0 },
                     onTripChanged = { live ->
                         liveOverview = live
                         if (offlineDemo && live.bookingId.isNotBlank() && live.carId.isNotBlank()) {
@@ -324,14 +336,14 @@ private fun AppScreen() {
                 if (current.phase != LivePhase.CHOOSE && current.phase != LivePhase.RECEIPT) {
                     selectedCarKey = null
                     liveSelectedCarId = null
-                    tab = 3
+                    showLiveDemo = true; tab = 3
                     error = "Другая учебная аренда уже начата. Продолжите её или нажмите «Сначала» в LIVE-демо."
                 } else {
                     if (current.phase == LivePhase.RECEIPT) liveStore.save(LiveDemoSession(durationHours = requestedHours))
                     else liveStore.save(current.copy(durationHours = requestedHours))
                     liveSelectedCarId = vehicle.id
                     selectedCarKey = null
-                    tab = 3
+                    showLiveDemo = true; tab = 3
                 }
             },
             onQuote = { start, end ->

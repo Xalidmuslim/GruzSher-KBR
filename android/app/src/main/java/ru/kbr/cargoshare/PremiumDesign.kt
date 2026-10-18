@@ -59,36 +59,48 @@ fun localTruckArtwork(vehicle: Vehicle): String = artworkSource(vehicle)
 @Composable fun PremiumBrandHeader(modifier: Modifier = Modifier) {
     Row(modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
         Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
-            Text("ГРУЗШЕР", fontSize = 32.sp, fontWeight = FontWeight.Black, letterSpacing = (-1).sp, color = PremiumTheme.GreenDark)
+            Text("ГРУЗШЕР", fontSize = 25.sp, fontWeight = FontWeight.Black, letterSpacing = (-0.5).sp, color = PremiumTheme.GreenDark)
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Icon(Icons.Outlined.LocationOn, null, tint = PremiumTheme.GreenDark, modifier = Modifier.size(16.dp))
                 Text("Нальчик · Кабардино-Балкария", fontSize = 11.sp, color = PremiumTheme.Muted)
             }
         }
         Surface(shape = RoundedCornerShape(50.dp), color = PremiumTheme.Mint) {
-            Row(Modifier.padding(horizontal = 11.dp, vertical = 11.dp), verticalAlignment = Alignment.CenterVertically) {
-                Icon(Icons.Outlined.VerifiedUser, null, tint = PremiumTheme.GreenDark, modifier = Modifier.size(20.dp))
-                Spacer(Modifier.width(6.dp))
-                Text("Без залога", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = PremiumTheme.GreenDark)
+            Row(Modifier.padding(horizontal = 11.dp, vertical = 8.dp), verticalAlignment = Alignment.CenterVertically) {
+                Text("ДЕМО", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = PremiumTheme.GreenDark)
             }
         }
     }
 }
 
+@Composable fun DemoPill() {
+    Surface(shape = RoundedCornerShape(50.dp), color = PremiumTheme.Mint) {
+        Text("ДЕМО", fontSize = 11.sp, fontWeight = FontWeight.Bold,
+            color = PremiumTheme.GreenDark,
+            modifier = Modifier.padding(horizontal = 13.dp, vertical = 9.dp))
+    }
+}
+
 @Composable fun PremiumDemoBanner(car: Vehicle?, modifier: Modifier = Modifier, onClick: () -> Unit) {
-    Card(onClick = onClick, modifier = modifier.fillMaxWidth(), shape = RoundedCornerShape(19.dp)) {
-        Box(Modifier.fillMaxWidth().height(100.dp).background(PremiumTheme.GreenDark)) {
-            AsyncImage("file:///android_asset/premium/live_banner.webp", null, contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize())
-            Row(Modifier.fillMaxSize().background(Brush.horizontalGradient(listOf(PremiumTheme.GreenDark.copy(alpha=.7f), Color.Transparent))).padding(14.dp), verticalAlignment = Alignment.CenterVertically) {
-                Surface(shape = RoundedCornerShape(50.dp), color = Color(0xFF008363)) {
-                    Icon(Icons.Outlined.PlayArrow, null, tint=Color.White, modifier=Modifier.padding(11.dp).size(28.dp))
+    Card(onClick = onClick, modifier = modifier.fillMaxWidth(), shape = RoundedCornerShape(20.dp)) {
+        Box(Modifier.fillMaxWidth().height(116.dp).background(PremiumTheme.GreenDark)) {
+            AsyncImage("file:///android_asset/premium/live_banner.webp", null,
+                contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize())
+            Row(Modifier.fillMaxSize().background(Brush.horizontalGradient(
+                listOf(PremiumTheme.GreenDark.copy(alpha = .97f),
+                    PremiumTheme.GreenDark.copy(alpha = .75f), Color.Transparent)))
+                .padding(15.dp), verticalAlignment = Alignment.CenterVertically) {
+                Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(5.dp)) {
+                    Text("Грузовые автомобили\\nв вашем городе",
+                        color = Color.White, fontWeight = FontWeight.ExtraBold,
+                        fontSize = 19.sp, lineHeight = 21.sp)
+                    Text("Выбор машины и обучение аренде",
+                        color = Color.White, fontSize = 10.sp)
                 }
-                Spacer(Modifier.width(12.dp))
-                Column(Modifier.weight(1f)) {
-                    Text("LIVE Демо аренды", color=Color.White, fontWeight=FontWeight.ExtraBold, fontSize=18.sp)
-                    Text("Все этапы аренды\nот выбора до чека", color=Color.White, fontSize=11.sp, lineHeight=15.sp)
+                Surface(shape = RoundedCornerShape(50.dp), color = PremiumTheme.Green) {
+                    Icon(Icons.Outlined.ArrowForward, "Открыть демо",
+                        modifier = Modifier.padding(9.dp).size(19.dp), tint = Color.White)
                 }
-                Icon(Icons.Outlined.ChevronRight, null, tint=Color.White)
             }
         }
     }

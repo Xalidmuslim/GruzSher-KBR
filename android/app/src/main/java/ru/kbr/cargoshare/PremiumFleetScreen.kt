@@ -1,5 +1,7 @@
 package ru.kbr.cargoshare
 
+import androidx.activity.compose.BackHandler
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -16,83 +18,258 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import kotlinx.coroutines.launch
 
-private fun fleetClass(v: Vehicle) = if(v.type.contains("тент",true)) "Тентованные" else "Цельнометаллические"
+private fun fleetClass(v: Vehicle) =
+    if (v.type.contains("тент", true)) "Тентованные" else "Цельнометаллические"
 
-@Composable fun PremiumFleetScreen(cars: List<Vehicle>, loading: Boolean, onSelect:(Vehicle)->Unit, onRefresh:()->Unit,onLiveDemo:()->Unit, active:Boolean=false) {
-    var mapMode by rememberSaveable { mutableStateOf(true) }
+@Composable
+fun PremiumFleetScreen(
+    cars: List<Vehicle>, loading: Boolean, onSelect: (Vehicle) -> Unit,
+    onRefresh: () -> Unit, onLiveDemo: () -> Unit, active: Boolean = false
+) {
     var filter by rememberSaveable { mutableStateOf("Все") }
+    var showEmbeddedMap by rememberSaveable { mutableStateOf(true) }
+    var fullMap by rememberSaveable { mutableStateOf(false) }
     var selectedId by rememberSaveable { mutableStateOf("") }
-    // A stable filtered collection avoids allocations every time the carousel or map selects a vehicle.
-    val shown = remember(cars, filter) {
-        cars.filter { filter == "Все" || fleetClass(it) == filter }
-    }
-    val carousel=rememberLazyListState()
-    val scroll=rememberLazyListState()
-    val scope=rememberCoroutineScope()
+    val shown = remember(cars, filter) { cars.filter { filter == "Все" || fleetClass(it) == filter } }
+    val carousel = rememberLazyListState()
+    val scroll = rememberLazyListState()
+    val scope = rememberCoroutineScope()
+    val selectedCar = shown.firstOrNull { it.id == selectedId } ?: shown.firstOrNull()
     LaunchedEffect(carousel.firstVisibleItemIndex, shown) {
         shown.getOrNull(carousel.firstVisibleItemIndex)?.let { selectedId = it.id }
     }
-    LazyColumn(state=scroll,modifier=Modifier.fillMaxSize().background(PremiumTheme.Paper),contentPadding=PaddingValues(14.dp),verticalArrangement=Arrangement.spacedBy(8.dp)) {
-        item { PremiumBrandHeader() }
-        if(active) item {Button(onClick=onLiveDemo,modifier=Modifier.fillMaxWidth(),shape=RoundedCornerShape(16.dp)) {Icon(Icons.Outlined.PlayArrow,null);Text("Вернуться к поездке")}}
-        item { PremiumDemoBanner(cars.firstOrNull(),onClick=onLiveDemo) }
-        item { Row(verticalAlignment=Alignment.CenterVertically) {
-            Text("Найти грузовик",fontSize=23.sp,fontWeight=FontWeight.ExtraBold,color=PremiumTheme.Text,modifier=Modifier.weight(1f))
-            IconButton(onClick=onRefresh,enabled=!loading,modifier=Modifier.size(40.dp)) {Icon(Icons.Outlined.Refresh,"Обновить автопарк")}
-            Surface(shape=RoundedCornerShape(30.dp),color=Color.White) {
-                Row { TextButton(onClick={mapMode=true},colors=ButtonDefaults.textButtonColors(containerColor=if(mapMode) PremiumTheme.Green else Color.White,contentColor=if(mapMode) Color.White else PremiumTheme.Muted)) {Icon(Icons.Outlined.Map,null,Modifier.size(17.dp));Text(" На карте",fontSize=10.sp)}
-                    TextButton(onClick={mapMode=false}) {Text("Список",fontSize=10.sp)} }
+    BackHandler(enabled = fullMap) { fullMap = false }
+
+    if (fullMap) {
+        Column(Modifier.fillMaxSize().background(PremiumTheme.Paper)) {
+            Row(Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 6.dp),
+                verticalAlignment = Alignment.CenterVertically) {
+                IconButton(onClick = { fullMap = false }) {
+                    Icon(Icons.Outlined.ArrowBack, "Назад к автомобилям", tint = PremiumTheme.GreenDark)
+                }
+                Column(Modifier.weight(1f)) {
+                    Text("ГРУЗШЕР", fontSize = 23.sp, fontWeight = FontWeight.Bold,
+                        color = PremiumTheme.GreenDark)
+                    Text("Автомобили на карте · Нальчик", fontSize = 11.sp,
+                        color = PremiumTheme.Muted)
+                }
+                DemoPill()
             }
-        } }
-        item { LazyRow(horizontalArrangement=Arrangement.spacedBy(7.dp)) {
-            items(listOf("Все","Тентованные","Цельнометаллические")) {name ->
-                FilterChip(selected=filter==name,onClick={filter=name;scope.launch {carousel.scrollToItem(0)}},label={Text(name,fontSize=11.sp)},leadingIcon={Icon(if(name=="Все") Icons.Outlined.LocalShipping else Icons.Outlined.Inventory2,null,Modifier.size(18.dp))},shape=RoundedCornerShape(24.dp),colors=FilterChipDefaults.filterChipColors(selectedContainerColor=PremiumTheme.Green,selectedLabelColor=Color.White,selectedLeadingIconColor=Color.White,containerColor=Color.White))
-            }
-        } }
-        if(loading) item {LinearProgressIndicator(Modifier.fillMaxWidth())}
-        if(mapMode) item {
-            Box(Modifier.fillMaxWidth().height(175.dp).clip(RoundedCornerShape(20.dp)).background(PremiumTheme.Mint)) {
-                NalchikMap(shown,{car ->selectedId=car.id;scope.launch {carousel.animateScrollToItem(shown.indexOf(car).coerceAtLeast(0))}},Modifier.fillMaxSize(), selectedVehicleId=selectedId)
-                Surface(Modifier.align(Alignment.TopStart).padding(9.dp),shape=RoundedCornerShape(24.dp),color=Color.White) {Text("🚚  Грузовики · ${shown.size}",modifier=Modifier.padding(10.dp),fontSize=11.sp,color=PremiumTheme.GreenDark)}
-                Surface(Modifier.align(Alignment.BottomStart).padding(8.dp),shape=RoundedCornerShape(20.dp),color=Color.White) {Text("ⓘ Учебные точки — не GPS автомобилей",modifier=Modifier.padding(6.dp),fontSize=9.sp,color=PremiumTheme.GreenDark)}
+            FleetFilters(filter) { filter = it; selectedId = "" }
+            Box(Modifier.fillMaxWidth().weight(1f).background(PremiumTheme.Mint)) {
+                NalchikMap(shown, { selectedId = it.id }, Modifier.fillMaxSize(), selectedId)
+                Surface(Modifier.align(Alignment.TopStart).padding(14.dp),
+                    shape = RoundedCornerShape(24.dp), color = Color.White) {
+                    Text("Грузовики · ${shown.size}", fontSize = 11.sp,
+                        color = PremiumTheme.GreenDark,
+                        modifier = Modifier.padding(horizontal = 13.dp, vertical = 9.dp))
+                }
+                selectedCar?.let { car ->
+                    Card(onClick = { onSelect(car) },
+                        modifier = Modifier.fillMaxWidth().align(Alignment.BottomCenter)
+                            .padding(horizontal = 13.dp, vertical = 43.dp),
+                        shape = RoundedCornerShape(19.dp),
+                        colors = CardDefaults.cardColors(containerColor = Color.White)) {
+                        Row(Modifier.fillMaxWidth().padding(9.dp),
+                            verticalAlignment = Alignment.CenterVertically) {
+                            TruckArtwork(car, Modifier.size(78.dp, 67.dp))
+                            Spacer(Modifier.width(11.dp))
+                            Column(Modifier.weight(1f)) {
+                                Text(car.name, fontWeight = FontWeight.Bold, maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis, color = PremiumTheme.Text)
+                                Text("${car.hourlyPriceRub} ₽/ч", fontSize = 17.sp,
+                                    fontWeight = FontWeight.ExtraBold, color = PremiumTheme.GreenDark)
+                                Text("Учебная точка · ДЕМО", fontSize = 10.sp,
+                                    color = PremiumTheme.Muted)
+                            }
+                            Icon(Icons.Outlined.ChevronRight, "Открыть автомобиль",
+                                tint = PremiumTheme.Green)
+                        }
+                    }
+                }
+                Text("Учебные точки — не GPS автомобилей",
+                    modifier = Modifier.align(Alignment.BottomCenter)
+                        .padding(bottom = 10.dp)
+                        .background(Color.White.copy(alpha = .95f), RoundedCornerShape(12.dp))
+                        .padding(horizontal = 11.dp, vertical = 5.dp),
+                    fontSize = 10.sp, color = PremiumTheme.GreenDark)
             }
         }
-        item {Row(verticalAlignment=Alignment.CenterVertically) {
-            Text("Доступны для аренды",fontSize=19.sp,fontWeight=FontWeight.Bold,color=PremiumTheme.Text,modifier=Modifier.weight(1f))
-            TextButton(onClick={mapMode=!mapMode}) {Text(if(mapMode) "Смотреть все ›" else "На карту ›",fontSize=11.sp)}
-        }}
-        if(shown.isEmpty()) item { Text("В этой категории нет автомобилей. Измените фильтр.",modifier=Modifier.padding(20.dp)) }
-        else if(mapMode) item {LazyRow(state=carousel,horizontalArrangement=Arrangement.spacedBy(9.dp)) {items(shown,key={it.id}) {car ->
-            PremiumFleetCard(car,Modifier.width(205.dp),selectedId==car.id) {onSelect(car)}
-        }}}
-        else items(shown,key={it.id}) {car -> PremiumFleetCard(car,Modifier.fillMaxWidth(),false) {onSelect(car)} }
+        return
+    }
+
+    LazyColumn(state = scroll, modifier = Modifier.fillMaxSize().background(PremiumTheme.Paper),
+        contentPadding = PaddingValues(start = 12.dp, end = 12.dp, top = 10.dp, bottom = 20.dp),
+        verticalArrangement = Arrangement.spacedBy(10.dp)) {
+        item(key = "header") { PremiumBrandHeader() }
+        if (active) item(key = "active") {
+            Button(onClick = onLiveDemo, modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(16.dp)) {
+                Icon(Icons.Outlined.PlayArrow, null)
+                Spacer(Modifier.width(5.dp))
+                Text("Вернуться к поездке")
+            }
+        }
+        item(key = "banner") { PremiumDemoBanner(cars.firstOrNull(), onClick = onLiveDemo) }
+        item(key = "search") {
+            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                Text("Найти грузовик", fontSize = 21.sp, fontWeight = FontWeight.Bold,
+                    color = PremiumTheme.Text, modifier = Modifier.weight(1f))
+                IconButton(onClick = onRefresh, enabled = !loading, modifier = Modifier.size(40.dp)) {
+                    Icon(Icons.Outlined.Refresh, "Обновить автопарк")
+                }
+                TextButton(onClick = { fullMap = true },
+                    colors = ButtonDefaults.textButtonColors(contentColor = PremiumTheme.GreenDark)) {
+                    Icon(Icons.Outlined.Map, null, Modifier.size(17.dp))
+                    Text(" На карте", fontSize = 12.sp)
+                }
+            }
+        }
+        item(key = "filters") { FleetFilters(filter) { filter = it; selectedId = ""; scope.launch { carousel.scrollToItem(0) } } }
+        if (loading) item(key = "loading") { LinearProgressIndicator(Modifier.fillMaxWidth()) }
+        if (showEmbeddedMap) item(key = "map") {
+            Box(Modifier.fillMaxWidth().height(191.dp).clip(RoundedCornerShape(20.dp))
+                .background(PremiumTheme.Mint)) {
+                NalchikMap(shown, { car ->
+                    selectedId = car.id
+                    scope.launch { carousel.animateScrollToItem(shown.indexOf(car).coerceAtLeast(0)) }
+                }, Modifier.fillMaxSize(), selectedVehicleId = selectedId)
+                Surface(Modifier.align(Alignment.TopStart).padding(10.dp),
+                    shape = RoundedCornerShape(22.dp), color = Color.White) {
+                    Text("🚚  Грузовики · ${shown.size}", fontSize = 11.sp,
+                        color = PremiumTheme.GreenDark,
+                        modifier = Modifier.padding(horizontal = 11.dp, vertical = 8.dp))
+                }
+                Surface(Modifier.align(Alignment.BottomStart).padding(9.dp),
+                    shape = RoundedCornerShape(16.dp), color = Color.White.copy(alpha = .95f)) {
+                    Text("ⓘ Учебные точки — не GPS автомобилей", fontSize = 9.sp,
+                        color = PremiumTheme.GreenDark,
+                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 6.dp))
+                }
+            }
+        }
+        item(key = "available") {
+            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                Text("Доступны для аренды", fontSize = 18.sp, fontWeight = FontWeight.Bold,
+                    color = PremiumTheme.Text, modifier = Modifier.weight(1f))
+                TextButton(onClick = { showEmbeddedMap = !showEmbeddedMap }) {
+                    Text(if (showEmbeddedMap) "Списком ›" else "С картой ›",
+                        fontSize = 11.sp, color = PremiumTheme.Green)
+                }
+            }
+        }
+        if (shown.isEmpty()) item(key = "empty") {
+            Text("В этой категории нет автомобилей.", modifier = Modifier.padding(20.dp))
+        } else if (showEmbeddedMap) {
+            item(key = "carousel") {
+                LazyRow(state = carousel, horizontalArrangement = Arrangement.spacedBy(9.dp)) {
+                    items(shown, key = { it.id }) { car ->
+                        PremiumFleetCard(car, Modifier.width(178.dp), selectedId == car.id) {
+                            onSelect(car)
+                        }
+                    }
+                }
+            }
+        } else {
+            items(shown, key = { "list_${it.id}" }) { car ->
+                PremiumFleetListRow(car) { onSelect(car) }
+            }
+        }
     }
 }
 
-@Composable private fun PremiumFleetCard(car:Vehicle,modifier:Modifier,selected:Boolean,onClick:()->Unit) {
-    Card(onClick=onClick,modifier=modifier,shape=RoundedCornerShape(18.dp),colors=CardDefaults.cardColors(containerColor=Color.White),elevation=CardDefaults.cardElevation(1.dp),border=if(selected) androidx.compose.foundation.BorderStroke(2.dp,PremiumTheme.Green) else null) {
-        Column(Modifier.padding(5.dp),verticalArrangement=Arrangement.spacedBy(3.dp)) {
-            Box {
-                TruckArtwork(car,Modifier.fillMaxWidth().height(96.dp))
-                Surface(Modifier.padding(4.dp),shape=RoundedCornerShape(18.dp),color=Color(0xFFDAFFE2)) {Text("● ДОСТУПЕН · ДЕМО",fontSize=8.sp,color=PremiumTheme.Green,modifier=Modifier.padding(horizontal=7.dp,vertical=3.dp))}
+@Composable
+private fun FleetFilters(selected: String, onChange: (String) -> Unit) {
+    LazyRow(contentPadding = PaddingValues(horizontal = 12.dp),
+        horizontalArrangement = Arrangement.spacedBy(7.dp)) {
+        items(listOf("Все", "Тентованные", "Цельнометаллические")) { name ->
+            FilterChip(selected = selected == name, onClick = { onChange(name) },
+                label = { Text(name, fontSize = 11.sp) },
+                leadingIcon = { Icon(
+                    if (name == "Все") Icons.Outlined.LocalShipping else Icons.Outlined.Inventory2,
+                    null, Modifier.size(16.dp)) },
+                shape = RoundedCornerShape(22.dp),
+                colors = FilterChipDefaults.filterChipColors(
+                    selectedContainerColor = PremiumTheme.Green, selectedLabelColor = Color.White,
+                    selectedLeadingIconColor = Color.White, containerColor = Color.White))
+        }
+    }
+}
+
+@Composable
+private fun PremiumFleetCard(car: Vehicle, modifier: Modifier, selected: Boolean,
+                             onClick: () -> Unit) {
+    val context = LocalContext.current
+    val prefs = remember(context) { context.getSharedPreferences("gruzsher_preferences", 0) }
+    var favourite by remember(car.id) { mutableStateOf(prefs.getBoolean("favourite_${car.id}", false)) }
+    Card(onClick = onClick, modifier = modifier.height(247.dp),
+        shape = RoundedCornerShape(19.dp),
+        colors = CardDefaults.cardColors(containerColor = Color.White),
+        elevation = CardDefaults.cardElevation(1.dp),
+        border = if (selected) BorderStroke(2.dp, PremiumTheme.Green) else null) {
+        Column(Modifier.fillMaxSize().padding(6.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+            Box(Modifier.fillMaxWidth().height(100.dp)) {
+                TruckArtwork(car, Modifier.fillMaxSize())
+                Surface(Modifier.align(Alignment.TopStart).padding(4.dp),
+                    shape = RoundedCornerShape(14.dp), color = PremiumTheme.Mint) {
+                    Text("● Доступен", fontSize = 9.sp, color = PremiumTheme.Green,
+                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 3.dp))
+                }
+                IconButton(onClick = {
+                    favourite = !favourite
+                    prefs.edit().putBoolean("favourite_${car.id}", favourite).apply()
+                }, modifier = Modifier.align(Alignment.TopEnd).size(35.dp)
+                    .background(Color.White, RoundedCornerShape(50))) {
+                    Icon(if (favourite) Icons.Outlined.Favorite else Icons.Outlined.FavoriteBorder,
+                        "В избранное", tint = PremiumTheme.Green, modifier = Modifier.size(19.dp))
+                }
             }
-            Text(car.name,fontSize=15.sp,lineHeight=18.sp,maxLines=2,fontWeight=FontWeight.ExtraBold,color=PremiumTheme.Text,modifier=Modifier.padding(horizontal=3.dp))
-            Text(car.type,fontSize=10.sp,maxLines=1,overflow=androidx.compose.ui.text.style.TextOverflow.Ellipsis,color=PremiumTheme.Muted,modifier=Modifier.padding(horizontal=3.dp))
-            Row(verticalAlignment=Alignment.CenterVertically) {
-                Icon(Icons.Outlined.Inventory2,null,Modifier.size(15.dp),tint=PremiumTheme.Muted)
-                Text(" ${car.payloadKg} кг   ◇ ${car.cargoVolumeM3} м³",fontSize=10.sp,maxLines=1,color=PremiumTheme.Muted)
+            Text(car.name, color = PremiumTheme.Text, fontWeight = FontWeight.Bold,
+                fontSize = 14.sp, lineHeight = 16.sp, maxLines = 2,
+                overflow = TextOverflow.Ellipsis, minLines = 2)
+            Text(car.type, color = PremiumTheme.Muted, fontSize = 9.sp,
+                maxLines = 1, overflow = TextOverflow.Ellipsis)
+            Text("${car.payloadKg} кг  ◇  ${car.cargoVolumeM3} м³",
+                color = PremiumTheme.Muted, fontSize = 10.sp, maxLines = 1)
+            Spacer(Modifier.weight(1f))
+            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                Text("${car.hourlyPriceRub} ₽/ч", fontSize = 15.sp,
+                    fontWeight = FontWeight.ExtraBold, color = PremiumTheme.GreenDark,
+                    maxLines = 1, modifier = Modifier.weight(1f))
+                Surface(shape = RoundedCornerShape(13.dp), color = PremiumTheme.Green) {
+                    Text("Выбрать", fontSize = 10.sp, color = Color.White,
+                        modifier = Modifier.padding(horizontal = 9.dp, vertical = 9.dp))
+                }
             }
-            Text("⌖ Нальчик · учебная точка",fontSize=9.sp,maxLines=1,color=PremiumTheme.Muted)
-            Row(Modifier.fillMaxWidth().padding(top=3.dp),verticalAlignment=Alignment.CenterVertically) {
-                Text("от ",fontSize=11.sp,color=PremiumTheme.GreenDark)
-                Text("${car.hourlyPriceRub} ₽/ч",fontSize=16.sp,maxLines=1,fontWeight=FontWeight.ExtraBold,color=PremiumTheme.GreenDark,modifier=Modifier.weight(1f))
-                Surface(color=PremiumTheme.Green,shape=RoundedCornerShape(20.dp)) {Text("Выбрать →",color=Color.White,fontSize=10.sp,modifier=Modifier.padding(horizontal=9.dp,vertical=8.dp))}
+        }
+    }
+}
+
+@Composable
+private fun PremiumFleetListRow(car: Vehicle, onClick: () -> Unit) {
+    Card(onClick = onClick, colors = CardDefaults.cardColors(containerColor = Color.White),
+        shape = RoundedCornerShape(18.dp)) {
+        Row(Modifier.fillMaxWidth().padding(10.dp), verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+            TruckArtwork(car, Modifier.size(118.dp, 104.dp))
+            Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                Text(car.name, color = PremiumTheme.Text, fontWeight = FontWeight.Bold,
+                    fontSize = 15.sp, maxLines = 2)
+                Text(car.type, color = PremiumTheme.Muted, fontSize = 11.sp,
+                    maxLines = 1, overflow = TextOverflow.Ellipsis)
+                Text("${car.payloadKg} кг · ${car.cargoVolumeM3} м³", fontSize = 11.sp,
+                    color = PremiumTheme.Muted)
+                Text("${car.hourlyPriceRub} ₽/ч", fontSize = 17.sp,
+                    color = PremiumTheme.GreenDark, fontWeight = FontWeight.Bold)
             }
+            Icon(Icons.Outlined.ChevronRight, "Открыть", tint = PremiumTheme.Green)
         }
     }
 }

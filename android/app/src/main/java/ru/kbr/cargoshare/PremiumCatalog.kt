@@ -238,6 +238,7 @@ internal fun NalchikMap(cars: List<Vehicle>, onSelect: (Vehicle) -> Unit, modifi
         MapView(context).apply {
             setTileSource(TileSourceFactory.MAPNIK)
             setMultiTouchControls(true)
+            setBuiltInZoomControls(false) // OSMDroid defaults obscure truck pins
             controller.setZoom(13.0)
             controller.setCenter(NalchikCenter)
             minZoomLevel = 8.0
@@ -349,6 +350,21 @@ internal fun NalchikMap(cars: List<Vehicle>, onSelect: (Vehicle) -> Unit, modifi
             modifier = Modifier.align(Alignment.CenterEnd).padding(end = 12.dp),
             containerColor = Color.White, contentColor = Forest,
         ) { Icon(Icons.Outlined.MyLocation, "Моё местоположение") }
+        Column(
+            Modifier.align(Alignment.BottomEnd).padding(end = 12.dp, bottom = 12.dp),
+            verticalArrangement = Arrangement.spacedBy(7.dp)
+        ) {
+            SmallFloatingActionButton(
+                onClick = { map.controller.zoomIn() },
+                containerColor = Color.White, contentColor = Forest,
+                modifier = Modifier.size(42.dp)
+            ) { Icon(Icons.Outlined.Add, "Приблизить") }
+            SmallFloatingActionButton(
+                onClick = { map.controller.zoomOut() },
+                containerColor = Color.White, contentColor = Forest,
+                modifier = Modifier.size(42.dp)
+            ) { Icon(Icons.Outlined.Remove, "Отдалить") }
+        }
         locationMessage?.let { msg ->
             Surface(Modifier.align(Alignment.BottomCenter).padding(8.dp), shape = RoundedCornerShape(12.dp), color = Color.White) {
                 Text(msg, modifier = Modifier.padding(10.dp), fontSize = 11.sp, color = DeepInk)

@@ -215,7 +215,7 @@ private fun AppScreen() {
         bottomBar = {
             NavigationBar(containerColor = Color.White, tonalElevation = 0.dp) {
                 val titles = listOf("Автомобили", "Поездки", "Профиль", "Ещё")
-                val icons = listOf(Icons.Outlined.LocalShipping, Icons.Outlined.ReceiptLong, Icons.Outlined.AccountCircle, Icons.Outlined.MoreHoriz)
+                val icons = listOf(Icons.Outlined.LocalShipping, Icons.Outlined.ReceiptLong, Icons.Outlined.AccountCircle, Icons.Outlined.Settings)
                 titles.forEachIndexed { index, title ->
                     NavigationBarItem(selected = tab == index, onClick = {
                         receiptId = null

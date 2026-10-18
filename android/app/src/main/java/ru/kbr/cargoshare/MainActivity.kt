@@ -28,6 +28,8 @@ import androidx.compose.material.icons.outlined.ReceiptLong
 import androidx.compose.material.icons.outlined.Schedule
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.saveable.rememberSaveableStateHolder
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -84,10 +86,13 @@ private fun AppScreen() {
     var busy by remember { mutableStateOf(!BuildConfig.DEBUG) }
     var error by remember { mutableStateOf<String?>(null) }
     var offlineDemo by remember { mutableStateOf(BuildConfig.DEBUG) }
-    var tab by remember { mutableIntStateOf(0) }
-    var liveSelectedCarId by remember { mutableStateOf<String?>(null) }
-    var selected by remember { mutableStateOf<Vehicle?>(null) }
+    var tab by rememberSaveable { mutableIntStateOf(0) }
+    var liveSelectedCarId by rememberSaveable { mutableStateOf<String?>(null) }
+    var selectedCarKey by rememberSaveable { mutableStateOf<String?>(null) }
+    val selected = vehicles.firstOrNull { it.id == selectedCarKey }
+    var receiptId by rememberSaveable { mutableStateOf<String?>(null) }
     val snackbar = remember { SnackbarHostState() }
+    val tabStates = rememberSaveableStateHolder()
     LaunchedEffect(tab) {
         if (tab == 1 || tab == 2) liveOverview = LiveDemoStorage(context.applicationContext).load()
     }
@@ -100,6 +105,10 @@ private fun AppScreen() {
         if (!BuildConfig.DEMO_SERVER_ENABLED) demoStore.save(bookings, demoState)
     }
     fun chooseTrip(booking: Booking) {
+        if (LiveDemoStorage(context.applicationContext).receipt(booking.id) != null) {
+            receiptId = booking.id; tab = 3; return
+        }
+        receiptId = null
         val liveTrip = LiveDemoStorage(context.applicationContext).load()
         if (liveTrip.bookingId == booking.id && booking.id.isNotBlank()) {
             liveSelectedCarId = booking.vehicleId
@@ -193,7 +202,7 @@ private fun AppScreen() {
 
     // OS back gesture: dialogs dismiss themselves, tabs return home, home never exits abruptly.
     BackHandler(enabled = selected == null) {
-        if (tab != 0) tab = 0
+        if (tab != 0) {receiptId=null; tab = 0}
         else scope.launch { snackbar.showSnackbar(
             "Вы на главном экране. Чтобы свернуть приложение, используйте жест «Домой».",
             duration = SnackbarDuration.Short) }
@@ -206,11 +215,11 @@ private fun AppScreen() {
                 val titles = listOf("Автомобили", "Поездки", "Профиль", "LIVE Демо")
                 val icons = listOf(Icons.Outlined.LocalShipping, Icons.Outlined.ReceiptLong, Icons.Outlined.AccountCircle, Icons.Outlined.PlayArrow)
                 titles.forEachIndexed { index, title ->
-                    NavigationBarItem(selected = tab == index, onClick = { tab = index },
+                    NavigationBarItem(selected = tab == index, onClick = { receiptId = null; tab = index },
                         icon = { Icon(icons[index], contentDescription = null) }, label = { Text(title, fontSize = 10.sp, maxLines = 1) },
                         colors = NavigationBarItemDefaults.colors(
-                            selectedIconColor = PremiumTheme.Green,
-                            selectedTextColor = PremiumTheme.Green,
+                            selectedIconColor = PremiumTheme.Purple,
+                            selectedTextColor = PremiumTheme.Purple,
                             indicatorColor = PremiumTheme.Lavender,
                             unselectedIconColor = PremiumTheme.Muted,
                             unselectedTextColor = PremiumTheme.Muted))
@@ -219,10 +228,6 @@ private fun AppScreen() {
         }
     ) { padding ->
         Column(Modifier.padding(padding).fillMaxSize()) {
-            if (BuildConfig.DEBUG) {
-                Text(if (offlineDemo) "ОФЛАЙН-СИМУЛЯЦИЯ • Без реальной брони и оплаты" else "ДЕМО-СЕРВЕР • Пример автомобилей и тарифов", fontSize = 11.sp,
-                    color = PremiumTheme.Green, modifier = Modifier.fillMaxWidth().background(PremiumTheme.Mint).padding(horizontal = 14.dp, vertical = 7.dp))
-            }
             if (error != null) {
                 Surface(color = Color(0xFFFFEBE7), modifier = Modifier.fillMaxWidth()) {
                     Row(Modifier.padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
@@ -231,8 +236,9 @@ private fun AppScreen() {
                     }
                 }
             }
+            tabStates.SaveableStateProvider(tab) {
             when (tab) {
-                0 -> PremiumFleetScreen(vehicles, busy, onSelect = { selected = it }, onRefresh = { reloadVehicles() }, onLiveDemo = { liveSelectedCarId = null; tab = 3 })
+                0 -> PremiumFleetScreen(vehicles.filterNot { it.id==liveOverview.carId && liveOverview.phase in setOf(LivePhase.WALK,LivePhase.INSPECT,LivePhase.UNLOCK,LivePhase.READY,LivePhase.DRIVING,LivePhase.RETURNING,LivePhase.RETURN) }, busy, onSelect = { selectedCarKey = it.id }, onRefresh = { reloadVehicles() }, onLiveDemo = { receiptId=null; liveSelectedCarId = null; tab = 3 }, active=liveOverview.phase !in setOf(LivePhase.CHOOSE,LivePhase.RECEIPT))
                 1 -> TripsDashboard(bookings = bookings, cars = vehicles,
                     live = liveOverview, offline = offlineDemo,
                     onResume = { chooseTrip(it) },
@@ -241,7 +247,9 @@ private fun AppScreen() {
                     onTimeline = { id ->
                         if (offlineDemo && BuildConfig.DEBUG) {
                             val current = bookings.find { it.id == id }
-                            listOf(BookingTimelineEvent("CREATED", offlineCreatedAt[id] ?: "")) +
+                            val store = LiveDemoStorage(context.applicationContext)
+                            val journal = (store.receipt(id) ?: store.load().takeIf { it.bookingId == id })?.events.orEmpty()
+                            journal.map { BookingTimelineEvent(it, "") } + listOf(BookingTimelineEvent("CREATED", offlineCreatedAt[id] ?: "")) +
                                 if (current?.status == "CANCELLED") listOf(BookingTimelineEvent("CANCELLED", offlineCancelledAt[id] ?: "")) else emptyList()
                         } else token?.let { api.timeline(id, it) } ?: emptyList()
                     },
@@ -251,6 +259,11 @@ private fun AppScreen() {
                             bookings = bookings.map { if (it.id == id) it.copy(status = "CANCELLED") else it }
                             offlineCancelledAt[id] = Instant.now().toString()
                             if (demoState.tripId == id) demoState = demoState.copy(tripStatus = "CANCELLED", doorsOpen = false)
+                            val liveStore = LiveDemoStorage(context.applicationContext)
+                            val live = liveStore.load()
+                            if (live.bookingId == id && live.phase in setOf(LivePhase.WALK, LivePhase.INSPECT, LivePhase.UNLOCK, LivePhase.READY)) {
+                                liveStore.save(LiveDemoSession()); liveOverview = LiveDemoSession()
+                            }
                         }
                     } else {
                     val t = token
@@ -262,11 +275,12 @@ private fun AppScreen() {
                     }
                 })
                 2 -> DriverDashboard(live = liveOverview, bookings = bookings,
-                    onLive = { tab = 3 }, onTrips = { tab = 1 })
+                    onLive = { receiptId=null; tab = 3 }, onTrips = { tab = 1 })
                 else -> LiveDemoScreen(
                     cars = vehicles,
                     selectedCarId = liveSelectedCarId,
-                    onBackToMap = { tab = 0 },
+                    selectedBookingId = receiptId,
+                    onBackToMap = { receiptId=null; tab = 0 },
                     onTripChanged = { live ->
                         liveOverview = live
                         if (offlineDemo && live.bookingId.isNotBlank() && live.carId.isNotBlank()) {
@@ -282,7 +296,7 @@ private fun AppScreen() {
                                     java.time.Instant.ofEpochMilli(live.approvalStartedAt), LocalZone)
                                 val simulatedEnd = simulatedStart.plusHours((live.durationHours + live.extraHours).toLong())
                                 val cost = if (live.phase == LivePhase.RECEIPT) demoFare(live, current.hourlyPriceRub, System.currentTimeMillis())
-                                    else (live.durationHours + live.extraHours) * current.hourlyPriceRub
+                                    else demoFare(live, current.hourlyPriceRub, System.currentTimeMillis())
                                 val record = Booking(live.bookingId, live.carId, phaseStatus,
                                     simulatedStart.format(DateTimeFormatter.ISO_OFFSET_DATE_TIME),
                                     simulatedEnd.format(DateTimeFormatter.ISO_OFFSET_DATE_TIME), cost)
@@ -297,17 +311,19 @@ private fun AppScreen() {
                     }
                 )
             }
+            }
         }
     }
     selected?.let { vehicle ->
         VehicleBookingSheet(vehicle = vehicle, canBook = token != null || (offlineDemo && BuildConfig.DEBUG),
             offlineTraining = offlineDemo && BuildConfig.DEBUG,
-            onDismiss = { selected = null },
+            onDismiss = { selectedCarKey = null },
             onTryLiveDemo = { requestedHours ->
+                receiptId = null
                 val liveStore = LiveDemoStorage(context.applicationContext)
                 val current = liveStore.load()
                 if (current.phase != LivePhase.CHOOSE && current.phase != LivePhase.RECEIPT) {
-                    selected = null
+                    selectedCarKey = null
                     liveSelectedCarId = null
                     tab = 3
                     error = "Другая учебная аренда уже начата. Продолжите её или нажмите «Сначала» в LIVE-демо."
@@ -315,7 +331,7 @@ private fun AppScreen() {
                     if (current.phase == LivePhase.RECEIPT) liveStore.save(LiveDemoSession(durationHours = requestedHours))
                     else liveStore.save(current.copy(durationHours = requestedHours))
                     liveSelectedCarId = vehicle.id
-                    selected = null
+                    selectedCarKey = null
                     tab = 3
                 }
             },
@@ -351,7 +367,7 @@ private fun AppScreen() {
                                 end.format(DateTimeFormatter.ISO_OFFSET_DATE_TIME), cost)) + bookings
                             demoState = chooseDemoBooking(demoState, id, "PENDING").state
                         }
-                        selected = null
+                        selectedCarKey = null
                         tab = 1
                         true
                     }
@@ -359,7 +375,7 @@ private fun AppScreen() {
                     error = "Для бронирования нужен сервер"; false
                 } else {
                     runCatching { api.book(vehicle.id, start, end, t, idempotencyKey) }
-                        .onSuccess { selected = null; reloadBookings(t); tab = 1 }
+                        .onSuccess { selectedCarKey = null; reloadBookings(t); tab = 1 }
                         .onFailure { error = it.localizedMessage }
                         .isSuccess
                 }

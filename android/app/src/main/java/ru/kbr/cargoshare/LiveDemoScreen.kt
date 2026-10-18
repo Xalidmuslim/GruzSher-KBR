@@ -49,12 +49,13 @@ private val LiveGray = PremiumTheme.Muted
 fun LiveDemoScreen(
     cars: List<Vehicle>,
     selectedCarId: String?,
+    selectedBookingId: String? = null,
     onTripChanged: (LiveDemoSession) -> Unit,
     onBackToMap: () -> Unit
 ) {
     val context = LocalContext.current
     val store = remember { LiveDemoStorage(context.applicationContext) }
-    var session by remember { mutableStateOf(store.load()) }
+    var session by remember(selectedBookingId) { mutableStateOf(selectedBookingId?.let(store::receipt) ?: store.load()) }
     var now by remember { mutableLongStateOf(System.currentTimeMillis()) }
     var message by remember { mutableStateOf<String?>(null) }
     var phone by remember { mutableStateOf("+79000000000") }
@@ -62,17 +63,20 @@ fun LiveDemoScreen(
     var supportText by remember { mutableStateOf("") }
     var sentSupport by remember { mutableStateOf<String?>(null) }
     var showReturnConfirm by remember { mutableStateOf(false) }
+    var reportKind by remember { mutableStateOf<String?>(null) }
+    var reportText by remember { mutableStateOf("") }
+    var previewAngle by remember { mutableStateOf<String?>(null) }
     val journeyScroll = rememberScrollState()
     // Stage changes must restart at the stage heading, never inherit the preceding stage's offset.
     LaunchedEffect(session.phase) { journeyScroll.scrollTo(0) }
 
     val car = cars.find { it.id == session.carId } ?: cars.firstOrNull()
     fun perform(event: LiveEvent, value: String = "") {
-        val result = applyLive(session, event, now, value)
+        val result = applyLive(session, event, System.currentTimeMillis(), value)
         message = result.message
         if (result.accepted) {
             session = result.state
-            onTripChanged(session)
+            if (selectedBookingId == null) onTripChanged(session)
         }
     }
     LaunchedEffect(Unit) {
@@ -85,59 +89,37 @@ fun LiveDemoScreen(
         val next = advanceLive(session, now)
         if (next != session) {
             session = next
-            onTripChanged(next)
+            if (selectedBookingId == null) onTripChanged(next)
         }
     }
-    LaunchedEffect(session) { store.save(session) }
+    LaunchedEffect(session) { if (selectedBookingId == null) store.save(session) else store.saveReceipt(session) }
     LaunchedEffect(selectedCarId) {
         if (!selectedCarId.isNullOrEmpty() && selectedCarId != session.carId && session.phase == LivePhase.CHOOSE) {
             val result = applyLive(session, LiveEvent.PICK_CAR, System.currentTimeMillis(), selectedCarId)
             if (result.accepted) {
                 session = result.state
-                onTripChanged(result.state)
+                if (selectedBookingId == null) onTripChanged(result.state)
             }
         }
     }
-    LaunchedEffect(Unit) { onTripChanged(session) }
+    LaunchedEffect(Unit) { if (selectedBookingId == null) onTripChanged(session) }
     Box(Modifier.fillMaxSize().background(LivePaper)) {
     Column(
         Modifier.fillMaxSize().verticalScroll(journeyScroll)
             .padding(horizontal = if (session.phase == LivePhase.DRIVING) 12.dp else 18.dp)
-            .padding(bottom = if (session.phase in setOf(LivePhase.DRIVING, LivePhase.RETURNING, LivePhase.RETURN)) 106.dp else 30.dp),
+            .padding(bottom = if (session.phase in setOf(LivePhase.INSPECT, LivePhase.DRIVING, LivePhase.RETURNING, LivePhase.RETURN)) 106.dp else 30.dp),
         verticalArrangement = Arrangement.spacedBy(if (session.phase == LivePhase.DRIVING) 9.dp else 14.dp)
     ) {
         Spacer(Modifier.height(6.dp))
-        if (session.phase !in setOf(LivePhase.DRIVING, LivePhase.RETURNING, LivePhase.RETURN, LivePhase.RECEIPT)) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Column(Modifier.weight(1f)) {
-                Text("ГРУЗШЕР", fontSize = 27.sp, fontWeight = FontWeight.Black,
-                    color = LiveGreen)
-                Text("LIVE Демо · полный цикл аренды", color = LiveGray, fontSize = 12.sp)
-            }
-            TextButton(onClick = { perform(LiveEvent.RESET) }) {
-                Icon(Icons.Outlined.Refresh, null, modifier = Modifier.size(16.dp))
-                Spacer(Modifier.width(3.dp))
-                Text("Сначала", fontSize = 11.sp)
-            }
-        }
-        if (session.phase !in setOf(LivePhase.DRIVING, LivePhase.RETURNING, LivePhase.RETURN, LivePhase.RECEIPT)) {
-        Surface(shape = RoundedCornerShape(14.dp), color = LivePale) {
-            Row(Modifier.fillMaxWidth().padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
-                Icon(Icons.Outlined.Info, null, tint = LiveGreen, modifier = Modifier.size(18.dp))
-                Spacer(Modifier.width(8.dp))
-                Text("Тренажёр: никакие SMS, платежи, команды автомобилю или сообщения оператору не отправляются.",
-                    color = LiveGreen, fontSize = 11.sp, lineHeight = 15.sp)
-            }
-        }
-        }
-        }
+        DemoNotice()
+        PremiumBrandHeader()
+        if(session.phase in setOf(LivePhase.PHONE,LivePhase.DOCUMENTS,LivePhase.PAYMENT,LivePhase.CONFIRM)) TextButton(onClick={perform(LiveEvent.RESET)}) {Icon(Icons.Outlined.ArrowBack,null);Text("Изменить автомобиль") }
         if (message != null) {
             Surface(color = Color.White, shape = RoundedCornerShape(12.dp)) {
                 Text(message!!, color = LiveInk, fontSize = 12.sp, modifier = Modifier.fillMaxWidth().padding(12.dp))
             }
         }
-        if (session.phase !in setOf(LivePhase.CHOOSE, LivePhase.DRIVING,
-                LivePhase.RETURNING, LivePhase.RETURN, LivePhase.RECEIPT) && car != null) {
+        if (session.phase in setOf(LivePhase.PHONE, LivePhase.PAYMENT, LivePhase.CONFIRM, LivePhase.WALK, LivePhase.READY) && car != null) {
             LiveVehicleCard(car)
         }
         when (session.phase) {
@@ -180,70 +162,20 @@ fun LiveDemoScreen(
                 }
             }
             LivePhase.DOCUMENTS -> {
-                LiveHeader("03", "Автопроверка документов",
-                    "Проверяем учебные образцы паспорта и прав. Реальные документы, камера и внешние базы не используются.")
-                Surface(color = Color.White, shape = RoundedCornerShape(22.dp)) {
-                    Column(Modifier.fillMaxWidth().padding(17.dp),
-                        verticalArrangement = Arrangement.spacedBy(14.dp)) {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Icon(Icons.Outlined.VerifiedUser, null, tint = LiveGreen,
-                                modifier = Modifier.size(27.dp))
-                            Spacer(Modifier.width(10.dp))
-                            Column(Modifier.weight(1f)) {
-                                Text(if (session.documentIssue.isNotEmpty()) "Тестовый отказ"
-                                     else "Идёт автоматическая проверка",
-                                    fontWeight = FontWeight.Bold, fontSize = 16.sp, color = LiveInk)
-                                Text("ДЕМО · без загрузки персональных данных",
-                                    fontSize = 11.sp, color = LiveGray)
-                            }
-                        }
-                        listOf("Паспорт", "Водительское удостоверение").forEach { name ->
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                Icon(if (session.documentIssue.isNotEmpty()) Icons.Outlined.ErrorOutline
-                                     else Icons.Outlined.Badge, null,
-                                    tint = if (session.documentIssue.isNotEmpty())
-                                        Color(0xFFA64A39) else LiveGreen)
-                                Spacer(Modifier.width(10.dp))
-                                Text(name, modifier = Modifier.weight(1f),
-                                    fontSize = 13.sp, color = LiveInk)
-                                if (session.documentIssue.isEmpty())
-                                    CircularProgressIndicator(Modifier.size(17.dp),
-                                        strokeWidth = 2.dp, color = LiveGreen)
-                            }
-                        }
-                        if (session.documentIssue.isNotEmpty()) {
-                            Text("Причина: ${session.documentIssue}. Только учебный отказ.",
-                                fontSize = 12.sp, color = Color(0xFFA64A39))
-                            Button(onClick = { perform(LiveEvent.RETRY_DOCUMENT_CHECK) },
-                                modifier = Modifier.fillMaxWidth(),
-                                shape = RoundedCornerShape(14.dp)) {
-                                Text("Повторить демопроверку")
-                            }
-                        } else {
-                            LinearProgressIndicator(
-                                progress = { ((now - session.passportStartedAt).toFloat() / LIVE_OPERATION_MS)
-                                    .coerceIn(0f, 1f) },
-                                modifier = Modifier.fillMaxWidth().height(5.dp)
-                                    .clip(RoundedCornerShape(4.dp)),
-                                color = LiveGreen, trackColor = LivePale)
+                StageBanner("Автопроверка документов", "Этап 03 / 13 · Проверяем учебные образцы")
+                LiveNote("ДЕМО · без загрузки персональных данных. Используются только образцы; это не OCR/KYC.")
+                DocumentStatusCard("Паспорт", "passport_sample", ((now-session.passportStartedAt).toFloat()/(LIVE_OPERATION_MS*.65f)).coerceIn(0f,1f), session.documentIssue)
+                DocumentStatusCard("Водительское удостоверение", "licence_sample", ((now-session.licenceStartedAt).toFloat()/LIVE_OPERATION_MS).coerceIn(0f,1f), session.documentIssue)
+                Text("Варианты для демонстрации",fontSize=16.sp,fontWeight=FontWeight.Bold,color=LiveInk)
+                Row(horizontalArrangement=Arrangement.spacedBy(6.dp)) {
+                    listOf("Нечитаемый документ","Истёк срок","Неверная категория").forEach { issue ->
+                        OutlinedButton(onClick={perform(LiveEvent.FAIL_DOCUMENT_CHECK,issue)},modifier=Modifier.weight(1f),contentPadding=PaddingValues(6.dp),shape=RoundedCornerShape(14.dp)) {
+                            Text(issue,fontSize=10.sp,lineHeight=13.sp)
                         }
                     }
                 }
-                if (session.documentIssue.isEmpty()) {
-                    Text("Тестовые причины отказа", color = LiveGray, fontSize = 11.sp)
-                    Row(horizontalArrangement = Arrangement.spacedBy(5.dp)) {
-                        listOf("Нечитаемый документ", "Истёк срок", "Неверная категория").forEach { issue ->
-                            OutlinedButton(
-                                onClick = { perform(LiveEvent.FAIL_DOCUMENT_CHECK, issue) },
-                                contentPadding = PaddingValues(horizontal = 7.dp, vertical = 3.dp),
-                                modifier = Modifier.weight(1f),
-                                shape = RoundedCornerShape(12.dp)) {
-                                Text(issue, fontSize = 10.sp, maxLines = 2, lineHeight = 12.sp)
-                            }
-                        }
-                    }
-                }
-                LiveNote("После успешной учебной проверки следующий этап откроется автоматически.")
+                if(session.documentIssue.isNotEmpty()) LiveButton("Повторить демопроверку",Icons.Outlined.Refresh) {perform(LiveEvent.RETRY_DOCUMENT_CHECK)}
+                LiveNote("После успешной проверки следующий этап откроется автоматически.")
             }
             LivePhase.PAYMENT -> {
                 LiveHeader("04", "Способ оплаты", "Учебная банковская карта, проверка подключения и нулевое списание.")
@@ -272,11 +204,15 @@ fun LiveDemoScreen(
                                 label = { Text("$h часа") })
                         }
                     }
-                    LiveMetricRow("Предварительная стоимость", "${session.durationHours * car.hourlyPriceRub} ₽")
+                    LiveMetricRow("Предварительная стоимость", "${demoFare(session,car.hourlyPriceRub,now)} ₽")
                     LiveMetricRow("Залог", "0 ₽")
                     LiveMetricRow("Способ оплаты", "Демо-карта •••• 0000")
                     LiveNote("Для настоящего заказа здесь появятся договор, правила аренды и подтверждение платежа.")
-                    LiveButton("Подтвердить и идти к автомобилю", Icons.Outlined.ArrowForward) { perform(LiveEvent.REQUEST_BOOKING) }
+                    Row(verticalAlignment=Alignment.CenterVertically) {
+                        Checkbox(session.termsAccepted,{perform(LiveEvent.ACCEPT_TERMS,it.toString())})
+                        Text("Принимаю учебные условия. Оплаты и реального договора нет.",fontSize=12.sp,modifier=Modifier.weight(1f))
+                    }
+                    LiveButton("Подтвердить и идти к автомобилю", Icons.Outlined.ArrowForward, enabled=session.termsAccepted) { perform(LiveEvent.REQUEST_BOOKING) }
                 }
             }
             LivePhase.APPROVAL -> {
@@ -291,74 +227,31 @@ fun LiveDemoScreen(
                     modifier = Modifier.fillMaxWidth(), color = LiveGreen)
             }
             LivePhase.INSPECT -> {
-                LiveHeader("07", "Осмотр перед поездкой",
-                    "Проверьте 4 стороны грузовика. В деморежиме фото имитируются и не загружаются.")
-                Surface(color = Color.White, shape = RoundedCornerShape(22.dp)) {
-                    Column(Modifier.fillMaxWidth().padding(16.dp),
-                        verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Icon(Icons.Outlined.PhotoCamera, null, tint = LiveGreen,
-                                modifier = Modifier.size(25.dp))
-                            Spacer(Modifier.width(10.dp))
-                            Column(Modifier.weight(1f)) {
-                                Text("Фото до поездки", fontWeight = FontWeight.Bold,
-                                    fontSize = 17.sp, color = LiveInk)
-                                Text("${session.inspected.size} из 4 выполнено · только ДЕМО",
-                                    fontSize = 11.sp, color = LiveGray)
-                            }
-                        }
-                        LinearProgressIndicator(
-                            progress = { session.inspected.size / 4f },
-                            modifier = Modifier.fillMaxWidth().height(6.dp)
-                                .clip(RoundedCornerShape(6.dp)),
-                            color = LiveGreen, trackColor = LivePale)
-                        listOf("Спереди", "Сзади", "Слева", "Справа").chunked(2).forEach { rowAngles ->
-                            Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                                rowAngles.forEach { angle ->
-                                    val captured = angle in session.inspected
-                                    Surface(
-                                        modifier = Modifier.weight(1f).height(112.dp),
-                                        onClick = { if (!captured) perform(LiveEvent.CAPTURE_ANGLE, angle) },
-                                        color = if (captured) LivePale else PremiumTheme.Paper,
-                                        shape = RoundedCornerShape(17.dp)) {
-                                        Column(
-                                            Modifier.fillMaxSize().padding(12.dp),
-                                            horizontalAlignment = Alignment.CenterHorizontally,
-                                            verticalArrangement = Arrangement.Center) {
-                                            Icon(if (captured) Icons.Outlined.CheckCircle
-                                                 else Icons.Outlined.AddAPhoto, null,
-                                                tint = LiveGreen, modifier = Modifier.size(29.dp))
-                                            Spacer(Modifier.height(9.dp))
-                                            Text(angle, fontSize = 13.sp, color = LiveInk,
-                                                fontWeight = FontWeight.SemiBold)
-                                            Text(if (captured) "Учебный снимок готов" else "Добавить демофото",
-                                                fontSize = 10.sp, color = LiveGray)
-                                        }
-                                    }
-                                }
-                            }
-                        }
+                Surface(color=LivePale,shape=RoundedCornerShape(21.dp)) {
+                    Column(Modifier.padding(16.dp)) {
+                        Text("Осмотр перед поездкой",fontSize=24.sp,fontWeight=FontWeight.ExtraBold,color=LiveInk)
+                        Text("Проверьте автомобиль. Фотографии сгенерированы, осмотр учебный.",fontSize=12.sp,color=LiveGray)
                     }
                 }
-                Surface(color = LivePale, shape = RoundedCornerShape(16.dp)) {
-                    Row(Modifier.fillMaxWidth().padding(13.dp),
-                        verticalAlignment = Alignment.CenterVertically) {
-                        Icon(Icons.Outlined.Info, null, tint = LiveGreen)
-                        Spacer(Modifier.width(9.dp))
-                        Text("Проверьте кузов, колёса, салон и грузовой отсек перед началом поездки.",
-                            fontSize = 12.sp, lineHeight = 17.sp, color = LiveInk)
-                    }
+                Row {Text("${session.inspected.size} из 4 выполнено",modifier=Modifier.weight(1f),fontWeight=FontWeight.Bold);Text("${session.inspected.size*25}%")}
+                Row(horizontalArrangement=Arrangement.spacedBy(5.dp)) {repeat(4) {n->Box(Modifier.weight(1f).height(8.dp).clip(RoundedCornerShape(10.dp)).background(if(n<session.inspected.size) Color(0xFF009A50) else PremiumTheme.Stroke))}}
+                listOf("Спереди" to "front","Сзади" to "rear","Слева" to "left","Справа" to "right").chunked(2).forEach { row ->
+                    Row(horizontalArrangement=Arrangement.spacedBy(10.dp)) {row.forEach {(angle,view)->
+                        val captured=angle in session.inspected
+                        Card(onClick={previewAngle=angle},modifier=Modifier.weight(1f),shape=RoundedCornerShape(17.dp),colors=CardDefaults.cardColors(containerColor=if(captured) LiveGreen else Color.White)) {
+                            Box {if(car!=null) TruckArtwork(car,Modifier.fillMaxWidth().height(120.dp),view)
+                                Icon(if(captured) Icons.Outlined.CheckCircle else Icons.Outlined.RadioButtonUnchecked,angle, tint=if(captured) Color(0xFF00A35D) else LiveGray,modifier=Modifier.align(Alignment.TopEnd).padding(6.dp).background(Color.White,RoundedCornerShape(30.dp)).size(30.dp))}
+                            Row(Modifier.fillMaxWidth().padding(11.dp),verticalAlignment=Alignment.CenterVertically) {
+                                Icon(Icons.Outlined.PhotoCamera,null,tint=if(captured) Color.White else LiveGreen)
+                                Spacer(Modifier.width(10.dp))
+                                Column(Modifier.weight(1f)) {Text(angle,fontWeight=FontWeight.Bold,color=if(captured) Color.White else LiveInk);Text(if(captured) "Фото добавлено" else "Добавьте демофото",fontSize=10.sp,color=if(captured) Color.White else LiveGray)}
+                                Icon(Icons.Outlined.ChevronRight,null,tint=if(captured) Color.White else LiveGray)
+                            }
+                        }
+                    }}
                 }
-                OutlinedButton(onClick = { perform(LiveEvent.REPORT_DAMAGE) },
-                    modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(17.dp)) {
-                    Text(if (session.damageRecorded)
-                        "Повреждение сохранено в учебном акте"
-                        else "Нашёл повреждение — добавить в акт", fontSize = 13.sp)
-                }
-                LiveButton("Подтвердить осмотр и открыть двери",
-                    Icons.Outlined.LockOpen, enabled = session.inspected.size == 4) {
-                    perform(LiveEvent.UNLOCK)
-                }
+                LiveNote("На что обратить внимание: кузов, колёса, салон и грузовой отсек. Проверьте чистоту и оборудование.")
+                OutlinedButton(onClick={reportKind="damage"},modifier=Modifier.fillMaxWidth().heightIn(min=48.dp),shape=RoundedCornerShape(16.dp)) {Icon(Icons.Outlined.WarningAmber,null);Text(if(session.damageRecorded) "Повреждение записано · добавить ещё" else "Сообщить о повреждении")}
             }
             LivePhase.UNLOCK -> {
                 LiveHeader("08", "Открываем двери", "В настоящем каршеринге ждём подтверждения телематического блока автомобиля.")
@@ -373,13 +266,13 @@ fun LiveDemoScreen(
                 LiveButton("Начать поездку", Icons.Outlined.PlayArrow) { perform(LiveEvent.START_DRIVE) }
             }
             LivePhase.DRIVING -> {
-                PremiumTripDashboard(session, car, now) { perform(it) }
+                PremiumTripDashboard(session, car, now) { if(it==LiveEvent.REPORT_INCIDENT) reportKind="incident" else perform(it) }
                 if (session.assistance) {
                     LiveNote("Учебная поддержка: «Здравствуйте! Мы видим вашу тестовую поездку. Какой у вас вопрос?»")
                     if (sentSupport != null) LiveNote("Вы: $sentSupport\nДемо-оператор: «Спасибо. В настоящем сервисе с вами свяжется сотрудник»")
                     OutlinedTextField(supportText, onValueChange = { supportText = it.take(140) },
                         modifier = Modifier.fillMaxWidth(), label = { Text("Сообщение") })
-                    OutlinedButton(onClick = { sentSupport = supportText; supportText = "" },
+                    OutlinedButton(onClick = { perform(LiveEvent.ASK_SUPPORT, supportText); sentSupport = supportText; supportText = "" },
                         enabled = supportText.isNotBlank()) { Text("Отправить в демо-чат") }
                 }
                 if (session.incident) LiveNote("Демо-инцидент внесён в журнал. Никому не отправлен.")
@@ -409,6 +302,11 @@ fun LiveDemoScreen(
                         }
                     }
                 }
+                Row(verticalAlignment=Alignment.CenterVertically) {
+                    Checkbox(session.returnConditionChecked,{perform(LiveEvent.CHECK_RETURN_CONDITION,it.toString())})
+                    Text("Кузов и салон осмотрены, вещи забраны (демо)",fontSize=12.sp,modifier=Modifier.weight(1f))
+                }
+                if(session.returnPhotoAt>0L && car!=null) TruckArtwork(car,Modifier.fillMaxWidth().height(120.dp),"rear")
                 val photoDone = session.returnPhotoAt > 0L && now >= session.returnPhotoAt + LIVE_OPERATION_MS
                 val lockDone = session.lockingAt > 0L && now >= session.lockingAt + LIVE_OPERATION_MS
                 Surface(color = Color.White, shape = RoundedCornerShape(21.dp)) {
@@ -418,9 +316,10 @@ fun LiveDemoScreen(
                             fontWeight = FontWeight.Bold, fontSize = 17.sp)
                         PremiumReturnStep(1, "Фотоосмотр автомобиля",
                             session.returnPhotoAt != 0L)
-                        PremiumReturnStep(2, "Закрытие дверей",
+                        PremiumReturnStep(2, "Кузов и салон осмотрены",session.returnConditionChecked)
+                        PremiumReturnStep(3, "Закрытие дверей",
                             lockDone)
-                        PremiumReturnStep(3, "Завершение аренды", false)
+                        PremiumReturnStep(4, "Завершение аренды", false)
                     }
                 }
                 if (session.returnPhotoAt == 0L) {
@@ -436,19 +335,7 @@ fun LiveDemoScreen(
                 else LiveNote("Шаг 3 из 3 · Двери закрыты. Подтвердите завершение и получите чек.")
             }
             LivePhase.RECEIPT -> {
-                LiveHeader("13", "Поездка завершена", "Пример электронного отчёта с реальными показаниями таймера симуляции.")
-                Surface(color = LivePale, shape = RoundedCornerShape(21.dp)) {
-                    Row(Modifier.fillMaxWidth().padding(17.dp), verticalAlignment = Alignment.CenterVertically) {
-                        Icon(Icons.Outlined.CheckCircle, null, tint = LiveGreen,
-                            modifier = Modifier.size(39.dp))
-                        Spacer(Modifier.width(13.dp))
-                        Column {
-                            Text("Поездка завершена", color = LiveInk,
-                                fontSize = 20.sp, fontWeight = FontWeight.ExtraBold)
-                            Text("Все операции были учебными", fontSize = 11.sp, color = LiveGray)
-                        }
-                    }
-                }
+                StageBanner("Поездка завершена", "Спасибо за учебную аренду!")
                 Surface(color = Color.White, shape = RoundedCornerShape(23.dp),
                     shadowElevation = 2.dp) {
                     Column(Modifier.fillMaxWidth().padding(18.dp), verticalArrangement = Arrangement.spacedBy(13.dp)) {
@@ -463,6 +350,7 @@ fun LiveDemoScreen(
                         HorizontalDivider(color = PremiumTheme.Stroke)
                         LiveMetricRow("Грузовик", car?.name ?: "Автомобиль")
                         LiveMetricRow("Тариф", "${session.durationHours + session.extraHours} ч")
+                        LiveMetricRow("Время в движении", "${elapsedRideSeconds(session,now)} сек (демо)")
                         LiveMetricRow("Пройдено", "${String.format(Locale.US, "%.2f", demoDistanceKm(session, now))} км (демо)")
                         HorizontalDivider(color = PremiumTheme.Stroke)
                         LiveMetricRow("Стоимость аренды", "${demoFare(session, car?.hourlyPriceRub ?: 650, now)} ₽")
@@ -488,7 +376,7 @@ fun LiveDemoScreen(
                         }
                     }
                 }
-                LiveButton("Начать новую учебную поездку", Icons.Outlined.Refresh) { perform(LiveEvent.RESET) }
+                if(selectedBookingId==null) LiveButton("Начать новую учебную поездку", Icons.Outlined.Refresh) { perform(LiveEvent.RESET) }
                 OutlinedButton(onClick = onBackToMap,
                     shape = RoundedCornerShape(17.dp),
                     modifier = Modifier.fillMaxWidth().height(50.dp)) {
@@ -503,7 +391,7 @@ fun LiveDemoScreen(
         }
         Spacer(Modifier.height(8.dp))
     }
-    if (session.phase in setOf(LivePhase.DRIVING, LivePhase.RETURNING, LivePhase.RETURN)) {
+    if (session.phase in setOf(LivePhase.INSPECT, LivePhase.DRIVING, LivePhase.RETURNING, LivePhase.RETURN)) {
         Surface(
             modifier = Modifier.fillMaxWidth().align(Alignment.BottomCenter),
             color = Color.White, shadowElevation = 11.dp, tonalElevation = 2.dp
@@ -513,6 +401,7 @@ fun LiveDemoScreen(
                 val photoReady = session.returnPhotoAt > 0L && now >= session.returnPhotoAt + LIVE_OPERATION_MS
                 val lockReady = session.lockingAt > 0L && now >= session.lockingAt + LIVE_OPERATION_MS
                 val target = when {
+                    session.phase == LivePhase.INSPECT -> "Подтвердить осмотр и открыть двери"
                     session.phase == LivePhase.DRIVING -> "Завершить поездку"
                     session.phase == LivePhase.RETURNING -> "Направляемся на стоянку…"
                     session.returnPhotoAt == 0L -> "Сделать фото при возврате"
@@ -521,12 +410,13 @@ fun LiveDemoScreen(
                     !lockReady -> "Проверяем закрытие…"
                     else -> "Завершить аренду • чек"
                 }
-                val enabled = session.phase == LivePhase.DRIVING ||
+                val enabled = (session.phase == LivePhase.INSPECT && session.inspected.size == 4) || session.phase == LivePhase.DRIVING ||
                     (session.phase == LivePhase.RETURN && (session.returnPhotoAt == 0L || photoReady &&
-                        (session.lockingAt == 0L || lockReady)))
+                        (session.lockingAt == 0L && session.returnConditionChecked || lockReady)))
                 Button(
                     onClick = {
                         when {
+                            session.phase == LivePhase.INSPECT -> perform(LiveEvent.UNLOCK)
                             session.phase == LivePhase.DRIVING -> showReturnConfirm = true
                             session.phase == LivePhase.RETURN && session.returnPhotoAt == 0L -> perform(LiveEvent.TAKE_RETURN_PHOTO)
                             session.phase == LivePhase.RETURN && session.lockingAt == 0L -> perform(LiveEvent.LOCK_DOORS)
@@ -551,6 +441,15 @@ fun LiveDemoScreen(
         }
     }
     }
+    if(previewAngle!=null && car!=null) AlertDialog(onDismissRequest={previewAngle=null}, title={Text(previewAngle!!)},text={
+        val view=when(previewAngle) {"Спереди"->"front";"Сзади"->"rear";"Слева"->"left";else->"right"}
+        Column {TruckArtwork(car,Modifier.fillMaxWidth().height(190.dp),view);Text("Сгенерированное демофото. Настоящая камера не используется.",fontSize=12.sp)}
+    },confirmButton={TextButton(onClick={if(previewAngle !in session.inspected) perform(LiveEvent.CAPTURE_ANGLE,previewAngle!!);previewAngle=null}) {Text(if(previewAngle in session.inspected) "Готово" else "Добавить демофото")}})
+    if(reportKind!=null) AlertDialog(onDismissRequest={reportKind=null},title={Text(if(reportKind=="damage") "Повреждение · демо" else "Происшествие · демо")},text={Column {
+        if(car!=null) TruckArtwork(car,Modifier.fillMaxWidth().height(120.dp),"left")
+        OutlinedTextField(reportText,{reportText=it.take(240)},label={Text("Опишите ситуацию")},modifier=Modifier.fillMaxWidth())
+        Text("Учебная запись с иллюстрацией сохранится в журнале поездки. Никуда не отправляется.",fontSize=11.sp)
+    }},confirmButton={TextButton(enabled=reportText.isNotBlank(),onClick={perform(if(reportKind=="damage") LiveEvent.REPORT_DAMAGE else LiveEvent.REPORT_INCIDENT,reportText);reportText="";reportKind=null}) {Text("Сохранить в журнал")}})
     if (showReturnConfirm) {
         AlertDialog(
             onDismissRequest = { showReturnConfirm = false },
@@ -702,7 +601,8 @@ fun LiveDemoScreen(
         }
     }
     DisposableEffect(map) { map.onResume(); onDispose { map.onPause(); map.onDetach() } }
-    AndroidView(factory = { map }, modifier = modifier.clip(RoundedCornerShape(20.dp)),
+    Box(modifier.clip(RoundedCornerShape(20.dp))) {
+    AndroidView(factory = { map }, modifier = Modifier.fillMaxSize(),
         update = { view ->
             val f = fraction.coerceIn(0f, 1f)
             val segment = (f * (route.size - 1)).coerceAtMost((route.size - 1).toFloat())
@@ -717,8 +617,13 @@ fun LiveDemoScreen(
             moving.title = if (mode == "пешком") "Учебный пешеход" else "Учебный грузовик"
             view.invalidate()
         })
-    Text("Учебная траектория • движение маркера не соответствует GPS или дорогам",
-        color = LiveGray, fontSize = 10.sp)
+    Column(Modifier.align(Alignment.BottomStart).padding(start=9.dp,bottom=24.dp)) {
+        FilledIconButton(onClick={map.controller.zoomIn()},colors=IconButtonDefaults.filledIconButtonColors(containerColor=Color.White,contentColor=LiveGreen)) {Icon(Icons.Outlined.Add,"Приблизить маршрут")}
+        FilledIconButton(onClick={map.controller.zoomOut()},colors=IconButtonDefaults.filledIconButtonColors(containerColor=Color.White,contentColor=LiveGreen)) {Icon(Icons.Outlined.Remove,"Отдалить маршрут")}
+    }
+    FilledIconButton(onClick={map.controller.animateTo(route[centerIndexForRoute(route.size)]);map.controller.setZoom(15.0)},modifier=Modifier.align(Alignment.BottomEnd).padding(end=9.dp,bottom=24.dp),colors=IconButtonDefaults.filledIconButtonColors(containerColor=Color.White,contentColor=LiveGreen)) {Icon(Icons.Outlined.MyLocation,"Центр учебного маршрута")}
+    Text("Учебная траектория · не GPS · тайлы OSM требуют интернет",modifier=Modifier.align(Alignment.BottomCenter).background(Color.White.copy(alpha=.9f)).padding(4.dp),color=LiveGray,fontSize=8.sp)
+    }
 }
 
 @Composable
@@ -736,5 +641,21 @@ private fun PremiumReturnStep(number: Int, label: String, completed: Boolean) {
         }
         Text(label, fontSize = 13.sp, color = LiveInk,
             fontWeight = if (completed) FontWeight.SemiBold else FontWeight.Normal)
+    }
+}
+
+@Composable private fun DocumentStatusCard(name:String,asset:String,progress:Float,issue:String) {
+    Surface(color=Color.White,shape=RoundedCornerShape(20.dp),shadowElevation=1.dp) {
+        Row(Modifier.fillMaxWidth().padding(9.dp),verticalAlignment=Alignment.CenterVertically) {
+            AsyncImage("file:///android_asset/premium/$asset.webp","Учебный образец: $name",contentScale=ContentScale.Fit,modifier=Modifier.size(105.dp,125.dp).clip(RoundedCornerShape(15.dp)).background(LivePale))
+            Spacer(Modifier.width(12.dp))
+            Column(Modifier.weight(1f),verticalArrangement=Arrangement.spacedBy(8.dp)) {
+                Text(name,fontSize=17.sp,fontWeight=FontWeight.Bold,color=LiveInk)
+                Text(if(issue.isNotEmpty()) issue else if(progress>=1f) "✓ Проверено · демо" else "Проверяем образец…",fontSize=11.sp,color=if(issue.isEmpty()) LiveGreen else Color(0xFFB3261E))
+                LinearProgressIndicator(progress={progress},modifier=Modifier.fillMaxWidth().height(7.dp).clip(RoundedCornerShape(8.dp)),color=Color(0xFF009C50),trackColor=PremiumTheme.Stroke)
+                Text("${(progress*100).toInt()}%",fontWeight=FontWeight.Bold,color=LiveInk)
+                Text("✓ Данные образца найдены\n✓ Категория и срок действия",fontSize=10.sp,lineHeight=16.sp,color=LiveGray)
+            }
+        }
     }
 }

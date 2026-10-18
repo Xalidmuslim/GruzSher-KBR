@@ -31,27 +31,9 @@ fun PremiumTripDashboard(
     val fare = demoFare(session,car?.hourlyPriceRub ?: 650,now)
     val parked = session.pauseStartedAt != 0L
 
-    // Compact dashboard instead of 14-step tutorial header above the map.
-    Surface(color = PremiumTheme.GreenDark, shape = RoundedCornerShape(24.dp)) {
-        Row(Modifier.fillMaxWidth().padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
-            Surface(color = Color(0xFF1B725B), shape = RoundedCornerShape(13.dp)) {
-                Icon(Icons.Outlined.LocalShipping, null, tint = Color.White,
-                    modifier = Modifier.padding(9.dp).size(23.dp))
-            }
-            Spacer(Modifier.width(12.dp))
-            Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(3.dp)) {
-                Text(if(parked) "● РЕЖИМ ОЖИДАНИЯ" else "● ПОЕЗДКА ИДЁТ",
-                    fontSize = 10.sp, fontWeight = FontWeight.Bold,
-                    color = Color(0xFF97EEC7))
-                Text(car?.name ?: "Грузовик", fontSize = 22.sp,
-                    fontWeight = FontWeight.ExtraBold, color = Color.White)
-                Text("Демоаренда · управление виртуальное",
-                    fontSize = 10.sp, color = Color.White.copy(alpha = .74f))
-            }
-        }
-    }
+    StageBanner(if(parked) "Ожидание на стоянке" else "Движение к стоянке", "Учебный маршрут · Нальчик")
     Box(
-        Modifier.fillMaxWidth().height(232.dp).clip(RoundedCornerShape(24.dp))
+        Modifier.fillMaxWidth().height(190.dp).clip(RoundedCornerShape(24.dp))
             .background(PremiumTheme.Mint)
     ) {
         LiveRouteMap(car, fraction, "грузовик", Modifier.fillMaxSize())
@@ -147,12 +129,11 @@ private fun TripAction(
     Surface(onClick = onClick, modifier = modifier,
         shape = RoundedCornerShape(17.dp), color = Color.White,
         shadowElevation = 1.dp) {
-        Column(Modifier.fillMaxWidth().padding(vertical = 10.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(6.dp)) {
-            Icon(icon, null, tint = PremiumTheme.Green, modifier = Modifier.size(22.dp))
-            Text(label, fontSize = 11.sp, color = PremiumTheme.Text,
-                fontWeight = FontWeight.SemiBold, maxLines = 1)
+        Row(Modifier.fillMaxWidth().padding(12.dp),verticalAlignment=Alignment.CenterVertically) {
+            Surface(color=PremiumTheme.Mint,shape=RoundedCornerShape(30.dp)) {Icon(icon,null,tint=PremiumTheme.Green,modifier=Modifier.padding(9.dp).size(26.dp))}
+            Spacer(Modifier.width(10.dp))
+            Text(label,fontSize=13.sp,color=PremiumTheme.Text,fontWeight=FontWeight.Bold,modifier=Modifier.weight(1f))
+            Icon(Icons.Outlined.ChevronRight,null,tint=PremiumTheme.Muted,modifier=Modifier.size(18.dp))
         }
     }
 }

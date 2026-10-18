@@ -18,117 +18,101 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
 
-/** A composed design system: visual mockups are references, never cropped backgrounds. */
 object PremiumTheme {
     val Green = Color(0xFF07523E)
-    val GreenDark = Color(0xFF063D30)
-    val Text = Color(0xFF102822)
+    val GreenDark = Color(0xFF003C2E)
+    val Text = Color(0xFF080E20)
     val Paper = Color(0xFFFBFAF6)
-    val Mint = Color(0xFFE6F5ED)
-    val Muted = Color(0xFF6F7E83)
-    val Stroke = Color(0xFFE9EBE7)
-    val Lavender = Color(0xFFEDE8FA)
+    val Mint = Color(0xFFEAF6EF)
+    val Muted = Color(0xFF61708F)
+    val Stroke = Color(0xFFE5E8ED)
+    val Lavender = Color(0xFFF0E8FF)
+    val Purple = Color(0xFF7216FF)
     val Shape = RoundedCornerShape(22.dp)
 }
 
-/** Use only matching media. The Largus has no verified photograph in the repository. */
-fun localTruckArtwork(vehicle: Vehicle): String? = when (vehicle.id) {
-    "gazelle-next" -> "file:///android_asset/truck_g01.webp"
-    "ford-transit" -> "file:///android_asset/truck_g02.webp"
-    else -> vehicle.imageUrl.takeIf { it.startsWith("https://") }
+fun artworkSource(vehicle: Vehicle, view: String = "hero"): String {
+    val model = when(vehicle.id) { "gazelle-next" -> "gazelle"; "ford-transit" -> "transit"; else -> "largus" }
+    return "file:///android_asset/premium/${model}_${view}.webp"
+}
+fun localTruckArtwork(vehicle: Vehicle): String = artworkSource(vehicle)
+
+@Composable fun TruckArtwork(vehicle: Vehicle, modifier: Modifier = Modifier, view: String = "hero") {
+    AsyncImage(model = artworkSource(vehicle, view), contentDescription = "${vehicle.name} · $view · сгенерированное демофото",
+        contentScale = ContentScale.Crop, modifier = modifier.clip(RoundedCornerShape(14.dp)).background(PremiumTheme.Mint))
 }
 
-@Composable
-fun TruckArtwork(vehicle: Vehicle, modifier: Modifier = Modifier) {
-    val source = localTruckArtwork(vehicle)
-    Box(modifier.clip(RoundedCornerShape(17.dp)).background(PremiumTheme.Mint),
-        contentAlignment = Alignment.Center) {
-        if (source != null) {
-            AsyncImage(
-                model = source,
-                contentDescription = "Изображение: ${vehicle.name}",
-                contentScale = ContentScale.Fit,
-                modifier = Modifier.fillMaxSize().padding(3.dp)
-            )
-        } else {
-            Column(horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                Icon(Icons.Outlined.LocalShipping, null, tint = PremiumTheme.Green, modifier = Modifier.size(47.dp))
-                Text("Фото уточняется", fontSize = 10.sp, color = PremiumTheme.Muted)
-            }
+@Composable fun DemoNotice(onClick: (() -> Unit)? = null) {
+    val content: @Composable () -> Unit = {
+        Row(Modifier.fillMaxWidth().padding(horizontal = 13.dp, vertical = 6.dp), verticalAlignment = Alignment.CenterVertically) {
+            Icon(Icons.Outlined.Info, null, Modifier.size(18.dp), tint = PremiumTheme.GreenDark)
+            Spacer(Modifier.width(7.dp))
+            Text("ОФЛАЙН-СИМУЛЯЦИЯ", fontSize = 10.sp, fontWeight = FontWeight.Bold, color = PremiumTheme.GreenDark)
+            Text(" · Без реальной брони и оплаты", fontSize = 9.sp, color = PremiumTheme.GreenDark, modifier = Modifier.weight(1f))
+            if(onClick != null) Icon(Icons.Outlined.ChevronRight, "О деморежиме", Modifier.size(18.dp))
         }
     }
+    if(onClick == null) Surface(shape = RoundedCornerShape(24.dp), color = PremiumTheme.Mint, content = content)
+    else Surface(onClick = onClick, shape = RoundedCornerShape(24.dp), color = PremiumTheme.Mint, content = content)
 }
 
-@Composable
-fun PremiumBrandHeader(modifier: Modifier = Modifier) {
+@Composable fun PremiumBrandHeader(modifier: Modifier = Modifier) {
     Row(modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-        Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(3.dp)) {
-            Text("ГРУЗШЕР", fontSize = 30.sp, fontWeight = FontWeight.Black,
-                letterSpacing = (-0.5).sp, color = PremiumTheme.GreenDark)
+        Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+            Text("ГРУЗШЕР", fontSize = 32.sp, fontWeight = FontWeight.Black, letterSpacing = (-1).sp, color = PremiumTheme.GreenDark)
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Icon(Icons.Outlined.LocationOn, null, tint = PremiumTheme.Green, modifier = Modifier.size(16.dp))
-                Text("Нальчик · Кабардино-Балкария",
-                    fontSize = 11.sp, maxLines = 1, color = PremiumTheme.Muted)
+                Icon(Icons.Outlined.LocationOn, null, tint = PremiumTheme.GreenDark, modifier = Modifier.size(16.dp))
+                Text("Нальчик · Кабардино-Балкария", fontSize = 11.sp, color = PremiumTheme.Muted)
             }
         }
         Surface(shape = RoundedCornerShape(50.dp), color = PremiumTheme.Mint) {
-            Row(Modifier.padding(horizontal = 10.dp, vertical = 9.dp),
-                verticalAlignment = Alignment.CenterVertically) {
-                Icon(Icons.Outlined.VerifiedUser, null, tint = PremiumTheme.Green,
-                    modifier = Modifier.size(16.dp))
-                Spacer(Modifier.width(5.dp))
-                Text("Без залога", fontSize = 11.sp, fontWeight = FontWeight.SemiBold,
-                    color = PremiumTheme.GreenDark)
+            Row(Modifier.padding(horizontal = 11.dp, vertical = 11.dp), verticalAlignment = Alignment.CenterVertically) {
+                Icon(Icons.Outlined.VerifiedUser, null, tint = PremiumTheme.GreenDark, modifier = Modifier.size(20.dp))
+                Spacer(Modifier.width(6.dp))
+                Text("Без залога", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = PremiumTheme.GreenDark)
             }
         }
     }
 }
 
-@Composable
-fun PremiumDemoBanner(
-    car: Vehicle?,
-    modifier: Modifier = Modifier,
-    onClick: () -> Unit,
-) {
-    Card(onClick = onClick, modifier = modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(23.dp),
-        colors = CardDefaults.cardColors(containerColor = PremiumTheme.GreenDark)) {
-        Box(Modifier.fillMaxWidth().height(144.dp).background(
-            Brush.horizontalGradient(listOf(PremiumTheme.GreenDark, PremiumTheme.Green, Color(0xFF287260))))) {
-            Column(Modifier.fillMaxHeight().fillMaxWidth(0.59f)
-                .padding(start = 17.dp, top = 19.dp, bottom = 16.dp),
-                verticalArrangement = Arrangement.SpaceBetween) {
-                Surface(shape = RoundedCornerShape(16.dp), color = Color.White.copy(alpha = 0.15f)) {
-                    Icon(Icons.Outlined.PlayArrow, null, tint = Color.White,
-                        modifier = Modifier.padding(7.dp).size(22.dp))
+@Composable fun PremiumDemoBanner(car: Vehicle?, modifier: Modifier = Modifier, onClick: () -> Unit) {
+    Card(onClick = onClick, modifier = modifier.fillMaxWidth(), shape = RoundedCornerShape(19.dp)) {
+        Box(Modifier.fillMaxWidth().height(100.dp).background(PremiumTheme.GreenDark)) {
+            AsyncImage("file:///android_asset/premium/live_banner.webp", null, contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize())
+            Row(Modifier.fillMaxSize().background(Brush.horizontalGradient(listOf(PremiumTheme.GreenDark.copy(alpha=.7f), Color.Transparent))).padding(14.dp), verticalAlignment = Alignment.CenterVertically) {
+                Surface(shape = RoundedCornerShape(50.dp), color = Color(0xFF008363)) {
+                    Icon(Icons.Outlined.PlayArrow, null, tint=Color.White, modifier=Modifier.padding(11.dp).size(28.dp))
                 }
-                Text("LIVE Демо аренды", color = Color.White,
-                    fontSize = 17.sp, fontWeight = FontWeight.ExtraBold, lineHeight = 20.sp)
-                Text("Бронь, осмотр, поездка и возврат",
-                    fontSize = 10.sp, lineHeight = 13.sp,
-                    color = Color.White.copy(alpha = .9f))
-            }
-            if (car != null) {
-                TruckArtwork(car,
-                    Modifier.align(Alignment.CenterEnd).padding(end = 12.dp).size(128.dp, 102.dp))
-            } else {
-                Icon(Icons.Outlined.LocalShipping, null, tint = Color.White.copy(alpha = 0.8f),
-                    modifier = Modifier.align(Alignment.CenterEnd).padding(end = 20.dp).size(83.dp))
+                Spacer(Modifier.width(12.dp))
+                Column(Modifier.weight(1f)) {
+                    Text("LIVE Демо аренды", color=Color.White, fontWeight=FontWeight.ExtraBold, fontSize=18.sp)
+                    Text("Все этапы аренды\nот выбора до чека", color=Color.White, fontSize=11.sp, lineHeight=15.sp)
+                }
+                Icon(Icons.Outlined.ChevronRight, null, tint=Color.White)
             }
         }
     }
 }
 
-@Composable
-fun PremiumFeature(value: String, icon: androidx.compose.ui.graphics.vector.ImageVector,
-    modifier: Modifier = Modifier) {
+@Composable fun StageBanner(title: String, subtitle: String) {
+    Box(Modifier.fillMaxWidth().height(112.dp).clip(RoundedCornerShape(20.dp)).background(PremiumTheme.GreenDark)) {
+        AsyncImage("file:///android_asset/premium/live_banner.webp", null, contentScale=ContentScale.Crop, modifier=Modifier.fillMaxSize())
+        Column(Modifier.fillMaxSize().background(Brush.horizontalGradient(listOf(PremiumTheme.GreenDark.copy(alpha=.9f), Color.Transparent))).padding(17.dp), verticalArrangement=Arrangement.Center) {
+            Text("● LIVE Поездка · ДЕМО", color=Color.White, fontSize=11.sp)
+            Spacer(Modifier.height(6.dp))
+            Text(title, color=Color.White, fontSize=24.sp, lineHeight=27.sp, fontWeight=FontWeight.ExtraBold, modifier=Modifier.fillMaxWidth(.72f))
+            Spacer(Modifier.height(5.dp))
+            Text(subtitle, color=Color.White, fontSize=11.sp)
+        }
+    }
+}
+
+@Composable fun PremiumFeature(value: String, icon: androidx.compose.ui.graphics.vector.ImageVector, modifier: Modifier = Modifier) {
     Surface(modifier, shape = RoundedCornerShape(17.dp), color = PremiumTheme.Mint) {
-        Row(Modifier.padding(horizontal = 11.dp, vertical = 12.dp),
-            verticalAlignment = Alignment.CenterVertically) {
-            Icon(icon, null, tint = PremiumTheme.Green, modifier = Modifier.size(18.dp))
+        Row(Modifier.padding(12.dp), verticalAlignment=Alignment.CenterVertically) {
+            Icon(icon, null, tint=PremiumTheme.Green, modifier=Modifier.size(22.dp))
             Spacer(Modifier.width(8.dp))
-            Text(value, color = PremiumTheme.Text, fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
+            Text(value, color=PremiumTheme.Text, fontSize=12.sp, fontWeight=FontWeight.SemiBold)
         }
     }
 }

@@ -1,0 +1,76 @@
+{
+  "assets": [
+    {
+      "view": "hero",
+      "prompt": "Create one original premium automotive photograph, landscape 3:2 ratio. A pristine white 2022 Ford Transit high-roof long-wheelbase cargo PANEL VAN, black plastic bumpers and grille, steel wheels, no cargo box or tarpaulin. Accurate Ford Transit vehicle silhouette and details, explicitly NOT a GAZelle. Front-left three-quarter hero view, whole vehicle fully inside frame, vehicle fills 75% width, camera at headlight height, doors closed. Parked on clean paved parking apron in a sunny Caucasus mountain valley, green foothills and distant layered mountains, natural late-morning sunlight, restrained warm editorial color grading, soft blue sky, photographic realism, realistic tires and shadows, no people. Blank unmarked license plate, no readable words, no interface, no watermarks, no graphic overlays. Professional vehicle rental listing photography.",
+      "tool": "image_gen.imagegen",
+      "source_path": "/workspace/generated_images/exec-75316bc6-6cc1-4889-b12a-5dc1cd8da5e6.png",
+      "original_path": "/workspace/gruzsher-generated/transit/transit_hero.png",
+      "output_path": "/workspace/GruzSher-KBR/android/app/src/main/assets/premium/transit_hero.webp",
+      "generated": true,
+      "width": 1536,
+      "height": 1024,
+      "bytes": 299068
+    },
+    {
+      "view": "front",
+      "prompt": "Create one original premium automotive photograph, landscape 3:2 ratio. A pristine white 2022 Ford Transit high-roof long-wheelbase cargo PANEL VAN, black plastic bumpers and grille, silver steel wheels, no cargo box or tarpaulin. Accurate Ford Transit vehicle silhouette and details, explicitly NOT a GAZelle. Perfect straight-on front view, symmetrically centered, both mirrors visible equally, whole van from roof to tires fully inside frame. Camera at headlight height, parked on clean paved parking apron in sunny Caucasus mountain valley, green foothills and distant layered mountains, natural late-morning sunlight, restrained warm editorial color grading, soft blue sky, photographic realism, realistic tires and shadows, no people. Blank unmarked license plate, no readable words, no interface, no watermarks, no graphic overlays. Professional vehicle rental listing photography.",
+      "tool": "image_gen.imagegen",
+      "source_path": "/workspace/generated_images/exec-757dd38f-e915-4cba-95ac-7bb073082c45.png",
+      "original_path": "/workspace/gruzsher-generated/transit/transit_front.png",
+      "output_path": "/workspace/GruzSher-KBR/android/app/src/main/assets/premium/transit_front.webp",
+      "generated": true,
+      "width": 1536,
+      "height": 1024,
+      "bytes": 286078
+    },
+    {
+      "view": "rear",
+      "prompt": "Create one original premium automotive photograph, landscape 3:2 ratio. A pristine white 2022 Ford Transit high-roof long-wheelbase cargo PANEL VAN, black plastic bumpers, silver steel wheels, no cargo box or tarpaulin. Accurate Ford Transit vehicle silhouette and details, explicitly NOT a GAZelle. Perfect straight-on REAR view, two closed opaque white rear barn doors, vertical tail lights and black bumper, symmetrically centered, entire vehicle fully inside frame. Camera at headlight height, parked on clean paved parking apron in sunny Caucasus mountain valley, green foothills and distant layered mountains, natural late-morning sunlight, restrained warm editorial color grading, soft blue sky, photographic realism, realistic tires and shadows, no people. Blank unmarked license plate, no readable words, no interface, no watermarks, no graphic overlays. Professional vehicle rental listing photography.",
+      "tool": "image_gen.imagegen",
+      "source_path": "/workspace/generated_images/exec-aea77a8d-b7a6-4a2a-b3a0-c32a7027168d.png",
+      "original_path": "/workspace/gruzsher-generated/transit/transit_rear.png",
+      "output_path": "/workspace/GruzSher-KBR/android/app/src/main/assets/premium/transit_rear.webp",
+      "generated": true,
+      "width": 1536,
+      "height": 1024,
+      "bytes": 286828
+    },
+    {
+      "view": "left",
+      "prompt": "Create one original premium automotive photograph, landscape 3:2 ratio. A pristine white 2022 Ford Transit high-roof long-wheelbase cargo PANEL VAN, black plastic bumpers and grille, silver steel wheels, no cargo box or tarpaulin. Accurate Ford Transit vehicle silhouette and details, explicitly NOT a GAZelle. Exact LEFT driver-side profile, van nose points LEFT in the frame. Complete van fully inside frame, no perspective foreshortening, driver door at left, solid windowless cargo body. Camera at headlight height, parked on clean paved parking apron in sunny Caucasus mountain valley, green foothills and distant layered mountains, natural late-morning sunlight, restrained warm editorial color grading, soft blue sky, photographic realism, realistic tires and shadows, no people. Blank unmarked license plate, no readable words, no interface, no watermarks, no graphic overlays. Professional vehicle rental listing photography.",
+      "tool": "image_gen.imagegen",
+      "source_path": "/workspace/generated_images/exec-09e2d23e-54f3-4f11-b7a9-56d4e43c05da.png",
+      "original_path": "/workspace/gruzsher-generated/transit/transit_left.png",
+      "output_path": "/workspace/GruzSher-KBR/android/app/src/main/assets/premium/transit_left.webp",
+      "generated": true,
+      "width": 1536,
+      "height": 1024,
+      "bytes": 270174
+    },
+    {
+      "view": "right",
+      "prompt": "Create one original premium automotive photograph, landscape 3:2 ratio. A pristine white 2022 Ford Transit high-roof long-wheelbase cargo PANEL VAN, black plastic bumpers and grille, silver steel wheels, no cargo box or tarpaulin. Accurate Ford Transit vehicle silhouette and details, explicitly NOT a GAZelle. Exact RIGHT passenger-side profile, van nose points RIGHT in the frame. Complete van fully inside frame, no perspective foreshortening, passenger door at right, closed cargo sliding door with seams, windowless cargo body. Camera at headlight height, parked on clean paved parking apron in sunny Caucasus mountain valley, green foothills and distant layered mountains, natural late-morning sunlight, restrained warm editorial color grading, soft blue sky, photographic realism, realistic tires and shadows, no people. Blank unmarked license plate, no readable words, no interface, no watermarks, no graphic overlays. Professional vehicle rental listing photography.",
+      "tool": "image_gen.imagegen",
+      "source_path": "/workspace/generated_images/exec-a6abe25c-75c0-4200-9cdb-52ab41c621ab.png",
+      "original_path": "/workspace/gruzsher-generated/transit/transit_right.png",
+      "output_path": "/workspace/GruzSher-KBR/android/app/src/main/assets/premium/transit_right.webp",
+      "generated": true,
+      "width": 1536,
+      "height": 1024,
+      "bytes": 288314
+    },
+    {
+      "view": "cargo",
+      "prompt": "Create one original premium automotive photograph, landscape 3:2 ratio. A pristine white 2022 Ford Transit high-roof long-wheelbase cargo PANEL VAN. View straight into the EMPTY CARGO INTERIOR through both fully open rear barn doors, camera just behind rear threshold. Tall spacious clean white metal ribbed ceiling and sidewalls, black non-slip floor, wheel arches, solid bulkhead separating front cab. Accurate Ford Transit panel van interior, no passenger seats in cargo area. Frame includes rear door surround and a little sunny mountain parking beyond edges. Parked on clean paved parking apron in sunny Caucasus mountain valley, green foothills and distant layered mountains, natural late-morning sunlight illuminates empty cargo interior, restrained warm editorial color grading, photographic realism, realistic panel seams and shadows, no people. No cargo box or tarpaulin; accurate Ford Transit not GAZelle. No readable words, no interface, no watermarks, no graphic overlays. Professional vehicle rental listing photography.",
+      "tool": "image_gen.imagegen",
+      "source_path": "/workspace/generated_images/exec-52eae703-a02f-4977-a73f-7fe6fede1ab4.png",
+      "original_path": "/workspace/gruzsher-generated/transit/transit_cargo.png",
+      "output_path": "/workspace/GruzSher-KBR/android/app/src/main/assets/premium/transit_cargo.webp",
+      "generated": true,
+      "width": 1536,
+      "height": 1024,
+      "bytes": 310224
+    }
+  ]
+}

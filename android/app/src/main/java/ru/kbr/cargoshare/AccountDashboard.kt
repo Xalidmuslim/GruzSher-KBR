@@ -1,6 +1,16 @@
 package ru.kbr.cargoshare
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.runtime.saveable.rememberSaveable
+import coil.compose.AsyncImage
+import org.json.JSONArray
+import org.json.JSONObject
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.*
@@ -24,11 +34,11 @@ import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import java.util.Locale
 
-private val Dark = Color(0xFF173D33)
-private val Jade = Color(0xFF185745)
-private val Paper = Color(0xFFF6F7F3)
-private val Pale = Color(0xFFE8F1EB)
-private val Quiet = Color(0xFF73827B)
+private val Dark = PremiumTheme.Text
+private val Jade = PremiumTheme.Green
+private val Paper = PremiumTheme.Paper
+private val Pale = PremiumTheme.Mint
+private val Quiet = PremiumTheme.Muted
 private val ErrorRed = Color(0xFFA33F38)
 private val Moscow = ZoneId.of("Europe/Moscow")
 private val DateRu = DateTimeFormatter.ofPattern("d MMM, HH:mm", Locale.forLanguageTag("ru-RU"))
@@ -83,7 +93,7 @@ fun TripsDashboard(
     onCancel: (String) -> Unit,
     onTimeline: suspend (String) -> List<BookingTimelineEvent>,
 ) {
-    var tab by remember { mutableStateOf("Текущие") }
+    var tab by rememberSaveable { mutableStateOf("Текущие") }
     var showing by remember { mutableStateOf<Booking?>(null) }
     var cancelPending by remember { mutableStateOf<Booking?>(null) }
     val visible = remember(bookings, tab) {
@@ -95,43 +105,34 @@ fun TripsDashboard(
     val activeCount = bookings.count(::isCurrent)
 
     Column(Modifier.fillMaxSize().background(Paper)) {
-        Row(
-            Modifier.fillMaxWidth().padding(start = 18.dp, end = 10.dp, top = 15.dp, bottom = 7.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Column(Modifier.weight(1f)) {
-                Text("Мои поездки", fontSize = 27.sp, fontWeight = FontWeight.ExtraBold, color = Dark)
-                Text(if (offline) "Учебные бронирования · без списаний" else "Заявки и история аренды",
-                    fontSize = 12.sp, color = Quiet, maxLines = 1, overflow = TextOverflow.Ellipsis)
-            }
-            if (!offline) {
-                IconButton(onClick = onRefresh) {
-                    Icon(Icons.Outlined.Refresh, contentDescription = "Обновить поездки", tint = Jade)
+        Column(Modifier.padding(horizontal = 14.dp, vertical = 8.dp), verticalArrangement = Arrangement.spacedBy(9.dp)) {
+            if (offline) DemoNotice()
+            PremiumBrandHeader()
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text("Мои поездки", fontSize = 28.sp, fontWeight = FontWeight.ExtraBold,
+                    color = Dark, modifier = Modifier.weight(1f))
+                if (!offline) IconButton(onClick = onRefresh) {
+                    Icon(Icons.Outlined.Refresh, "Обновить поездки", tint = Jade)
                 }
             }
-        }
-        Row(
-            Modifier.fillMaxWidth().padding(horizontal = 18.dp, vertical = 5.dp),
-            horizontalArrangement = Arrangement.spacedBy(10.dp)
-        ) {
-            listOf("Текущие", "История").forEach { label ->
-                FilterChip(
-                    selected = tab == label,
-                    onClick = { tab = label },
-                    label = {
-                        Text(if (label == "Текущие") "Текущие ($activeCount)" else "История",
-                            fontSize = 13.sp)
-                    },
-                    colors = FilterChipDefaults.filterChipColors(
-                        selectedContainerColor = Jade, selectedLabelColor = Color.White,
-                        containerColor = Color.White),
-                )
+            Surface(shape = RoundedCornerShape(19.dp), color = Color.White) {
+                Row(Modifier.fillMaxWidth().padding(3.dp)) {
+                    listOf("Текущие", "История").forEach { label ->
+                        Surface(onClick = { tab = label }, modifier = Modifier.weight(1f),
+                            shape = RoundedCornerShape(17.dp), color = if (tab == label) Jade else Color.White) {
+                            Row(Modifier.padding(vertical = 13.dp), horizontalArrangement = Arrangement.Center,
+                                verticalAlignment = Alignment.CenterVertically) {
+                                Icon(if (label == "Текущие") Icons.Outlined.Schedule else Icons.Outlined.History,
+                                    null, tint = if (tab == label) Color.White else Quiet, modifier = Modifier.size(20.dp))
+                                Spacer(Modifier.width(7.dp))
+                                Text(if (label == "Текущие") "Текущие · $activeCount" else label,
+                                    fontSize = 14.sp, fontWeight = FontWeight.SemiBold,
+                                    color = if (tab == label) Color.White else Quiet)
+                            }
+                        }
+                    }
+                }
             }
-        }
-        if (offline) {
-            Text("LIVE-поездки обновляются по этапам. Учебные бронирования на дату не подтверждаются оператором.",
-                modifier = Modifier.padding(start = 18.dp, end = 18.dp, bottom = 12.dp),
-                color = Quiet, fontSize = 11.sp)
         }
         if (visible.isEmpty()) {
             Column(
@@ -159,7 +160,8 @@ fun TripsDashboard(
             ) {
                 items(visible, key = { it.id }) { b ->
                     val isLive = b.id == live.bookingId && live.bookingId.isNotBlank()
-                    val name = cars.firstOrNull { it.id == b.vehicleId }?.name ?: "Грузовой автомобиль"
+                    val car = cars.firstOrNull { it.id == b.vehicleId }
+                    val name = car?.name ?: "Грузовой автомобиль"
                     Card(
                         shape = RoundedCornerShape(23.dp),
                         colors = CardDefaults.cardColors(containerColor = Color.White),
@@ -167,7 +169,19 @@ fun TripsDashboard(
                         modifier = Modifier.fillMaxWidth(),
                     ) {
                         Column(Modifier.fillMaxWidth().padding(17.dp), verticalArrangement = Arrangement.spacedBy(11.dp)) {
+                            if (isCurrent(b) && car != null) {
+                                Box(Modifier.fillMaxWidth().height(145.dp)) {
+                                    TruckArtwork(car, Modifier.fillMaxSize())
+                                    Surface(modifier = Modifier.align(Alignment.TopStart).padding(8.dp),
+                                        color = Pale, shape = RoundedCornerShape(12.dp)) {
+                                        Text(if (isLive) "● LIVE · ДЕМО" else "УЧЕБНАЯ ЗАЯВКА",
+                                            color = Jade, fontWeight = FontWeight.Bold, fontSize = 10.sp,
+                                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 7.dp))
+                                    }
+                                }
+                            }
                             Row(verticalAlignment = Alignment.Top, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                                if (!isCurrent(b) && car != null) TruckArtwork(car, Modifier.size(78.dp, 70.dp))
                                 Column(Modifier.weight(1f)) {
                                     Text(name, fontSize = 19.sp, fontWeight = FontWeight.Bold, color = Dark)
                                     Spacer(Modifier.height(5.dp))
@@ -188,6 +202,13 @@ fun TripsDashboard(
                                     Text("Демо", color = Quiet, fontSize = 10.sp)
                                 }
                             }
+                            if (car != null && isCurrent(b)) {
+                                Text("${car.type} · ${car.payloadKg} кг · ${car.cargoVolumeM3} м³", color = Quiet, fontSize = 11.sp)
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Icon(Icons.Outlined.LocationOn, null, tint = Jade, modifier = Modifier.size(18.dp))
+                                    Text(car.pickupLocation, color = Quiet, fontSize = 11.sp, modifier = Modifier.weight(1f))
+                                }
+                            }
                             HorizontalDivider(color = Pale)
                             Row {
                                 Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
@@ -200,8 +221,27 @@ fun TripsDashboard(
                                 }
                             }
                             if (b.status !in setOf("CANCELLED", "EXPIRED")) {
-                                Text("Бронирование  →  Осмотр  →  Поездка  →  Возврат",
-                                    color = Quiet, fontSize = 10.sp, maxLines = 2)
+                                val phase = if (isLive) live.phase else null
+                                val step = when {
+                                    b.status == "COMPLETED" || phase == LivePhase.RECEIPT -> 3
+                                    phase in setOf(LivePhase.RETURNING, LivePhase.RETURN) -> 3
+                                    phase in setOf(LivePhase.DRIVING, LivePhase.READY) || b.status == "ACTIVE" -> 2
+                                    phase in setOf(LivePhase.INSPECT, LivePhase.UNLOCK) -> 1
+                                    else -> 0
+                                }
+                                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                                    listOf("Бронь", "Осмотр", "Поездка", "Возврат").forEachIndexed { index, label ->
+                                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                            Surface(shape = CircleShape, color = if (index <= step) Pale else Paper) {
+                                                Icon(if (index < step || b.status == "COMPLETED") Icons.Outlined.CheckCircle else
+                                                    if (index == step) Icons.Outlined.LocalShipping else Icons.Outlined.RadioButtonUnchecked,
+                                                    null, tint = if (index <= step) Jade else Quiet,
+                                                    modifier = Modifier.padding(7.dp).size(21.dp))
+                                            }
+                                            Text(label, color = if (index <= step) Jade else Quiet, fontSize = 10.sp)
+                                        }
+                                    }
+                                }
                             }
                             if (offline && b.status == "PENDING" && !isLive) {
                                 Surface(color = Pale, shape = RoundedCornerShape(15.dp)) {
@@ -223,6 +263,9 @@ fun TripsDashboard(
                                         fontSize = 12.sp, maxLines = 1)
                                 }
                             }
+                            if (b.status == "COMPLETED") {
+                                TextButton(onClick={onResume(b)}) { Icon(Icons.Outlined.ReceiptLong,null); Text("Открыть учебный чек") }
+                            }
                             if (isCurrent(b) && isLive) {
                                 Button(onClick = { onResume(b) },
                                     modifier = Modifier.fillMaxWidth().height(48.dp),
@@ -239,7 +282,7 @@ fun TripsDashboard(
                                     shape = RoundedCornerShape(14.dp)) {
                                     Text("События", fontSize = 12.sp)
                                 }
-                                if (b.status == "PENDING" && !isLive) {
+                                if ((b.status == "PENDING" && !isLive) || (isLive && live.phase in setOf(LivePhase.WALK,LivePhase.INSPECT,LivePhase.UNLOCK,LivePhase.READY))) {
                                     TextButton(onClick = { cancelPending = b }, modifier = Modifier.weight(1f)) {
                                         Text("Отменить", color = ErrorRed, fontSize = 12.sp)
                                     }
@@ -321,6 +364,7 @@ fun TripsDashboard(
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun DriverDashboard(
     live: LiveDemoSession,
@@ -334,48 +378,55 @@ fun DriverDashboard(
     val documentPassed = live.phase !in setOf(LivePhase.CHOOSE, LivePhase.PHONE, LivePhase.DOCUMENTS)
     val cardPassed = live.phase !in setOf(LivePhase.CHOOSE, LivePhase.PHONE, LivePhase.DOCUMENTS, LivePhase.PAYMENT)
     var showDetails by remember { mutableStateOf(false) }
+    var panel by rememberSaveable { mutableStateOf<String?>(null) }
+    val context = LocalContext.current
+    val prefs = remember(context) { context.getSharedPreferences("gruzsher_preferences", 0) }
+    var notifications by remember { mutableStateOf(prefs.getBoolean("notifications_enabled", true)) }
+    var language by remember { mutableStateOf(prefs.getString("language", "ru") ?: "ru") }
+    var message by rememberSaveable { mutableStateOf("") }
+    var journal by remember { mutableStateOf(prefs.getString("account_journal", "[]") ?: "[]") }
     Column(Modifier.fillMaxSize().background(Paper)) {
-        // Keep the page title pinned while long account sections scroll.
-        Column(Modifier.fillMaxWidth().padding(horizontal = 18.dp, vertical = 14.dp),
-            verticalArrangement = Arrangement.spacedBy(3.dp)) {
-            Text("Профиль", fontSize = 28.sp, fontWeight = FontWeight.ExtraBold, color = Dark)
-            Text("Учебная учётная запись · Нальчик", color = Quiet, fontSize = 12.sp)
+        Column(Modifier.padding(horizontal = 14.dp, vertical = 8.dp), verticalArrangement = Arrangement.spacedBy(9.dp)) {
+            DemoNotice()
+            PremiumBrandHeader()
         }
         LazyColumn(
             modifier = Modifier.weight(1f),
-            contentPadding = PaddingValues(start = 18.dp, end = 18.dp, top = 5.dp, bottom = 22.dp),
+            contentPadding = PaddingValues(start = 14.dp, end = 14.dp, top = 5.dp, bottom = 22.dp),
             verticalArrangement = Arrangement.spacedBy(13.dp),
         ) {
         item {
-            Surface(color = Dark, shape = RoundedCornerShape(23.dp)) {
-                Row(Modifier.fillMaxWidth().padding(18.dp), verticalAlignment = Alignment.CenterVertically) {
-                    Surface(shape = RoundedCornerShape(18.dp), color = Color.White.copy(alpha = .14f)) {
-                        Icon(Icons.Outlined.PersonOutline, contentDescription = null,
-                            modifier = Modifier.padding(15.dp).size(33.dp), tint = Color.White)
+            Box(Modifier.fillMaxWidth().height(128.dp).clip(RoundedCornerShape(22.dp)).background(Jade)) {
+                AsyncImage("file:///android_asset/premium/live_banner.webp", null,
+                    contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize())
+                Row(Modifier.fillMaxSize().background(Brush.horizontalGradient(listOf(
+                    PremiumTheme.GreenDark, PremiumTheme.GreenDark.copy(alpha = .75f), Color.Transparent)))
+                    .padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
+                    Surface(shape = CircleShape, color = Pale) {
+                        Icon(Icons.Outlined.PersonOutline, "Нейтральный аватар демоводителя",
+                            modifier = Modifier.padding(14.dp).size(32.dp), tint = Jade)
                     }
-                    Spacer(Modifier.width(13.dp))
-                    Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(5.dp)) {
-                        Text("Демо-водитель", fontSize = 18.sp, fontWeight = FontWeight.Bold, color = Color.White)
-                        Text("Реальная регистрация ещё не подключена",
-                            fontSize = 11.sp, lineHeight = 15.sp, color = Color.White.copy(alpha = .76f))
+                    Spacer(Modifier.width(12.dp))
+                    Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                        Text("Демо-водитель", fontSize = 21.sp, fontWeight = FontWeight.ExtraBold, color = Color.White)
+                        Text("Реальная регистрация\nещё не подключена", fontSize = 11.sp,
+                            lineHeight = 15.sp, color = Color.White)
+                        Text("● ДЕМО-РЕЖИМ", color = Color(0xFFC8F7D9), fontWeight = FontWeight.Bold, fontSize = 10.sp)
                     }
-                    Icon(Icons.Outlined.Shield, null, tint = Color.White.copy(alpha = .8f))
                 }
             }
         }
         item {
             Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                DashboardMetric("Текущие", active.toString(), Modifier.weight(1f))
-                DashboardMetric("Завершено", completed.toString(), Modifier.weight(1f))
+                DashboardMetric("Текущие", active.toString(), Modifier.weight(1f).clickable(onClick = onTrips))
+                DashboardMetric("Завершено", completed.toString(), Modifier.weight(1f).clickable(onClick = onTrips))
             }
         }
         if (live.bookingId.isNotBlank() && live.phase !in setOf(LivePhase.CHOOSE, LivePhase.RECEIPT)) {
             item {
                 Surface(color = Pale, shape = RoundedCornerShape(20.dp)) {
                     Column(Modifier.fillMaxWidth().padding(16.dp), verticalArrangement = Arrangement.spacedBy(9.dp)) {
-                        Text("Ваш LIVE-демосценарий", fontSize = 16.sp,
-                            fontWeight = FontWeight.Bold, color = Dark)
-                        Text(liveLabel(live), color = Jade, fontSize = 13.sp)
+                        StageBanner("Ваша поездка", liveLabel(live))
                         Button(onClick = onLive, modifier = Modifier.fillMaxWidth(),
                             shape = RoundedCornerShape(14.dp)) {
                             Text("Продолжить поездку")
@@ -387,34 +438,28 @@ fun DriverDashboard(
         item {
             DashboardSection("Доступ к аренде") {
                 AccountStatusLine("Вход по SMS", if (loginPassed) "Учебный вход пройден" else "Не пройден",
-                    loginPassed, Icons.Outlined.Sms)
+                    loginPassed, Icons.Outlined.Sms, onLive)
                 HorizontalDivider(color = Pale)
                 AccountStatusLine("Права и паспорт",
                     if (documentPassed) "Проверены только образцы" else "Демопроверка не пройдена",
-                    documentPassed, Icons.Outlined.Badge)
+                    documentPassed, Icons.Outlined.Badge, onLive)
                 HorizontalDivider(color = Pale)
                 AccountStatusLine("Способ оплаты",
                     if (cardPassed) "Виртуальная карта •••• 0000" else "Демо-карта не подключена",
-                    cardPassed, Icons.Outlined.CreditCard)
+                    cardPassed, Icons.Outlined.CreditCard, onLive)
             }
         }
         item {
             DashboardSection("Мои действия") {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(Icons.Outlined.ReceiptLong, contentDescription = null, tint = Jade)
-                    Spacer(Modifier.width(12.dp))
-                    Text("История поездок", color = Dark, modifier = Modifier.weight(1f),
-                        fontWeight = FontWeight.SemiBold)
-                    TextButton(onClick = onTrips) { Text("Открыть") }
-                }
+                AccountAction("История поездок", "Все поездки и события аренды", Icons.Outlined.History, onTrips)
                 HorizontalDivider(color = Pale)
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(Icons.Outlined.PlayArrow, contentDescription = null, tint = Jade)
-                    Spacer(Modifier.width(12.dp))
-                    Text("Тренажёр аренды", color = Dark, modifier = Modifier.weight(1f),
-                        fontWeight = FontWeight.SemiBold)
-                    TextButton(onClick = onLive) { Text("Перейти") }
-                }
+                AccountAction("Тренажёр аренды", "Полный учебный сценарий", Icons.Outlined.PlayArrow, onLive)
+                HorizontalDivider(color = Pale)
+                AccountAction("Настройки", "Уведомления и язык", Icons.Outlined.Settings) { panel = "Настройки" }
+                HorizontalDivider(color = Pale)
+                AccountAction("Поддержка", "Локальный учебный чат", Icons.Outlined.SupportAgent) { panel = "Поддержка" }
+                HorizontalDivider(color = Pale)
+                AccountAction("Сообщить о происшествии", "Запись в деможурнал", Icons.Outlined.ReportProblem) { panel = "Происшествие" }
             }
         }
         item {
@@ -438,13 +483,95 @@ fun DriverDashboard(
         }
         }
     }
+    panel?.let { title ->
+        ModalBottomSheet(onDismissRequest = { panel = null }, containerColor = Paper) {
+            Column(Modifier.fillMaxWidth().verticalScroll(rememberScrollState())
+                .padding(horizontal = 20.dp).padding(bottom = 28.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
+                Text(title, color = Dark, fontSize = 24.sp, fontWeight = FontWeight.Bold)
+                if (title == "Настройки") {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Column(Modifier.weight(1f)) {
+                            Text("Учебные уведомления", color = Dark, fontWeight = FontWeight.SemiBold)
+                            Text("Предпочтение хранится на устройстве", color = Quiet, fontSize = 11.sp)
+                        }
+                        Switch(checked = notifications, onCheckedChange = {
+                            notifications = it
+                            prefs.edit().putBoolean("notifications_enabled", it).apply()
+                        })
+                    }
+                    Text("Язык", color = Dark, fontWeight = FontWeight.SemiBold)
+                    listOf("ru" to "Русский", "en" to "English").forEach { (code, label) ->
+                        Row(Modifier.fillMaxWidth().clickable {
+                            language = code
+                            prefs.edit().putString("language", code).apply()
+                        }, verticalAlignment = Alignment.CenterVertically) {
+                            RadioButton(selected = language == code, onClick = {
+                                language = code
+                                prefs.edit().putString("language", code).apply()
+                            })
+                            Text(label, color = Dark)
+                        }
+                    }
+                    Text("Выбор языка сохранён. Учебные сценарии пока доступны на русском.", color = Quiet, fontSize = 12.sp)
+                } else {
+                    Text("Учебный журнал на этом устройстве. Сообщения не отправляются оператору или экстренным службам.", color = Quiet, fontSize = 12.sp)
+                    OutlinedTextField(value = message, onValueChange = { message = it.take(500) },
+                        label = { Text(if (title == "Поддержка") "Ваш вопрос" else "Что произошло?") },
+                        modifier = Modifier.fillMaxWidth(), minLines = 2)
+                    Button(onClick = {
+                        val entries = runCatching { JSONArray(prefs.getString("account_journal", "[]")) }.getOrDefault(JSONArray())
+                        entries.put(JSONObject().put("type", title).put("message", message.trim())
+                            .put("at", OffsetDateTime.now().toString()))
+                        val recent = JSONArray()
+                        for (i in maxOf(0, entries.length() - 50) until entries.length()) recent.put(entries.getJSONObject(i))
+                        journal = recent.toString()
+                        prefs.edit().putString("account_journal", journal).apply()
+                        message = ""
+                    }, enabled = message.isNotBlank(), modifier = Modifier.fillMaxWidth()) {
+                        Text("Сохранить в деможурнал")
+                    }
+                    val entries = runCatching { JSONArray(journal) }.getOrDefault(JSONArray())
+                    for (i in entries.length() - 1 downTo maxOf(0, entries.length() - 10)) {
+                        val entry = entries.optJSONObject(i) ?: continue
+                        Surface(color = Color.White, shape = RoundedCornerShape(14.dp)) {
+                            Column(Modifier.fillMaxWidth().padding(12.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                                Text(entry.optString("type") + " · " + readableDate(entry.optString("at")), color = Jade, fontSize = 11.sp)
+                                Text(entry.optString("message"), color = Dark, fontSize = 13.sp)
+                                Text("Сохранено локально · Демо", color = Quiet, fontSize = 10.sp)
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable private fun AccountAction(title: String, subtitle: String,
+    icon: androidx.compose.ui.graphics.vector.ImageVector, onClick: () -> Unit) {
+    Row(Modifier.fillMaxWidth().clickable(onClick = onClick).padding(vertical = 3.dp), verticalAlignment = Alignment.CenterVertically) {
+        Surface(shape = CircleShape, color = Pale) {
+            Icon(icon, null, tint = Jade, modifier = Modifier.padding(12.dp).size(24.dp))
+        }
+        Spacer(Modifier.width(12.dp))
+        Column(Modifier.weight(1f)) {
+            Text(title, color = Dark, fontSize = 15.sp, fontWeight = FontWeight.Bold)
+            Text(subtitle, color = Quiet, fontSize = 11.sp)
+        }
+        Icon(Icons.Outlined.ChevronRight, null, tint = Dark)
+    }
 }
 
 @Composable private fun DashboardMetric(label: String, value: String, modifier: Modifier) {
-    Surface(modifier = modifier, color = Color.White, shape = RoundedCornerShape(17.dp)) {
-        Column(Modifier.padding(15.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-            Text(label, color = Quiet, fontSize = 12.sp)
-            Text(value, color = Jade, fontSize = 25.sp, fontWeight = FontWeight.ExtraBold)
+    Surface(modifier = modifier, color = if (label == "Текущие") Pale else Color(0xFFF0F3FC), shape = RoundedCornerShape(17.dp)) {
+        Row(Modifier.padding(13.dp), verticalAlignment = Alignment.CenterVertically) {
+            Icon(if (label == "Текущие") Icons.Outlined.LocalShipping else Icons.Outlined.CheckCircle,
+                null, tint = Jade, modifier = Modifier.size(32.dp))
+            Spacer(Modifier.width(10.dp))
+            Column(verticalArrangement = Arrangement.spacedBy(3.dp)) {
+                Text(label, color = Quiet, fontSize = 12.sp)
+                Text(value, color = Dark, fontSize = 27.sp, fontWeight = FontWeight.ExtraBold)
+            }
         }
     }
 }
@@ -462,8 +589,9 @@ fun DriverDashboard(
 @Composable private fun AccountStatusLine(
     title: String, detail: String, complete: Boolean,
     icon: androidx.compose.ui.graphics.vector.ImageVector,
+    onClick: () -> Unit,
 ) {
-    Row(verticalAlignment = Alignment.CenterVertically) {
+    Row(Modifier.fillMaxWidth().clickable(onClick = onClick).padding(vertical = 3.dp), verticalAlignment = Alignment.CenterVertically) {
         Surface(color = Pale, shape = RoundedCornerShape(11.dp)) {
             Icon(icon, contentDescription = null, tint = Jade,
                 modifier = Modifier.padding(10.dp).size(20.dp))

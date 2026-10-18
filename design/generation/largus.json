@@ -1,0 +1,48 @@
+{
+  "vehicle": "white LADA Largus cargo panel van",
+  "date": "2026-10-18",
+  "receipts": [
+    {
+      "view": "hero",
+      "prompt": "One standalone photorealistic automotive catalog photograph, landscape 3:2. White LADA Largus compact cargo panel van, based on first-generation Dacia Logan MCV body, low roof, compact long wagon-derived cargo van proportions, black bumpers and steel wheels, SOLID WHITE METAL REAR SIDE PANELS with no rear passenger side windows. Exact vehicle class Largus commercial panel van, not passenger wagon, not Ford Transit, not GAZelle. Front-left three-quarter HERO view, entire vehicle fully inside frame with generous background margins, eye level 50mm lens. Parked on clean grey asphalt in sunny Caucasus mountain valley parking turnout, green slopes and distant rocky peaks, blue sky, warm daylight, natural soft shadows, premium realistic rental vehicle photography, no people, no readable plates, no text overlays, no UI, no collage. Single image.",
+      "original": "/workspace/generated_images/exec-75fcd8f6-cd77-4b91-8a8e-20b58ca87456.png",
+      "output": "/workspace/GruzSher-KBR/android/app/src/main/assets/premium/largus_hero.webp",
+      "tool": "image_gen__imagegen"
+    },
+    {
+      "view": "front",
+      "prompt": "Create a standalone photorealistic automotive catalog photograph, landscape 3:2. Use referenced image as exact vehicle and location reference: identical white LADA Largus compact commercial cargo panel van (first-gen Dacia Logan MCV-based body), black bumpers, silver steel wheels, SOLID WHITE METAL rear side panels, no passenger windows. Change camera to perfectly centered straight-on FRONT view, headlights and grille symmetric, vehicle fully in frame with ground below and mountains above. Same sunny Caucasus valley asphalt parking turnout, natural bright daylight, green slopes and rocky distant peaks. Realistic rental vehicle catalog photography. No readable number plates, no people, no UI, no text overlays, no collage. One image.",
+      "original": "/workspace/generated_images/exec-249b946c-6ae5-41de-84e7-2958ea06cf16.png",
+      "output": "/workspace/GruzSher-KBR/android/app/src/main/assets/premium/largus_front.webp",
+      "tool": "image_gen__imagegen"
+    },
+    {
+      "view": "rear",
+      "prompt": "Create one standalone photorealistic automotive catalog photograph, landscape 3:2. Referenced image fixes the exact white LADA Largus compact commercial cargo panel van, first-gen Dacia Logan MCV body, low roof, black bumpers and steel wheels. Change camera to perfectly centered straight-on REAR view with rear cargo doors CLOSED, vertically split solid white metal cargo doors, tall narrow vertical red rear lamps on outer rear pillars, black rear bumper, blank plate. Fully visible vehicle, ample ground and mountain background. Same sunny Caucasus valley asphalt parking turnout, green hills and rocky distant peaks, natural bright daylight. No people, no readable text or plates, no graphics, no UI, no collage. One image only.",
+      "original": "/workspace/generated_images/exec-9018068b-8200-42b7-9ed2-46d5bd2b159a.png",
+      "output": "/workspace/GruzSher-KBR/android/app/src/main/assets/premium/largus_rear.webp",
+      "tool": "image_gen__imagegen"
+    },
+    {
+      "view": "left",
+      "prompt": "One standalone photorealistic automotive catalog photograph, landscape 3:2. The reference fixes exact vehicle and style. Identical white LADA Largus compact commercial cargo panel van based on first-gen Dacia Logan MCV, low-roof wagon-derived shape, solid white metal rear side panels with no rear passenger windows, black bumpers and side molding, steel wheels. Perfectly orthogonal full LEFT driver-side profile, nose points to LEFT edge, rear at RIGHT edge. Camera perpendicular to vehicle, both wheels visible round, whole car fully within image with generous margins. Sunny Caucasus valley clean asphalt parking turnout, green slopes and rocky mountain peaks, same natural daylight. No people, no readable plates, no overlays, no text, no UI, no collage.",
+      "original": "/workspace/generated_images/exec-d93ccedd-5996-47d0-bdf3-12b505a42a10.png",
+      "output": "/workspace/GruzSher-KBR/android/app/src/main/assets/premium/largus_left.webp",
+      "tool": "image_gen__imagegen"
+    },
+    {
+      "view": "right",
+      "prompt": "One standalone photorealistic automotive catalog photograph, landscape 3:2. The reference fixes exact vehicle and style. Identical white LADA Largus compact commercial cargo panel van based on first-gen Dacia Logan MCV, low roof wagon-derived shape, solid white metal rear side panels with NO rear passenger windows, black bumpers and side molding, steel wheels. Perfectly orthogonal full RIGHT passenger-side profile, nose points RIGHT edge, rear at LEFT edge. Camera perpendicular to vehicle, both wheels visible round, whole car fully within image with generous margins. Sunny Caucasus valley clean asphalt parking turnout, green slopes and rocky mountain peaks, natural daylight. No people, no readable plates, no overlays, no text, no UI, no collage.",
+      "original": "/workspace/generated_images/exec-1dde4bda-2a9a-4874-97d5-cb6e3bad938a.png",
+      "output": "/workspace/GruzSher-KBR/android/app/src/main/assets/premium/largus_right.webp",
+      "tool": "image_gen__imagegen"
+    },
+    {
+      "view": "cargo",
+      "prompt": "One standalone photorealistic automotive catalog photograph, landscape 3:2. Referenced image fixes vehicle and location. Identical white LADA Largus compact commercial panel cargo van based on first-gen Dacia Logan MCV, low roof and narrow compact body. Camera behind van centered looking INTO empty cargo bay through fully OPEN rear split barn doors, both white doors visible at left and right. Show believable small Largus cargo compartment: clean dark rubber flat load floor, modest wheel arch humps, white stamped steel walls with no side windows, full bulkhead behind front seats. No rear passenger seating. The cargo bay is compact and low, NOT a high-roof delivery van interior. Asphalt turnout and sunny Caucasus mountain valley visible around open doors, natural daylight and soft interior shadows, crisp photographic detail. No people, no readable plates, no text, no UI, no collage.",
+      "original": "/workspace/generated_images/exec-bbea859d-6336-4207-8983-0a575d00d5f1.png",
+      "output": "/workspace/GruzSher-KBR/android/app/src/main/assets/premium/largus_cargo.webp",
+      "tool": "image_gen__imagegen"
+    }
+  ]
+}

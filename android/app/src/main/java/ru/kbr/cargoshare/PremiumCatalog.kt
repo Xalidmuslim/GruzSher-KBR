@@ -231,7 +231,7 @@ private fun PremiumTruckCard(vehicle: Vehicle, onClick: () -> Unit) {
 }
 
 @Composable
-internal fun NalchikMap(cars: List<Vehicle>, onSelect: (Vehicle) -> Unit, modifier: Modifier = Modifier) {
+internal fun NalchikMap(cars: List<Vehicle>, onSelect: (Vehicle) -> Unit, modifier: Modifier = Modifier, selectedVehicleId: String? = null) {
     val context = LocalContext.current
     val map = remember(context) {
         Configuration.getInstance().userAgentValue = context.packageName
@@ -286,6 +286,12 @@ internal fun NalchikMap(cars: List<Vehicle>, onSelect: (Vehicle) -> Unit, modifi
         else locationMessage = "Для определения позиции по GPS разрешите точное местоположение."
     }
     val currentOnSelect by rememberUpdatedState(onSelect)
+    LaunchedEffect(selectedVehicleId,map,cars) {
+        val selected=cars.firstOrNull {it.id==selectedVehicleId}
+        map.overlays.filterIsInstance<Marker>().forEach {it.icon=compactTruckMarker(context, selected=it.title==selected?.name)}
+        if(selected?.latitude!=null && selected.longitude!=null) map.controller.animateTo(GeoPoint(selected.latitude,selected.longitude))
+        map.invalidate()
+    }
     DisposableEffect(map, permissionGranted) {
         if (permissionGranted) {
             if (!map.overlays.contains(locationOverlay)) map.overlays.add(locationOverlay)

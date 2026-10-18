@@ -1,0 +1,67 @@
+{
+  "generator": "image_gen.imagegen",
+  "original_generation": true,
+  "created_at": "2026-10-18",
+  "assets": [
+    {
+      "view": "hero",
+      "prompt": "Create ONE photorealistic original premium vehicle rental catalog photograph, landscape 3:2. White Russian GAZelle NEXT light commercial truck, recognizably correct GAZelle NEXT cab and grille, white curtain-sided rectangular cargo body, black bumpers and wheels, not Volkswagen, no readable license plate. Hero front left three-quarter angle, whole truck fully visible centered with generous margins, camera at headlamp height with natural 50mm perspective. Parked on clean gray asphalt parking area in sunny Caucasus mountain valley, green hills and layered rocky distant peaks, pale blue sky, daylight from upper left, realistic crisp neutral colors. No people, text, overlay, UI, watermarks, poster, collage. Output original photograph suitable for Android app asset; save generated local file if supported.",
+      "source_path": "/workspace/generated_images/exec-2e0212a2-0edb-419f-8f20-f3d033825dd2.png",
+      "output_path": "/workspace/GruzSher-KBR/android/app/src/main/assets/premium/gazelle_hero.webp",
+      "generation_receipt": "Generated images are saved to /workspace/generated_images as /workspace/generated_images/exec-2e0212a2-0edb-419f-8f20-f3d033825dd2.png by default.\nIf you need to use a generated image at another path, copy it and leave the original in place unless the user explicitly asks you to delete it.\nThe generated image is already displayed to the user. There is no need to render it in the final response as a Markdown image or file link.",
+      "width": 1536,
+      "height": 1024,
+      "bytes": 336708
+    },
+    {
+      "view": "front",
+      "prompt": "Generate ONE original photorealistic landscape 3:2 vehicle inspection catalog photo. Show this SAME white GAZelle NEXT Russian truck and same white tall rectangular curtain-sided cargo body from STRAIGHT FRONT, exactly centered symmetrical, full truck including tires and top, ample margins. Keep identical recognizable GAZelle NEXT cab, headlamps, grille, black bumpers; no readable license plate. Sunny Caucasus green valley mountain parking asphalt, realistic midday light from upper left, clean premium neutral colors. No people, UI, overlays, text, collage, watermark. Use supplied hero as vehicle identity/environment reference but create a new camera view.",
+      "source_path": "/workspace/generated_images/exec-ec76a2b3-9f77-4592-97e0-d831f4a92dc3.png",
+      "output_path": "/workspace/GruzSher-KBR/android/app/src/main/assets/premium/gazelle_front.webp",
+      "generation_receipt": "Generated images are saved to /workspace/generated_images as /workspace/generated_images/exec-ec76a2b3-9f77-4592-97e0-d831f4a92dc3.png by default.\nIf you need to use a generated image at another path, copy it and leave the original in place unless the user explicitly asks you to delete it.\nThe generated image is already displayed to the user. There is no need to render it in the final response as a Markdown image or file link.",
+      "width": 1536,
+      "height": 1024,
+      "bytes": 362408
+    },
+    {
+      "view": "rear",
+      "prompt": "Generate ONE original photorealistic landscape 3:2 vehicle inspection catalog photo. Show this SAME white GAZelle NEXT Russian truck with identical white tall rectangular curtain-sided cargo body from STRAIGHT REAR exactly centered symmetrical. White closed rear cargo doors with simple metal locking rods, small rear red lights, black chassis and rear bumper, full truck including tires and top, ample margins. Accurate realistic commercial truck proportions, no readable license plate. Sunny Caucasus green valley mountain parking asphalt, realistic midday light from upper left, clean premium neutral colors. No people, UI, overlays, text, collage, watermark. Use supplied hero as vehicle identity/environment reference but create a new camera view.",
+      "source_path": "/workspace/generated_images/exec-01703039-aa4c-416c-9ce0-8869b83b1fbe.png",
+      "output_path": "/workspace/GruzSher-KBR/android/app/src/main/assets/premium/gazelle_rear.webp",
+      "generation_receipt": "Generated images are saved to /workspace/generated_images as /workspace/generated_images/exec-01703039-aa4c-416c-9ce0-8869b83b1fbe.png by default.\nIf you need to use a generated image at another path, copy it and leave the original in place unless the user explicitly asks you to delete it.\nThe generated image is already displayed to the user. There is no need to render it in the final response as a Markdown image or file link.",
+      "width": 1536,
+      "height": 1024,
+      "bytes": 312856
+    },
+    {
+      "view": "left",
+      "prompt": "Generate ONE original photorealistic landscape 3:2 vehicle inspection catalog photo. Show this SAME white GAZelle NEXT Russian truck and same white tall rectangular curtain-sided cargo body from exact LEFT SIDE PROFILE, driver's side visible, front points LEFT. Camera perpendicular to side, whole truck fully within frame with ample margins, wheels and tall body top uncropped. Keep identical GAZelle NEXT cab proportions and cargo length, black bumpers/wheels, curtain tension buckles along body base. Sunny Caucasus green valley mountain parking asphalt, realistic midday light from upper left, clean premium neutral colors. No readable plates, people, UI, overlays, text, collage, watermark. Use supplied hero as vehicle identity/environment reference but create a new camera view.",
+      "source_path": "/workspace/generated_images/exec-d06d807a-ca8d-47a8-8402-90d7b1484e3e.png",
+      "output_path": "/workspace/GruzSher-KBR/android/app/src/main/assets/premium/gazelle_left.webp",
+      "generation_receipt": "Generated images are saved to /workspace/generated_images as /workspace/generated_images/exec-d06d807a-ca8d-47a8-8402-90d7b1484e3e.png by default.\nIf you need to use a generated image at another path, copy it and leave the original in place unless the user explicitly asks you to delete it.\nThe generated image is already displayed to the user. There is no need to render it in the final response as a Markdown image or file link.",
+      "width": 1536,
+      "height": 1024,
+      "bytes": 323110
+    },
+    {
+      "view": "right",
+      "prompt": "Generate ONE original photorealistic landscape 3:2 vehicle inspection catalog photo. Show this SAME white GAZelle NEXT Russian truck and same white tall rectangular curtain-sided cargo body from exact RIGHT SIDE PROFILE, passenger side visible, front points RIGHT. Camera perpendicular to side, whole truck fully within frame with ample margins, wheels and tall body top uncropped. Keep identical GAZelle NEXT cab proportions and cargo length, black bumpers/wheels, curtain tension buckles along body base. Sunny Caucasus green valley mountain parking asphalt, realistic midday light from upper left, clean premium neutral colors. No readable plates, people, UI, overlays, text, collage, watermark. Use supplied hero as vehicle identity/environment reference but create a new camera view.",
+      "source_path": "/workspace/generated_images/exec-2ad591b5-5a83-42cd-88cf-7a3982049dc5.png",
+      "output_path": "/workspace/GruzSher-KBR/android/app/src/main/assets/premium/gazelle_right.webp",
+      "generation_receipt": "Generated images are saved to /workspace/generated_images as /workspace/generated_images/exec-2ad591b5-5a83-42cd-88cf-7a3982049dc5.png by default.\nIf you need to use a generated image at another path, copy it and leave the original in place unless the user explicitly asks you to delete it.\nThe generated image is already displayed to the user. There is no need to render it in the final response as a Markdown image or file link.",
+      "width": 1536,
+      "height": 1024,
+      "bytes": 343798
+    },
+    {
+      "view": "cargo",
+      "prompt": "Generate ONE original photorealistic landscape 3:2 vehicle inspection catalog photo. Show empty CARGO INTERIOR of this SAME white GAZelle NEXT curtain-sided rectangular box truck. View straight from open rear doors looking toward closed front bulkhead. Realistic clean light gray plywood non-slip cargo floor, white translucent canvas walls over evenly spaced metal structural hoops, practical tie rails, rectangular ceiling, accurate medium commercial truck volume. Symmetrical composition and clear usable empty floor, rear door edges frame image, subtle glimpses of sunny Caucasus green valley asphalt parking beyond outer edges. Natural daylight illuminating the interior, crisp neutral colors. No cargo, people, readable text, UI, overlay, collage, watermark. Use reference as exterior vehicle identity; show its cargo interior.",
+      "source_path": "/workspace/generated_images/exec-64637a7c-a9b3-498c-99f0-80800aa255e3.png",
+      "output_path": "/workspace/GruzSher-KBR/android/app/src/main/assets/premium/gazelle_cargo.webp",
+      "generation_receipt": "Generated images are saved to /workspace/generated_images as /workspace/generated_images/exec-64637a7c-a9b3-498c-99f0-80800aa255e3.png by default.\nIf you need to use a generated image at another path, copy it and leave the original in place unless the user explicitly asks you to delete it.\nThe generated image is already displayed to the user. There is no need to render it in the final response as a Markdown image or file link.",
+      "width": 1536,
+      "height": 1024,
+      "bytes": 275934
+    }
+  ]
+}

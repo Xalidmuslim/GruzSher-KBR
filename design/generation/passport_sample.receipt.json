@@ -1,0 +1,8 @@
+{
+  "tool": "image_gen__imagegen",
+  "attempt": 1,
+  "prompt": "Create a refined premium studio product photograph in landscape 4:3 composition of a clearly FICTIONAL TRAINING booklet, standing slightly angled, on an elegant neutral warm gray background. The booklet is closed with a deep burgundy leather-like cover, subtle embossing and tasteful edge stitching, physically realistic. It is NOT an authentic government passport. On its cover very large unmistakable legible Cyrillic text ОБРАЗЕЦ in a restrained gold sans serif typeface, and a smaller simple text УЧЕБНЫЙ МАКЕТ. Use a tiny simple geometric diamond decoration only, no eagle, no national or official emblem, no coat of arms, no genuine seals, no country names. No document number, no personal data. This is an abstract educational prop showing the idea of document verification. Close composition with attractive soft shadows, premium realistic materials, warm softbox highlights, no background text, no watermark.",
+  "output_hint": "Generated images are saved to /workspace/generated_images as /workspace/generated_images/exec-ce812b0c-9981-4f20-9ac3-264bc16d78e2.png by default.\nIf you need to use a generated image at another path, copy it and leave the original in place unless the user explicitly asks you to delete it.\nThe generated image is already displayed to the user. There is no need to render it in the final response as a Markdown image or file link.",
+  "inspection": "Visually inspected original. Accepted: premium photograph, requested composition; clear sample markings, no authentic data or official emblems in document props.",
+  "processing": "Pillow RGB conversion, proportional resize only if wider than 1536 px, WebP quality 90 method 6. No crops, no screenshot sources."
+}

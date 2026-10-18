@@ -2,6 +2,7 @@ package ru.kbr.cargoshare
 
 import android.app.DatePickerDialog
 import android.app.TimePickerDialog
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -93,7 +94,7 @@ fun FullScreenVehicleBooking(
     }
     Dialog(onDismissRequest = onDismiss,
         properties = DialogProperties(usePlatformDefaultWidth = false)) {
-        Column(Modifier.fillMaxSize().background(PremiumTheme.Paper)) {
+        Column(Modifier.fillMaxSize().background(PremiumTheme.Paper).statusBarsPadding()) {
             Row(
                 Modifier.fillMaxWidth().background(Color.White).padding(start = 11.dp,
                     end = 18.dp, top = 7.dp, bottom = 7.dp),
@@ -103,8 +104,8 @@ fun FullScreenVehicleBooking(
                     Icon(Icons.Outlined.ArrowBack, "Назад", tint = PremiumTheme.Text)
                 }
                 Column(Modifier.weight(1f)) {
-                    Text("ГрузШер", fontSize = 15.sp, fontWeight = FontWeight.Bold,
-                        color = PremiumTheme.Text)
+                    Text("ГРУЗШЕР", fontSize = 25.sp, fontWeight = FontWeight.Black,
+                        color = PremiumTheme.GreenDark)
                     Text("Выбор грузовика", fontSize = 11.sp, color = PremiumTheme.Muted)
                 }
                 Surface(shape = RoundedCornerShape(30.dp), color = PremiumTheme.Mint) {
@@ -116,23 +117,37 @@ fun FullScreenVehicleBooking(
             Column(Modifier.weight(1f).verticalScroll(rememberScrollState())
                 .padding(horizontal = 17.dp).padding(top = 14.dp, bottom = 25.dp),
                 verticalArrangement = Arrangement.spacedBy(14.dp)) {
-                Box(Modifier.fillMaxWidth().height(228.dp)
-                    .clip(RoundedCornerShape(24.dp)).background(Color.White)) {
-                    TruckArtwork(vehicle, Modifier.fillMaxSize().padding(13.dp))
-                    Surface(modifier = Modifier.align(Alignment.TopStart).padding(14.dp),
-                        shape = RoundedCornerShape(24.dp), color = PremiumTheme.Green) {
-                        Text("● Доступен · Демо",
-                            color = Color.White, fontSize = 11.sp,
-                            modifier = Modifier.padding(horizontal = 11.dp, vertical = 7.dp))
+                if (offlineTraining) {
+                    Surface(color = PremiumTheme.Mint, shape = RoundedCornerShape(12.dp)) {
+                        Row(Modifier.fillMaxWidth().padding(10.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(7.dp)) {
+                            Icon(Icons.Outlined.Info, null, Modifier.size(16.dp), tint = PremiumTheme.Green)
+                            Text("Офлайн-симуляция · без реальной брони и оплаты",
+                                fontSize = 11.sp, color = PremiumTheme.GreenDark)
+                        }
                     }
                 }
+                PremiumGallery(vehicle)
                 Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                    Text(vehicle.name, fontSize = 28.sp, lineHeight = 33.sp,
+                    Text(vehicle.name, fontSize = 27.sp, lineHeight = 32.sp,
                         color = PremiumTheme.Text, fontWeight = FontWeight.ExtraBold)
                     Text(vehicle.type, color = PremiumTheme.Muted, fontSize = 14.sp)
+                    Row(Modifier.fillMaxWidth().padding(top = 5.dp),
+                        verticalAlignment = Alignment.CenterVertically) {
+                        Surface(modifier = Modifier.weight(1f), color = PremiumTheme.Mint,
+                            shape = RoundedCornerShape(30.dp)) {
+                            Text(if (checking) "Проверяем доступность…" else if (available) "● Доступен · Демо" else "Недоступен на это время",
+                                color = PremiumTheme.Green, fontSize = 11.sp,
+                                modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp))
+                        }
+                        Spacer(Modifier.width(10.dp))
+                        Text("${vehicle.hourlyPriceRub} ₽/ч", fontSize = 20.sp,
+                            fontWeight = FontWeight.ExtraBold, color = PremiumTheme.GreenDark)
+                    }
                 }
-                Row(horizontalArrangement = Arrangement.spacedBy(9.dp),
-                    modifier = Modifier.fillMaxWidth()) {
+                Surface(color = Color.White, shape = RoundedCornerShape(20.dp)) {
+                Row(modifier = Modifier.fillMaxWidth()) {
                     BookingSpecTile(Icons.Outlined.Inventory2, "${vehicle.payloadKg} кг",
                         "Нагрузка", Modifier.weight(1f))
                     BookingSpecTile(Icons.Outlined.ViewInAr, "${vehicle.cargoVolumeM3} м³",
@@ -140,16 +155,22 @@ fun FullScreenVehicleBooking(
                     BookingSpecTile(Icons.Outlined.Settings, vehicle.transmission,
                         "КПП", Modifier.weight(1f))
                 }
+                }
                 Surface(color = Color.White, shape = RoundedCornerShape(20.dp)) {
-                    Row(Modifier.fillMaxWidth().padding(15.dp),
-                        verticalAlignment = Alignment.CenterVertically) {
-                        Icon(Icons.Outlined.Place, null, tint = PremiumTheme.Green)
-                        Spacer(Modifier.width(10.dp))
-                        Column(Modifier.weight(1f)) {
-                            Text("Точка получения", color = PremiumTheme.Text,
-                                fontSize = 14.sp, fontWeight = FontWeight.Bold)
-                            Text(vehicle.pickupLocation, fontSize = 12.sp,
+                    Row(Modifier.fillMaxWidth().padding(12.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                        Icon(Icons.Outlined.Place, null, tint = PremiumTheme.Green,
+                            modifier = Modifier.size(25.dp))
+                        Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                            Text("Учебная точка получения", color = PremiumTheme.Text,
+                                fontSize = 13.sp, fontWeight = FontWeight.Bold)
+                            Text(vehicle.pickupLocation, fontSize = 11.sp,
                                 color = PremiumTheme.Muted)
+                        }
+                        Column(Modifier.width(115.dp)) {
+                            LiveRouteMap(vehicle, 0f, "пешком",
+                                Modifier.fillMaxWidth().height(78.dp))
                         }
                     }
                 }
@@ -196,21 +217,28 @@ fun FullScreenVehicleBooking(
                             }
                         }
                         }
-                        Text(if (offlineTraining) "Срок учебной аренды" else "Продолжительность", fontSize = 15.sp,
+                        Text("Выберите тариф", fontSize = 18.sp,
                             fontWeight = FontWeight.Bold, color = PremiumTheme.Text)
-                        Row(horizontalArrangement = Arrangement.spacedBy(7.dp)) {
+                        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(7.dp)) {
                             (if (offlineTraining) listOf(2,4,8) else listOf(2,4,8,24)).forEach { h ->
-                                FilterChip(
-                                    selected = hours == h,
-                                    onClick = { hours = h },
-                                    label = { Text(if(h==24) "Сутки" else "$h ч",
-                                        fontSize = 12.sp, maxLines = 1) },
-                                    shape = RoundedCornerShape(12.dp),
-                                    colors = FilterChipDefaults.filterChipColors(
-                                        containerColor = PremiumTheme.Paper,
-                                        selectedContainerColor = PremiumTheme.Green,
-                                        selectedLabelColor = Color.White)
-                                )
+                                val selected = hours == h
+                                Surface(onClick = { hours = h }, modifier = Modifier.weight(1f),
+                                    shape = RoundedCornerShape(16.dp),
+                                    color = if (selected) PremiumTheme.Green else Color.White,
+                                    border = BorderStroke(1.dp, if (selected) PremiumTheme.Green else PremiumTheme.Stroke)) {
+                                    Column(Modifier.padding(horizontal = 3.dp, vertical = 14.dp),
+                                        horizontalAlignment = Alignment.CenterHorizontally,
+                                        verticalArrangement = Arrangement.spacedBy(5.dp)) {
+                                        Text(if (h == 24) "Сутки" else "$h ч", fontSize = 19.sp,
+                                            fontWeight = FontWeight.ExtraBold,
+                                            color = if (selected) Color.White else PremiumTheme.Text)
+                                        Text(if (h == 24) "${vehicle.dailyPriceRub} ₽" else "${vehicle.hourlyPriceRub} ₽/ч",
+                                            fontSize = 11.sp, maxLines = 1,
+                                            color = if (selected) Color.White else PremiumTheme.Muted)
+                                        Text(if (selected) "Выбрано" else "Выбрать", fontSize = 10.sp,
+                                            color = if (selected) Color.White.copy(alpha = .8f) else PremiumTheme.Muted)
+                                    }
+                                }
                             }
                         }
                     }
@@ -218,12 +246,17 @@ fun FullScreenVehicleBooking(
                 Surface(color = PremiumTheme.Mint, shape = RoundedCornerShape(20.dp)) {
                     Column(Modifier.fillMaxWidth().padding(16.dp),
                         verticalArrangement = Arrangement.spacedBy(7.dp)) {
-                        Text("Тариф аренды", fontSize = 12.sp, color = PremiumTheme.Green)
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Text("${vehicle.hourlyPriceRub} ₽/ч",
-                                fontSize = 22.sp, fontWeight = FontWeight.ExtraBold,
-                                color = PremiumTheme.GreenDark, modifier = Modifier.weight(1f))
-                            Icon(Icons.Outlined.ReceiptLong, null, tint = PremiumTheme.Green)
+                        Row(verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                            Icon(Icons.Outlined.Schedule, null, tint = PremiumTheme.Green,
+                                modifier = Modifier.size(27.dp))
+                            Column(Modifier.weight(1f)) {
+                                Text("$hours ч аренды", fontSize = 17.sp,
+                                    fontWeight = FontWeight.Bold, color = PremiumTheme.GreenDark)
+                                Text(if (offlineTraining) "Учебный сценарий · время начнётся после осмотра"
+                                    else "${start.format(DateTimeFormatter.ofPattern("dd.MM, HH:mm"))} — ${end.format(DateTimeFormatter.ofPattern("dd.MM, HH:mm"))}",
+                                    fontSize = 11.sp, color = PremiumTheme.Muted)
+                            }
                         }
                         Text(if (offlineTraining) "Расчёт учебного тарифа · списания нет"
                              else if (checking) "Проверяем стоимость и доступность…"
@@ -239,14 +272,14 @@ fun FullScreenVehicleBooking(
                     fontSize = 11.sp, color = PremiumTheme.Muted, lineHeight = 16.sp)
             }
             Surface(color = Color.White, shadowElevation = 12.dp) {
-                Column(Modifier.fillMaxWidth().padding(horizontal = 17.dp, vertical = 12.dp),
+                Column(Modifier.fillMaxWidth().navigationBarsPadding().padding(horizontal = 17.dp, vertical = 12.dp),
                     verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Column(Modifier.weight(1f)) {
-                            Text("Итого за ${hours} ч", fontSize = 11.sp, color = PremiumTheme.Muted)
+                            Text("Итого за ${hours} ч", fontSize = 12.sp, color = PremiumTheme.Muted)
                             Text(if (checking) "Рассчитываем…" else if (available && quotedPrice != null)
                                     "${quotedPrice} ₽" else "Нет тарифа",
-                                fontSize = 24.sp, fontWeight = FontWeight.ExtraBold,
+                                fontSize = 29.sp, fontWeight = FontWeight.ExtraBold,
                                 color = PremiumTheme.GreenDark)
                         }
                         Text("Без залога", fontSize = 12.sp, color = PremiumTheme.Green)

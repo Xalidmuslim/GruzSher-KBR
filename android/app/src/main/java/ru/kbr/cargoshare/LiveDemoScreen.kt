@@ -198,7 +198,7 @@ fun LiveDemoScreen(
                 if (car != null) {
                     Text("Срок аренды", color = LiveInk, fontWeight = FontWeight.SemiBold)
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        listOf(2, 4, 8).forEach { h ->
+                        listOf(2, 4, 8, 24).forEach { h ->
                             FilterChip(selected = session.durationHours == h,
                                 onClick = { perform(LiveEvent.SET_DURATION, h.toString()) },
                                 label = { Text("$h часа") })
@@ -269,7 +269,7 @@ fun LiveDemoScreen(
                 PremiumTripDashboard(session, car, now) { if(it==LiveEvent.REPORT_INCIDENT) reportKind="incident" else perform(it) }
                 if (session.assistance) {
                     LiveNote("Учебная поддержка: «Здравствуйте! Мы видим вашу тестовую поездку. Какой у вас вопрос?»")
-                    if (sentSupport != null) LiveNote("Вы: $sentSupport\nДемо-оператор: «Спасибо. В настоящем сервисе с вами свяжется сотрудник»")
+                    session.events.filter { it.startsWith("Демо-чат:") }.takeLast(6).forEach { LiveNote(it) }
                     OutlinedTextField(supportText, onValueChange = { supportText = it.take(140) },
                         modifier = Modifier.fillMaxWidth(), label = { Text("Сообщение") })
                     OutlinedButton(onClick = { perform(LiveEvent.ASK_SUPPORT, supportText); sentSupport = supportText; supportText = "" },

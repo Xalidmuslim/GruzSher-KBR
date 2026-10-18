@@ -15,6 +15,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -233,14 +234,22 @@ private fun PremiumTruckCard(vehicle: Vehicle, onClick: () -> Unit) {
 @Composable
 internal fun NalchikMap(cars: List<Vehicle>, onSelect: (Vehicle) -> Unit, modifier: Modifier = Modifier, selectedVehicleId: String? = null) {
     val context = LocalContext.current
+    var savedLatitude by rememberSaveable { mutableDoubleStateOf(NalchikCenter.latitude) }
+    var savedLongitude by rememberSaveable { mutableDoubleStateOf(NalchikCenter.longitude) }
+    var savedZoom by rememberSaveable { mutableDoubleStateOf(13.0) }
+    var lastSelection by rememberSaveable { mutableStateOf(selectedVehicleId) }
     val map = remember(context) {
         Configuration.getInstance().userAgentValue = context.packageName
         MapView(context).apply {
             setTileSource(TileSourceFactory.MAPNIK)
             setMultiTouchControls(true)
             setBuiltInZoomControls(false) // OSMDroid defaults obscure truck pins
-            controller.setZoom(13.0)
-            controller.setCenter(NalchikCenter)
+            controller.setZoom(savedZoom)
+            controller.setCenter(GeoPoint(savedLatitude,savedLongitude))
+            addMapListener(object: org.osmdroid.events.MapListener {
+                override fun onScroll(event:org.osmdroid.events.ScrollEvent):Boolean {savedLatitude=mapCenter.latitude;savedLongitude=mapCenter.longitude;return false}
+                override fun onZoom(event:org.osmdroid.events.ZoomEvent):Boolean {savedZoom=event.zoomLevel;return false}
+            })
             minZoomLevel = 8.0
             maxZoomLevel = 19.0
         }
@@ -289,7 +298,8 @@ internal fun NalchikMap(cars: List<Vehicle>, onSelect: (Vehicle) -> Unit, modifi
     LaunchedEffect(selectedVehicleId,map,cars) {
         val selected=cars.firstOrNull {it.id==selectedVehicleId}
         map.overlays.filterIsInstance<Marker>().forEach {it.icon=compactTruckMarker(context, selected=it.title==selected?.name)}
-        if(selected?.latitude!=null && selected.longitude!=null) map.controller.animateTo(GeoPoint(selected.latitude,selected.longitude))
+        if(selectedVehicleId!=lastSelection && selected?.latitude!=null && selected.longitude!=null) map.controller.animateTo(GeoPoint(selected.latitude,selected.longitude))
+        lastSelection=selectedVehicleId
         map.invalidate()
     }
     DisposableEffect(map, permissionGranted) {

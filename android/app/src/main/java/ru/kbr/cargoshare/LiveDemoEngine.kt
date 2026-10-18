@@ -122,7 +122,7 @@ fun applyLive(s: LiveDemoSession, event: LiveEvent, now: Long, value: String = "
     val c = advanceLive(s, now)
     return when (event) {
         LiveEvent.RESET -> valid(LiveDemoSession(), "Учебный сценарий сброшен")
-        LiveEvent.PICK_CAR -> if (c.phase != LivePhase.CHOOSE || value.isBlank()) invalid(c, "Выберите грузовик")
+        LiveEvent.PICK_CAR -> if (c.phase != LivePhase.CHOOSE || value !in offlineDemoCatalog().map { it.id }) invalid(c, "Выберите грузовик из учебного каталога")
             else valid(c.copy(phase = LivePhase.PHONE, carId = value), "Автомобиль выбран")
         LiveEvent.REQUEST_CODE -> if (c.phase != LivePhase.PHONE || !value.matches(Regex("^\\+?7[0-9]{10}$")))
             invalid(c, "Введите учебный номер +7 и 10 цифр")
@@ -146,7 +146,7 @@ fun applyLive(s: LiveDemoSession, event: LiveEvent, now: Long, value: String = "
         LiveEvent.START_PAYMENT -> if (c.phase != LivePhase.PAYMENT || c.paymentStartedAt != 0L)
             invalid(c, "Демонстрационная карта уже проверяется")
             else valid(c.copy(paymentStartedAt = now), "Проверяем виртуальную карту •••• 0000…")
-        LiveEvent.SET_DURATION -> if (c.phase != LivePhase.CONFIRM || value.toIntOrNull() !in listOf(2, 4, 8))
+        LiveEvent.SET_DURATION -> if (c.phase != LivePhase.CONFIRM || value.toIntOrNull() !in listOf(2, 4, 8, 24))
             invalid(c, "Выберите доступный срок")
             else valid(c.copy(durationHours = value.toInt()), "Длительность обновлена")
         LiveEvent.ACCEPT_TERMS -> if(c.phase != LivePhase.CONFIRM) invalid(c,"Условия доступны перед бронированием")

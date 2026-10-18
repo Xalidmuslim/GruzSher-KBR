@@ -93,11 +93,10 @@ fun FullScreenVehicleBooking(
         }
     }
     Dialog(onDismissRequest = onDismiss,
-        properties = DialogProperties(usePlatformDefaultWidth = false, decorFitsSystemWindows = false)) {
-        // Keep the fixed booking CTA entirely above Android's bottom gesture bar.
+        properties = DialogProperties(usePlatformDefaultWidth = false, decorFitsSystemWindows = true)) {
+        // Let the dialog fit the OS window. The fixed footer owns the bottom insets.
         Column(Modifier.fillMaxSize().background(PremiumTheme.Paper)
-            .statusBarsPadding().navigationBarsPadding().imePadding()
-            .padding(bottom = 8.dp)) {
+            .statusBarsPadding().imePadding()) {
             Row(
                 Modifier.fillMaxWidth().background(Color.White).padding(start = 11.dp,
                     end = 18.dp, top = 7.dp, bottom = 7.dp),
@@ -274,12 +273,11 @@ fun FullScreenVehicleBooking(
                      else "Для реального бронирования нужны проверка допуска и серверное подтверждение.",
                     fontSize = 11.sp, color = PremiumTheme.Muted, lineHeight = 16.sp)
             }
-            Surface(color = Color.White, shadowElevation = 12.dp) {
-                // The fullscreen Dialog window may report zero navigation-bar insets on
-                // gesture-navigation devices. Reserve a physical white footer area
-                // *after* the CTA so the gesture pill can never be drawn across it.
+            Surface(color = Color.White, shadowElevation = 12.dp,
+                modifier = Modifier.fillMaxWidth().navigationBarsPadding()) {
+                // Always render the CTA above Android gesture navigation.
                 Column(Modifier.fillMaxWidth()
-                    .padding(start = 17.dp, end = 17.dp, top = 9.dp, bottom = 28.dp),
+                    .padding(start = 17.dp, end = 17.dp, top = 9.dp, bottom = 18.dp),
                     verticalArrangement = Arrangement.spacedBy(7.dp)) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Column(Modifier.weight(1f)) {

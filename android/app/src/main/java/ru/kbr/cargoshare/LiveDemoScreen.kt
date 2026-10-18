@@ -464,7 +464,7 @@ fun LiveDemoScreen(
 @Composable private fun LiveHeader(step: String, heading: String, detail: String) {
     Surface(color = Color.White, shape = RoundedCornerShape(18.dp)) {
         Column(Modifier.fillMaxWidth().padding(18.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-            Text("ЭТАП $step / 13", fontSize = 10.sp, color = LiveGreen, fontWeight = FontWeight.Bold)
+            Text("ЭТАП $step / 14", fontSize = 10.sp, color = LiveGreen, fontWeight = FontWeight.Bold)
             Text(heading, fontSize = 22.sp, fontWeight = FontWeight.Bold, color = LiveInk)
             Text(detail, fontSize = 12.sp, lineHeight = 17.sp, color = LiveGray)
         }

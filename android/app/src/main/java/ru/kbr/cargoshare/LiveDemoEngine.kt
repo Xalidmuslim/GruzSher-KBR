@@ -50,6 +50,7 @@ private fun valid(s: LiveDemoSession, text: String): LiveOutcome =
 private fun invalid(s: LiveDemoSession, text: String): LiveOutcome = LiveOutcome(s, false, text)
 
 const val LIVE_ROUTE_MS = 75_000L
+const val LIVE_ROUTE_DISTANCE_KM = 0.6 // 600 m in 75 s: approximately 29 km/h
 const val LIVE_APPROACH_MS = 12_000L
 const val LIVE_OPERATION_MS = 2_500L
 const val LIVE_RETURN_MS = 16_000L
@@ -64,6 +65,14 @@ fun routeFraction(s: LiveDemoSession, now: Long): Float {
     return ((now - s.drivingAt - s.pausedSeconds * 1000L -
         if (s.pauseStartedAt > 0) now - s.pauseStartedAt else 0L).coerceAtLeast(0L).toFloat() / LIVE_ROUTE_MS).coerceIn(0f, 1f)
 }
+
+/** Route metrics must derive from a single clock and single distance model. */
+fun demoDistanceKm(s: LiveDemoSession, now: Long): Double =
+    routeFraction(s, now).toDouble() * LIVE_ROUTE_DISTANCE_KM
+
+fun demoSpeedKmh(s: LiveDemoSession): Int =
+    if (s.phase != LivePhase.DRIVING || s.pauseStartedAt > 0L) 0
+    else (LIVE_ROUTE_DISTANCE_KM * 3_600_000.0 / LIVE_ROUTE_MS).roundToInt()
 
 fun elapsedRideSeconds(s: LiveDemoSession, now: Long): Long =
     if (s.drivingAt == 0L) 0L else

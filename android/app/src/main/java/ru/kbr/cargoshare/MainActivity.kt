@@ -106,6 +106,26 @@ private fun AppScreen() {
             error = "Эта заявка относится к прежнему офлайн-сценарию. Текущую поездку можно продолжить через LIVE Демо."
         }
     }
+    fun trainForBooking(booking: Booking) {
+        if (!offlineDemo || !BuildConfig.DEBUG) {
+            error = "Учебный сценарий доступен только в демонстрационном режиме."
+            return
+        }
+        if (vehicles.none { it.id == booking.vehicleId }) {
+            error = "Грузовик этой заявки отсутствует в учебном каталоге."
+            return
+        }
+        val current = LiveDemoStorage(context.applicationContext).load()
+        if (current.phase != LivePhase.CHOOSE) {
+            liveSelectedCarId = null
+            tab = 3
+            error = "Уже открыт другой учебный сценарий. Завершите его или нажмите «Сначала» в LIVE Демо, затем выберите грузовик. Заявка на дату останется без изменений."
+            return
+        }
+        liveSelectedCarId = booking.vehicleId
+        tab = 3
+    }
+
     fun runDemoAction(action: DemoAction) {
         val result = performDemoAction(demoState, action)
         demoNotice = result.message
@@ -206,6 +226,7 @@ private fun AppScreen() {
                 1 -> TripsDashboard(bookings = bookings, cars = vehicles,
                     live = liveOverview, offline = offlineDemo,
                     onResume = { chooseTrip(it) },
+                    onTrain = { trainForBooking(it) },
                     onBrowse = { tab = 0 },
                     onTimeline = { id ->
                         if (offlineDemo && BuildConfig.DEBUG) {

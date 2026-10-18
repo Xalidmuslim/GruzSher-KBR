@@ -1,6 +1,8 @@
 package ru.kbr.cargoshare
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -67,6 +69,7 @@ private fun ticketLabel(b: Booking, live: LiveDemoSession): String =
 private fun isCurrent(b: Booking): Boolean =
     b.status !in setOf("COMPLETED", "CANCELLED", "EXPIRED")
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun TripsDashboard(
     bookings: List<Booking>,
@@ -241,7 +244,8 @@ fun TripsDashboard(
             }
         }
         ModalBottomSheet(onDismissRequest = { showing = null }, containerColor = Paper) {
-            Column(Modifier.fillMaxWidth().padding(horizontal = 20.dp).padding(bottom = 28.dp),
+            Column(Modifier.fillMaxWidth().verticalScroll(rememberScrollState())
+                .padding(horizontal = 20.dp).padding(bottom = 28.dp),
                 verticalArrangement = Arrangement.spacedBy(10.dp)) {
                 Text("События аренды", color = Dark, fontSize = 23.sp, fontWeight = FontWeight.Bold)
                 Text(ticketLabel(b, live), color = Jade, fontSize = 12.sp)

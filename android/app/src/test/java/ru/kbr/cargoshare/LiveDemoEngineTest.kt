@@ -89,7 +89,7 @@ class LiveDemoEngineTest {
         val s = LiveDemoSession(phase = LivePhase.DRIVING, durationHours = 2,
             drivingAt = base, extraHours = 2)
         assertEquals(4 * 650, demoFare(s, 650, base))
-        assertTrue(demoFare(s, 650, base + 31_000L) > 4 * 650)
+        assertEquals(4 * 650, demoFare(s, 650, base + 31_000L))
     }
 
     @Test fun receiptTotalFreezesAfterArrival() {

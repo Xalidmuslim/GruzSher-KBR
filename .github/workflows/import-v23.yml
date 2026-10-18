@@ -3,7 +3,7 @@ name: Import v2.3 source and build Android APK
 on:
   push:
     paths:
-      - 'GruzSher-KBR-v2.3-alpha-CI-source.zip'
+      - 'source/GruzSher-KBR-v2.3-source.tar.xz.b64'
   workflow_dispatch:
 
 permissions:
@@ -16,31 +16,19 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Verify exact v2.3 source archive
+      - name: Decode and verify v2.3 source archive
         shell: bash
         run: |
-          test -f GruzSher-KBR-v2.3-alpha-CI-source.zip || { echo '::error::Upload the v2.3 ZIP to the repository root first'; exit 1; }
-          echo '808f91e914f93dc753b3b581521b811599e5b1e691fed8b509bb39bc7092c136  GruzSher-KBR-v2.3-alpha-CI-source.zip' | sha256sum --check
-
+          test -s source/GruzSher-KBR-v2.3-source.tar.xz.b64
+          base64 --decode source/GruzSher-KBR-v2.3-source.tar.xz.b64 > /tmp/gruzsher-v2.3-source.tar.xz
+          echo 'a43057a4a4a646af97c31d26130ad2b7d852beb026c7eca6159a15eff8c74ce4  /tmp/gruzsher-v2.3-source.tar.xz' | sha256sum --check
       - name: Extract verified project files
         shell: bash
         run: |
-          python3 - <<'PY'
-          from pathlib import Path, PurePosixPath
-          from zipfile import ZipFile
-          archive = Path('GruzSher-KBR-v2.3-alpha-CI-source.zip')
-          allowed_roots = {'android', 'backend', 'ios', 'docs', '.github', 'README.md', '.gitignore', 'docker-compose.yml'}
-          with ZipFile(archive) as z:
-              for entry in z.infolist():
-                  p = PurePosixPath(entry.filename)
-                  if p.is_absolute() or '..' in p.parts or not p.parts or p.parts[0] not in allowed_roots:
-                      raise ValueError(f'Unsafe path: {entry.filename}')
-              z.extractall('.')
-          for path in ['android/app/build.gradle.kts', 'android/app/src/main/AndroidManifest.xml', 'backend/tests/test_api.py']:
-              if not Path(path).is_file():
-                  raise FileNotFoundError(path)
-          print('Verified v2.3 Android and backend sources extracted')
-          PY
+          tar -xJf /tmp/gruzsher-v2.3-source.tar.xz
+          test -f android/app/build.gradle.kts
+          test -f android/app/src/main/AndroidManifest.xml
+          test -f backend/tests/test_api.py
 
       - name: Commit imported project to main
         shell: bash

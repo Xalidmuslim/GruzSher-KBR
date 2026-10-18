@@ -8,7 +8,7 @@ android {
     namespace = "ru.kbr.cargoshare"
     compileSdk = 35
     defaultConfig {
-        applicationId = "ru.kbr.cargoshare.referencepreview.uifix"
+        applicationId = "ru.kbr.cargoshare.referencepreview.compact"
         minSdk = 26
         targetSdk = 35
         versionCode = 38

@@ -1,0 +1,35 @@
+<?xml version='1.0' encoding='UTF-8' ?>
+<testsuite tests="0" failures="0" errors="0" skipped="0" time="1.792337279185E9" timestamp="2026-10-18T15:27:59" hostname="localhost">
+  <properties>
+    <property name="device" value="emulator-5554" />
+    <property name="flavor" value="" />
+    <property name="project" value=":app" />
+  </properties>
+  <system-err>Exception thrown during onBeforeAll invocation of plugin AndroidTestApkInstallerPlugin: ErrorName: UNKNOWN
+NameSpace: DdmlibAndroidDeviceController
+ErrorCode: 1
+ErrorType: TEST
+Message: Failed to install split APK(s): [/workspace/GruzSher-KBR/android/app/build/outputs/apk/debug/app-debug.apk]
+Failed to install split APK(s): [/workspace/GruzSher-KBR/android/app/build/outputs/apk/debug/app-debug.apk]
+'package install-create -r -t -S 25319662' returns error 'Unknown failure: cmd: Can't find service: package'
+com.android.ddmlib.InstallException: 'package install-create -r -t -S 25319662' returns error 'Unknown failure: cmd: Can't find service: package'
+	at com.android.ddmlib.SplitApkInstallerBase.createMultiInstallSession(SplitApkInstallerBase.java:124)
+	at com.android.ddmlib.SplitApkInstaller.install(SplitApkInstaller.java:68)
+	at com.android.ddmlib.IDeviceSharedImpl.installPackages(IDeviceSharedImpl.java:395)
+	at com.android.ddmlib.internal.DeviceImpl.lambda$installPackages$34(DeviceImpl.java:1491)
+	at com.android.ddmlib.internal.DeviceImpl.logRun3(DeviceImpl.java:1833)
+	at com.android.ddmlib.internal.DeviceImpl.installPackages(DeviceImpl.java:1488)
+	at com.android.ddmlib.internal.DeviceImpl.lambda$installPackages$35(DeviceImpl.java:1503)
+	at com.android.ddmlib.internal.DeviceImpl.logRun3(DeviceImpl.java:1833)
+	at com.android.ddmlib.internal.DeviceImpl.installPackages(DeviceImpl.java:1499)
+	at com.android.tools.utp.plugins.deviceprovider.ddmlib.DdmlibAndroidDevice.installPackages(DdmlibAndroidDevice.kt:74)
+	at com.android.tools.utp.plugins.deviceprovider.ddmlib.DdmlibAndroidDeviceController$executeAsync$deferred$1.invokeSuspend(DdmlibAndroidDeviceController.kt:259)
+	at kotlin.coroutines.jvm.internal.BaseContinuationImpl.resumeWith(ContinuationImpl.kt:33)
+	at kotlinx.coroutines.DispatchedTask.run(DispatchedTask.kt:106)
+	at kotlinx.coroutines.scheduling.CoroutineScheduler.runSafely(CoroutineScheduler.kt:570)
+	at kotlinx.coroutines.scheduling.CoroutineScheduler$Worker.executeTask(CoroutineScheduler.kt:749)
+	at kotlinx.coroutines.scheduling.CoroutineScheduler$Worker.runWorker(CoroutineScheduler.kt:677)
+	at kotlinx.coroutines.scheduling.CoroutineScheduler$Worker.run(CoroutineScheduler.kt:664)
+
+</system-err>
+</testsuite>

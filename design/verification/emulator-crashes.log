@@ -1,0 +1,22 @@
+--------- beginning of crash
+10-18 15:12:15.121  1597  1651 E AndroidRuntime: FATAL EXCEPTION: GoogleApiHandler
+10-18 15:12:15.121  1597  1651 E AndroidRuntime: Process: com.google.android.apps.wellbeing, PID: 1597
+10-18 15:12:15.121  1597  1651 E AndroidRuntime: DeadSystemException: The system died; earlier logs will point to the root cause
+10-18 15:12:15.164  1597  1597 E AndroidRuntime: FATAL EXCEPTION: main
+10-18 15:12:15.164  1597  1597 E AndroidRuntime: Process: com.google.android.apps.wellbeing, PID: 1597
+10-18 15:12:15.164  1597  1597 E AndroidRuntime: DeadSystemException: The system died; earlier logs will point to the root cause
+10-18 15:12:15.170  1736  1736 E AndroidRuntime: FATAL EXCEPTION: main
+10-18 15:12:15.170  1736  1736 E AndroidRuntime: Process: com.google.android.deskclock, PID: 1736
+10-18 15:12:15.170  1736  1736 E AndroidRuntime: DeadSystemException: The system died; earlier logs will point to the root cause
+10-18 15:12:15.208  1713  1713 E AndroidRuntime: FATAL EXCEPTION: main
+10-18 15:12:15.208  1713  1713 E AndroidRuntime: Process: com.android.phone, PID: 1713
+10-18 15:12:15.208  1713  1713 E AndroidRuntime: DeadSystemException: The system died; earlier logs will point to the root cause
+10-18 15:12:15.338  1686  1686 E AndroidRuntime: FATAL EXCEPTION: main
+10-18 15:12:15.338  1686  1686 E AndroidRuntime: Process: com.android.bluetooth, PID: 1686
+10-18 15:12:15.338  1686  1686 E AndroidRuntime: DeadSystemException: The system died; earlier logs will point to the root cause
+10-18 15:12:15.586   734   734 E AndroidRuntime: FATAL EXCEPTION: main
+10-18 15:12:15.586   734   734 E AndroidRuntime: Process: com.android.systemui, PID: 734
+10-18 15:12:15.586   734   734 E AndroidRuntime: DeadSystemException: The system died; earlier logs will point to the root cause
+10-18 15:12:16.553  1658  1658 E AndroidRuntime: FATAL EXCEPTION: main
+10-18 15:12:16.553  1658  1658 E AndroidRuntime: Process: com.google.android.inputmethod.latin, PID: 1658
+10-18 15:12:16.553  1658  1658 E AndroidRuntime: DeadSystemException: The system died; earlier logs will point to the root cause

@@ -8,8 +8,12 @@ import org.json.JSONObject
 class LiveDemoStorage(context: Context) {
     private val prefs = context.getSharedPreferences("gruzsher_live_demo_v1", Context.MODE_PRIVATE)
 
-    fun load(): LiveDemoSession = runCatching {
-        val j = JSONObject(prefs.getString("progress", "{}") ?: "{}")
+    fun load(): LiveDemoSession = decode(prefs.getString("progress", "{}") ?: "{}")
+
+    fun receipt(id: String): LiveDemoSession? = prefs.getString("receipt_$id", null)?.let(::decode)
+
+    private fun decode(raw: String): LiveDemoSession = runCatching {
+        val j = JSONObject(raw)
         val phase = runCatching { LivePhase.valueOf(j.optString("phase", "CHOOSE")) }.getOrDefault(LivePhase.CHOOSE)
         val angles = j.optJSONArray("inspected") ?: JSONArray()
         val events = j.optJSONArray("events") ?: JSONArray()
@@ -27,6 +31,8 @@ class LiveDemoStorage(context: Context) {
             approachStartedAt = j.optLong("approachStartedAt"),
             inspected = (0 until angles.length()).map { angles.getString(it) }.toSet(),
             damageRecorded = j.optBoolean("damageRecorded"),
+            termsAccepted = j.optBoolean("termsAccepted"),
+            returnConditionChecked = j.optBoolean("returnConditionChecked"),
             unlockingAt = j.optLong("unlockingAt"),
             drivingAt = j.optLong("drivingAt"),
             returnRequestedAt = j.optLong("returnRequestedAt"),
@@ -46,7 +52,19 @@ class LiveDemoStorage(context: Context) {
         )
     }.getOrDefault(LiveDemoSession())
 
+    fun saveReceipt(s: LiveDemoSession) {
+        require(s.phase == LivePhase.RECEIPT && s.bookingId.isNotBlank())
+        prefs.edit().putString("receipt_${s.bookingId}", encode(s).toString()).apply()
+    }
+
     fun save(s: LiveDemoSession) {
+        val j = encode(s)
+        val edit = prefs.edit().putString("progress",j.toString())
+        if (s.phase == LivePhase.RECEIPT && s.bookingId.isNotBlank()) edit.putString("receipt_${s.bookingId}",j.toString())
+        edit.apply()
+    }
+
+    private fun encode(s: LiveDemoSession): JSONObject {
         val j = JSONObject().apply {
             put("phase", s.phase.name)
             put("carId", s.carId)
@@ -60,6 +78,8 @@ class LiveDemoStorage(context: Context) {
             put("approachStartedAt", s.approachStartedAt)
             put("inspected", JSONArray(s.inspected.toList()))
             put("damageRecorded", s.damageRecorded)
+            put("termsAccepted", s.termsAccepted)
+            put("returnConditionChecked", s.returnConditionChecked)
             put("unlockingAt", s.unlockingAt)
             put("drivingAt", s.drivingAt)
             put("returnRequestedAt", s.returnRequestedAt)
@@ -77,6 +97,6 @@ class LiveDemoStorage(context: Context) {
             put("bookingId", s.bookingId)
             put("events", JSONArray(s.events.takeLast(30)))
         }
-        prefs.edit().putString("progress", j.toString()).apply()
+        return j
     }
 }

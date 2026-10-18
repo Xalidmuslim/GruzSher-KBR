@@ -20,6 +20,8 @@ data class LiveDemoSession(
     val approachStartedAt: Long = 0L,
     val inspected: Set<String> = emptySet(),
     val damageRecorded: Boolean = false,
+    val termsAccepted: Boolean = false,
+    val returnConditionChecked: Boolean = false,
     val unlockingAt: Long = 0L,
     val drivingAt: Long = 0L,
     val returnRequestedAt: Long = 0L,
@@ -40,7 +42,7 @@ data class LiveDemoSession(
 
 enum class LiveEvent {
     PICK_CAR, REQUEST_CODE, VERIFY_CODE, SCAN_PASSPORT, SCAN_LICENCE, FAIL_DOCUMENT_CHECK, RETRY_DOCUMENT_CHECK, START_PAYMENT,
-    SET_DURATION, REQUEST_BOOKING, CAPTURE_ANGLE, REPORT_DAMAGE, UNLOCK, START_DRIVE,
+    SET_DURATION, ACCEPT_TERMS, CHECK_RETURN_CONDITION, REQUEST_BOOKING, CAPTURE_ANGLE, REPORT_DAMAGE, UNLOCK, START_DRIVE,
     EXTEND, TOGGLE_WAIT, ASK_SUPPORT, REPORT_INCIDENT, REQUEST_RETURN, TAKE_RETURN_PHOTO, LOCK_DOORS,
     FINISH, SET_RATING, RESET
 }
@@ -63,7 +65,7 @@ fun routeFraction(s: LiveDemoSession, now: Long): Float {
         val portion = ((now - s.returnRequestedAt).toFloat() / LIVE_RETURN_MS).coerceIn(0f, 1f)
         return (s.returnStartFraction + (1f - s.returnStartFraction) * portion).coerceIn(0f, 1f)
     }
-    return ((now - s.drivingAt - s.pausedSeconds * 1000L -
+    return (((if (s.finishedAt > 0L) s.finishedAt else now) - s.drivingAt - s.pausedSeconds * 1000L -
         if (s.pauseStartedAt > 0) now - s.pauseStartedAt else 0L).coerceAtLeast(0L).toFloat() / LIVE_ROUTE_MS).coerceIn(0f, 1f)
 }
 
@@ -77,14 +79,18 @@ fun demoSpeedKmh(s: LiveDemoSession): Int =
 
 fun elapsedRideSeconds(s: LiveDemoSession, now: Long): Long =
     if (s.drivingAt == 0L) 0L else
-        ((now - s.drivingAt - s.pausedSeconds * 1000L -
+        (((if (s.finishedAt > 0L) s.finishedAt else now) - s.drivingAt - s.pausedSeconds * 1000L -
             if (s.pauseStartedAt > 0) now - s.pauseStartedAt else 0L).coerceAtLeast(0L) / 1000L)
 
 /** Fixed demo package price. Driving seconds are included, not billed a second time.
  * The clock is intentionally a simulator clock and is not connected to banking.
  */
-fun demoFare(s: LiveDemoSession, hourlyPriceRub: Int, now: Long): Int =
-    (s.durationHours + s.extraHours) * hourlyPriceRub
+fun demoFare(s: LiveDemoSession, hourlyPriceRub: Int, now: Long): Int {
+    val hours = (s.durationHours + s.extraHours).coerceAtLeast(0)
+    val daily = offlineDemoCatalog().firstOrNull { it.id == s.carId }?.dailyPriceRub
+        ?: return hours * hourlyPriceRub
+    return (hours / 24) * daily + minOf((hours % 24) * hourlyPriceRub, daily)
+}
 
 /** Idempotent time transitions: resilient to Android lifecycle pauses and device restarts. */
 fun advanceLive(s: LiveDemoSession, now: Long): LiveDemoSession = when {
@@ -143,16 +149,21 @@ fun applyLive(s: LiveDemoSession, event: LiveEvent, now: Long, value: String = "
         LiveEvent.SET_DURATION -> if (c.phase != LivePhase.CONFIRM || value.toIntOrNull() !in listOf(2, 4, 8))
             invalid(c, "Выберите доступный срок")
             else valid(c.copy(durationHours = value.toInt()), "Длительность обновлена")
-        LiveEvent.REQUEST_BOOKING -> if (c.phase != LivePhase.CONFIRM)
+        LiveEvent.ACCEPT_TERMS -> if(c.phase != LivePhase.CONFIRM) invalid(c,"Условия доступны перед бронированием")
+            else valid(c.copy(termsAccepted=value=="true"),"Согласие с учебными условиями обновлено")
+        LiveEvent.CHECK_RETURN_CONDITION -> if(c.phase != LivePhase.RETURN) invalid(c,"Проверка доступна в зоне возврата")
+            else valid(c.copy(returnConditionChecked=value=="true"),"Состояние кузова и салона подтверждено · демо")
+        LiveEvent.REQUEST_BOOKING -> if (c.phase != LivePhase.CONFIRM || !c.termsAccepted)
             invalid(c, "Завершите регистрацию и проверку")
             else valid(c.copy(phase = LivePhase.WALK, approvalStartedAt = now, approachStartedAt = now,
                 bookingId = "SIM-${now.toString().takeLast(7)}"),
                 "Учебная бронь подтверждена автоматически. Идём к машине")
         LiveEvent.CAPTURE_ANGLE -> if (c.phase != LivePhase.INSPECT || value !in setOf("Спереди", "Сзади", "Слева", "Справа"))
             invalid(c, "Выберите сторону грузовика")
+            else if(value in c.inspected) invalid(c,"Эта сторона уже осмотрена")
             else valid(c.copy(inspected = c.inspected + value), "Симуляция снимка: $value")
         LiveEvent.REPORT_DAMAGE -> if (c.phase != LivePhase.INSPECT) invalid(c, "Осмотрите автомобиль")
-            else valid(c.copy(damageRecorded = true), "Учебное повреждение добавлено в акт")
+            else valid(c.copy(damageRecorded = true), "Учебное повреждение: ${value.trim().take(240).ifBlank { "отметка водителя" }} · сгенерированное демофото")
         LiveEvent.UNLOCK -> if (c.phase != LivePhase.INSPECT || c.inspected.size != 4)
             invalid(c, "Нужно осмотреть автомобиль со всех четырёх сторон")
             else valid(c.copy(phase = LivePhase.UNLOCK, unlockingAt = now), "Отправляем симулированную команду открытия…")
@@ -166,9 +177,9 @@ fun applyLive(s: LiveDemoSession, event: LiveEvent, now: Long, value: String = "
             else valid(c.copy(pauseStartedAt = 0L, pausedSeconds = c.pausedSeconds + (now - c.pauseStartedAt) / 1000L),
                 "Движение продолжено")
         LiveEvent.ASK_SUPPORT -> if (c.phase != LivePhase.DRIVING) invalid(c, "Поддержка доступна во время поездки")
-            else valid(c.copy(assistance = true), "Учебный оператор: «Здравствуйте! Чем помочь?»")
+            else valid(c.copy(assistance = true), "Демо-чат: ${value.trim().take(240).ifBlank { "Здравствуйте! Чем помочь?" }}")
         LiveEvent.REPORT_INCIDENT -> if (c.phase != LivePhase.DRIVING) invalid(c, "Нет поездки")
-            else valid(c.copy(incident = true), "Учебное обращение о происшествии сохранено")
+            else valid(c.copy(incident = true), "Учебное происшествие: ${value.trim().take(240).ifBlank { "обращение водителя" }}")
         LiveEvent.REQUEST_RETURN -> if (c.phase != LivePhase.DRIVING)
             invalid(c, "Вернуться на стоянку можно только во время учебной поездки")
             else {
@@ -181,7 +192,7 @@ fun applyLive(s: LiveDemoSession, event: LiveEvent, now: Long, value: String = "
             }
         LiveEvent.TAKE_RETURN_PHOTO -> if (c.phase != LivePhase.RETURN || c.returnPhotoAt != 0L) invalid(c, "Дождитесь точки возврата")
             else valid(c.copy(returnPhotoAt = now), "Фиксируем фото при возврате…")
-        LiveEvent.LOCK_DOORS -> if (c.phase != LivePhase.RETURN || c.returnPhotoAt == 0L || now < c.returnPhotoAt + LIVE_OPERATION_MS)
+        LiveEvent.LOCK_DOORS -> if (c.phase != LivePhase.RETURN || c.returnPhotoAt == 0L || c.lockingAt != 0L || !c.returnConditionChecked || now < c.returnPhotoAt + LIVE_OPERATION_MS)
             invalid(c, "Сначала сфотографируйте машину при возврате")
             else valid(c.copy(lockingAt = now), "Отправляем учебную команду закрытия…")
         LiveEvent.FINISH -> if (c.phase != LivePhase.RETURN || c.lockingAt == 0L || now < c.lockingAt + LIVE_OPERATION_MS)

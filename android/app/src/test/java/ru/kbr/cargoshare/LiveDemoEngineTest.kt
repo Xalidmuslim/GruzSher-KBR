@@ -24,7 +24,7 @@ class LiveDemoEngineTest {
         s = action(s, LiveEvent.START_PAYMENT, base + 6100L)
         s = advanceLive(s, base + 8700L)
         assertEquals(LivePhase.CONFIRM, s.phase)
-        return s
+        return action(s, LiveEvent.ACCEPT_TERMS, base + 8800L, "true")
     }
 
     @Test fun phoneCodeIsDelayedAndActuallyValidated() {
@@ -108,6 +108,7 @@ class LiveDemoEngineTest {
         assertFalse(applyLive(s, LiveEvent.FINISH, base + 75_000L).accepted)
         s = action(s, LiveEvent.TAKE_RETURN_PHOTO, base + 76_000L)
         assertFalse(applyLive(s, LiveEvent.LOCK_DOORS, base + 77_000L).accepted)
+        s = action(s, LiveEvent.CHECK_RETURN_CONDITION, base + 78_400L, "true")
         s = action(s, LiveEvent.LOCK_DOORS, base + 78_500L)
         assertFalse(applyLive(s, LiveEvent.FINISH, base + 80_000L).accepted)
         s = action(s, LiveEvent.FINISH, base + 81_000L)
@@ -185,6 +186,94 @@ class LiveDemoEngineTest {
             val r = applyLive(s, event, base)
             assertFalse(r.accepted)
             assertEquals(s, r.state)
+        }
+    }
+
+    @Test fun receiptElapsedTimeIsFrozenAtCompletion() {
+        val s = LiveDemoSession(phase = LivePhase.RECEIPT, drivingAt = base, finishedAt = base + 30_000)
+        assertEquals(30L, elapsedRideSeconds(s, base + 900_000))
+    }
+    @Test fun duplicateLockCannotRestartAcknowledgementTimer() {
+        val s = LiveDemoSession(phase = LivePhase.RETURN, returnPhotoAt = base - 3000, lockingAt = base)
+        val result = applyLive(s, LiveEvent.LOCK_DOORS, base + 1000)
+        assertEquals(base, result.state.lockingAt)
+    }
+    @Test fun supportAndIncidentStoreActualReportText() {
+        val s = LiveDemoSession(phase = LivePhase.DRIVING, drivingAt = base)
+        val support = applyLive(s, LiveEvent.ASK_SUPPORT, base + 1000, "Как продлить аренду?")
+        assertTrue(support.state.events.last().contains("Как продлить аренду?"))
+        val incident = applyLive(s, LiveEvent.REPORT_INCIDENT, base + 1000, "Повреждено зеркало")
+        assertTrue(incident.state.events.last().contains("Повреждено зеркало"))
+    }
+    @Test fun damageDescriptionIsPreservedInAct() {
+        val s = LiveDemoSession(phase = LivePhase.INSPECT)
+        val r = applyLive(s, LiveEvent.REPORT_DAMAGE, base, "Царапина слева, учебное фото")
+        assertTrue(r.state.events.last().contains("Царапина слева"))
+    }
+
+    @Test fun cannotCloseReturnBeforeConditionConfirmation() {
+        val s=LiveDemoSession(phase=LivePhase.RETURN,returnPhotoAt=base)
+        assertFalse(applyLive(s,LiveEvent.LOCK_DOORS,base+3000).accepted)
+    }
+    @Test fun confirmStageRequiresExplicitTermsAcceptance() {
+        assertFalse(applyLive(LiveDemoSession(phase=LivePhase.CONFIRM),LiveEvent.REQUEST_BOOKING,base).accepted)
+    }
+
+    @Test fun liveFareUsesSameDailyCapAsCatalogQuote() {
+        val s=LiveDemoSession(carId="gazelle-next",durationHours=8)
+        assertEquals(3400,demoFare(s,550,base))
+    }
+
+    @Test fun fullRentalForEveryModelProducesStableReceiptAndHistory() {
+        offlineDemoCatalog().forEach { car ->
+            var t=base
+            var s=action(LiveDemoSession(durationHours=8),LiveEvent.PICK_CAR,t,car.id)
+            s=action(s,LiveEvent.REQUEST_CODE,++t,"+79000000000")
+            t+=3001;s=action(s,LiveEvent.VERIFY_CODE,t,"2468")
+            t+=LIVE_OPERATION_MS;s=advanceLive(s,t)
+            s=action(s,LiveEvent.START_PAYMENT,++t)
+            t+=LIVE_OPERATION_MS;s=advanceLive(s,t)
+            s=action(s,LiveEvent.ACCEPT_TERMS,++t,"true")
+            s=action(s,LiveEvent.REQUEST_BOOKING,++t)
+            val id=s.bookingId
+            assertFalse(applyLive(s,LiveEvent.REQUEST_BOOKING,++t).accepted)
+            t+=LIVE_APPROACH_MS;s=advanceLive(s,t)
+            listOf("Спереди","Сзади","Слева","Справа").forEach { side -> s=action(s,LiveEvent.CAPTURE_ANGLE,++t,side) }
+            s=action(s,LiveEvent.REPORT_DAMAGE,++t,"Демо: царапина на кузове")
+            s=action(s,LiveEvent.UNLOCK,++t)
+            t+=LIVE_OPERATION_MS;s=advanceLive(s,t)
+            s=action(s,LiveEvent.START_DRIVE,++t)
+            t+=1000;s=action(s,LiveEvent.TOGGLE_WAIT,t)
+            val distance=demoDistanceKm(s,t)
+            t+=10000;assertEquals(distance,demoDistanceKm(s,t),0.001)
+            s=action(s,LiveEvent.ASK_SUPPORT,t,"Как вернуть машину?")
+            s=action(s,LiveEvent.REPORT_INCIDENT,t,"Демо: проверка обращения")
+            s=action(s,LiveEvent.EXTEND,++t)
+            s=action(s,LiveEvent.TOGGLE_WAIT,++t)
+            s=action(s,LiveEvent.REQUEST_RETURN,++t)
+            t+=LIVE_RETURN_MS;s=advanceLive(s,t)
+            s=action(s,LiveEvent.TAKE_RETURN_PHOTO,++t)
+            s=action(s,LiveEvent.CHECK_RETURN_CONDITION,++t,"true")
+            t+=LIVE_OPERATION_MS;s=action(s,LiveEvent.LOCK_DOORS,t)
+            t+=LIVE_OPERATION_MS;s=action(s,LiveEvent.FINISH,t)
+            s=action(s,LiveEvent.SET_RATING,++t,"5")
+            assertEquals(LivePhase.RECEIPT,s.phase)
+            assertEquals(id,s.bookingId)
+            assertEquals(5,s.rating)
+            assertTrue(s.locked)
+            assertTrue(s.events.any {it.contains("Как вернуть машину?")})
+            assertEquals(car.dailyPriceRub,demoFare(s,car.hourlyPriceRub,t))
+            assertEquals(elapsedRideSeconds(s,t),elapsedRideSeconds(s,t+900000))
+            assertFalse(applyLive(s,LiveEvent.FINISH,++t).accepted)
+        }
+    }
+    @Test fun everyDocumentFailureBlocksProgressUntilRetry() {
+        listOf("Нечитаемый документ","Истёк срок","Неверная категория").forEach { issue ->
+            val checking=LiveDemoSession(phase=LivePhase.DOCUMENTS,passportStartedAt=base,licenceStartedAt=base)
+            val failed=action(checking,LiveEvent.FAIL_DOCUMENT_CHECK,base+1,issue)
+            assertEquals(LivePhase.DOCUMENTS,advanceLive(failed,base+100000).phase)
+            val retried=action(failed,LiveEvent.RETRY_DOCUMENT_CHECK,base+100001)
+            assertEquals(LivePhase.PAYMENT,advanceLive(retried,base+100001+LIVE_OPERATION_MS).phase)
         }
     }
 }

@@ -62,6 +62,9 @@ fun LiveDemoScreen(
     var supportText by remember { mutableStateOf("") }
     var sentSupport by remember { mutableStateOf<String?>(null) }
     var showReturnConfirm by remember { mutableStateOf(false) }
+    val journeyScroll = rememberScrollState()
+    // Stage changes must restart at the stage heading, never inherit the preceding stage's offset.
+    LaunchedEffect(session.phase) { journeyScroll.scrollTo(0) }
 
     val car = cars.find { it.id == session.carId } ?: cars.firstOrNull()
     fun perform(event: LiveEvent, value: String = "") {
@@ -98,7 +101,7 @@ fun LiveDemoScreen(
     LaunchedEffect(Unit) { onTripChanged(session) }
     Box(Modifier.fillMaxSize().background(LivePaper)) {
     Column(
-        Modifier.fillMaxSize().verticalScroll(rememberScrollState())
+        Modifier.fillMaxSize().verticalScroll(journeyScroll)
             .padding(horizontal = 18.dp)
             .padding(bottom = if (session.phase in setOf(LivePhase.DRIVING, LivePhase.RETURNING, LivePhase.RETURN)) 106.dp else 30.dp),
         verticalArrangement = Arrangement.spacedBy(14.dp)
@@ -551,7 +554,9 @@ fun LiveDemoScreen(
                 setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_CENTER)
             })
             overlays.add(Marker(this).apply {
-                position = route.last()
+                position = if (mode == "пешком") route.last() else GeoPoint(
+                    route.last().latitude + 0.00045, route.last().longitude + 0.00045
+                )
                 title = if (mode == "пешком") "Автомобиль" else "Учебная зона возврата"
                 icon = if (mode == "пешком") truckMapMarker(context) else returnZoneMapMarker(context)
                 setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_CENTER)

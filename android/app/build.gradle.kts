@@ -8,11 +8,11 @@ android {
     namespace = "ru.kbr.cargoshare"
     compileSdk = 35
     defaultConfig {
-        applicationId = "ru.kbr.cargoshare.preview"
+        applicationId = "ru.kbr.cargoshare.demofull"
         minSdk = 26
         targetSdk = 35
-        versionCode = 23
-        versionName = "2.3.0-alpha"
+        versionCode = 24
+        versionName = "2.4.0-demo"
     }
     buildFeatures {
         compose = true

@@ -245,12 +245,10 @@ internal fun NalchikMap(cars: List<Vehicle>, onSelect: (Vehicle) -> Unit, modifi
         MapView(context).apply {
             setTileSource(TileSourceFactory.MAPNIK)
             // OSMDroid normally renders a grey grid while loading newly zoomed tiles.
-            // Use a flat map-like fallback instead and keep nearby decoded tiles in
-            // memory to reduce flashes on pinch gestures.
+            // Use a flat map-like fallback instead of a changing grey grid.
             setBackgroundColor(android.graphics.Color.rgb(238, 242, 234))
             overlayManager.tilesOverlay.setLoadingBackgroundColor(android.graphics.Color.rgb(238, 242, 234))
             overlayManager.tilesOverlay.setLoadingLineColor(android.graphics.Color.rgb(238, 242, 234))
-            overlayManager.tilesOverlay.setOvershootTileCache(2)
             setMultiTouchControls(true)
             // Compose's vertical list must not consume panning gestures inside the map.
             // Returning false lets osmdroid handle pan, zoom and pin clicks itself.

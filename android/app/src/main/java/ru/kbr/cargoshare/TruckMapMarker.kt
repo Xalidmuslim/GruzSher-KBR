@@ -15,8 +15,7 @@ import kotlin.math.roundToInt
  * Fully drawn local map markers. No raster cutouts or stock pin overlays.
  * Coordinates/amounts displayed by the caller remain demo-only until linked to fleet telemetry.
  */
-fun truckMapMarker(context: Context, hourlyRub: Int? = null, selected: Boolean = false,
-                   facingDegrees: Float = 0f): Drawable {
+fun truckMapMarker(context: Context, hourlyRub: Int? = null, selected: Boolean = false): Drawable {
     val scale = context.resources.displayMetrics.density
     val width = 106f
     val height = 77f
@@ -51,9 +50,7 @@ fun truckMapMarker(context: Context, hourlyRub: Int? = null, selected: Boolean =
     canvas.drawCircle(53f, cy, 19f, paint)
     paint.style = Paint.Style.FILL
 
-    // Rotate only the truck drawing; the price badge remains upright.
-    canvas.save()
-    canvas.rotate(facingDegrees, 53f, cy)
+    // Truck glyph stays upright; only the demo pickup points are distributed.
     // Cargo box and cab, drawn as a single cohesive truck icon.
     canvas.drawRoundRect(RectF(39f, cy - 8f, 54f, cy + 4f), 2f, 2f, paint)
     canvas.drawRoundRect(RectF(55f, cy - 4f, 65f, cy + 4f), 2f, 2f, paint)
@@ -71,14 +68,7 @@ fun truckMapMarker(context: Context, hourlyRub: Int? = null, selected: Boolean =
     paint.color = strong
     canvas.drawCircle(45f, cy + 5.5f, 3.2f, paint)
     canvas.drawCircle(60f, cy + 5.5f, 3.2f, paint)
-    canvas.restore()
     return BitmapDrawable(context.resources, bitmap)
-}
-
-/** Stable demo orientation for each truck, without moving or inventing its position. */
-fun truckFacingDegrees(vehicleId: String): Float {
-    val headings = floatArrayOf(0f, 180f, -60f, 60f)
-    return headings[Math.floorMod(vehicleId.hashCode(), headings.size)]
 }
 
 /** A distinctly different moving pedestrian icon for the offline approach simulation. */

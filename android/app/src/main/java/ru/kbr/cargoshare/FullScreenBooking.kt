@@ -275,9 +275,10 @@ fun FullScreenVehicleBooking(
             }
             Surface(color = Color.White, shadowElevation = 12.dp,
                 modifier = Modifier.fillMaxWidth().navigationBarsPadding()) {
-                // Always render the CTA above Android gesture navigation.
+                // Extra clearance covers edge-to-edge fullscreen dialogs with
+                // incomplete gesture-inset reports; scroll content can shrink.
                 Column(Modifier.fillMaxWidth()
-                    .padding(start = 17.dp, end = 17.dp, top = 9.dp, bottom = 18.dp),
+                    .padding(start = 17.dp, end = 17.dp, top = 9.dp, bottom = 58.dp),
                     verticalArrangement = Arrangement.spacedBy(7.dp)) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Column(Modifier.weight(1f)) {

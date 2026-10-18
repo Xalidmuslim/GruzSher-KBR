@@ -237,7 +237,7 @@ internal fun NalchikMap(cars: List<Vehicle>, onSelect: (Vehicle) -> Unit, modifi
     val context = LocalContext.current
     var savedLatitude by rememberSaveable { mutableDoubleStateOf(NalchikCenter.latitude) }
     var savedLongitude by rememberSaveable { mutableDoubleStateOf(NalchikCenter.longitude) }
-    var savedZoom by rememberSaveable { mutableDoubleStateOf(13.0) }
+    var savedZoom by rememberSaveable { mutableDoubleStateOf(12.5) }
     var lastSelection by rememberSaveable { mutableStateOf(selectedVehicleId) }
     val map = remember(context) {
         Configuration.getInstance().userAgentValue = context.packageName
@@ -312,12 +312,10 @@ internal fun NalchikMap(cars: List<Vehicle>, onSelect: (Vehicle) -> Unit, modifi
     }
     val markerIcons = remember(context, markerSignature) {
         cars.associate { vehicle ->
-            // The price stays horizontal; only the truck glyph has a stable heading.
-            val facing = truckFacingDegrees(vehicle.id)
+            // Keep truck icons upright and tariffs legible.
             vehicle.id to Pair(
-                truckMapMarker(context, hourlyRub = vehicle.hourlyPriceRub, facingDegrees = facing),
-                truckMapMarker(context, hourlyRub = vehicle.hourlyPriceRub,
-                    selected = true, facingDegrees = facing)
+                truckMapMarker(context, hourlyRub = vehicle.hourlyPriceRub),
+                truckMapMarker(context, hourlyRub = vehicle.hourlyPriceRub, selected = true)
             )
         }
     }

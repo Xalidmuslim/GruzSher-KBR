@@ -107,14 +107,19 @@ fun localTruckArtwork(vehicle: Vehicle): String = artworkSource(vehicle)
 }
 
 @Composable fun StageBanner(title: String, subtitle: String) {
-    Box(Modifier.fillMaxWidth().height(112.dp).clip(RoundedCornerShape(20.dp)).background(PremiumTheme.GreenDark)) {
+    Box(Modifier.fillMaxWidth().height(156.dp).clip(RoundedCornerShape(20.dp)).background(PremiumTheme.GreenDark)) {
         AsyncImage("file:///android_asset/premium/live_banner.webp", null, contentScale=ContentScale.Crop, modifier=Modifier.fillMaxSize())
-        Column(Modifier.fillMaxSize().background(Brush.horizontalGradient(listOf(PremiumTheme.GreenDark.copy(alpha=.9f), Color.Transparent))).padding(17.dp), verticalArrangement=Arrangement.Center) {
-            Text("● LIVE Поездка · ДЕМО", color=Color.White, fontSize=11.sp)
+        Column(Modifier.fillMaxSize().background(Brush.horizontalGradient(
+            listOf(PremiumTheme.GreenDark.copy(alpha=.96f), PremiumTheme.GreenDark.copy(alpha=.78f), Color.Transparent)
+        )).padding(horizontal = 16.dp, vertical = 13.dp), verticalArrangement=Arrangement.Center) {
+            Text("● LIVE Поездка · ДЕМО", color=Color.White, fontSize=10.sp)
             Spacer(Modifier.height(6.dp))
-            Text(title, color=Color.White, fontSize=24.sp, lineHeight=27.sp, fontWeight=FontWeight.ExtraBold, modifier=Modifier.fillMaxWidth(.72f))
-            Spacer(Modifier.height(5.dp))
-            Text(subtitle, color=Color.White, fontSize=11.sp)
+            Text(title, color=Color.White, fontSize=21.sp, lineHeight=25.sp,
+                fontWeight=FontWeight.ExtraBold, maxLines=3,
+                modifier=Modifier.fillMaxWidth(.81f))
+            Spacer(Modifier.height(6.dp))
+            Text(subtitle, color=Color.White, fontSize=11.sp, lineHeight=14.sp,
+                maxLines=2, modifier=Modifier.fillMaxWidth(.82f))
         }
     }
 }

@@ -250,12 +250,13 @@ private fun AppScreen() {
         containerColor = PremiumTheme.Paper,
         bottomBar = {
             NavigationBar(containerColor = Color.White, tonalElevation = 0.dp) {
-                val titles = listOf("Автомобили", "Поездки", "Профиль", "Ещё")
-                val icons = listOf(Icons.Outlined.LocalShipping, Icons.Outlined.ReceiptLong, Icons.Outlined.AccountCircle, Icons.Outlined.Settings)
+                val titles = listOf("Автомобили", "Поездки", "Профиль", "LIVE Демо")
+                val icons = listOf(Icons.Outlined.LocalShipping, Icons.Outlined.ReceiptLong, Icons.Outlined.AccountCircle, Icons.Outlined.PlayArrow)
                 titles.forEachIndexed { index, title ->
                     NavigationBarItem(selected = tab == index, onClick = {
                         receiptId = null
-                        navigateTo(index)
+                        if (index == 3) navigateTo(3, openDemo = true)
+                        else navigateTo(index)
                     },
                         icon = { Icon(icons[index], contentDescription = null) }, label = { Text(title, fontSize = 10.sp, maxLines = 1) },
                         colors = NavigationBarItemDefaults.colors(
@@ -316,7 +317,8 @@ private fun AppScreen() {
                     }
                 })
                 2 -> DriverDashboard(live = liveOverview, bookings = bookings,
-                    onLive = { receiptId=null; navigateTo(3, openDemo = true) }, onTrips = { navigateTo(1) })
+                    onLive = { receiptId=null; navigateTo(3, openDemo = true) },
+                    onTrips = { navigateTo(1) }, onMore = { navigateTo(3) })
                 else -> if (!showLiveDemo) GruzSherMoreScreen(
                     onDemo = { receiptId = null; navigateTo(3, openDemo = true) },
                     onFleet = { navigateTo(0) },

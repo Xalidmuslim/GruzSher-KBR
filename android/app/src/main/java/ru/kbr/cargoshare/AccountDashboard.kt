@@ -366,7 +366,8 @@ fun TripsDashboard(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun DriverDashboard(live: LiveDemoSession, bookings: List<Booking>,
-                    onLive: () -> Unit, onTrips: () -> Unit) {
+                    onLive: () -> Unit, onTrips: () -> Unit,
+                    onMore: () -> Unit) {
     val context = LocalContext.current
     val prefs = remember(context) {
         context.getSharedPreferences("gruzsher_preferences", 0)
@@ -453,6 +454,9 @@ fun DriverDashboard(live: LiveDemoSession, bookings: List<Booking>,
                     HorizontalDivider(color = Pale)
                     AccountAction("О приложении", "Возможности и ограничения",
                         Icons.Outlined.Info) { panel = "О приложении" }
+                    HorizontalDivider(color = Pale)
+                    AccountAction("Все режимы", "Дополнительные функции и тренажёр аренды",
+                        Icons.Outlined.PlayArrow, onMore)
                 }
             }
         }

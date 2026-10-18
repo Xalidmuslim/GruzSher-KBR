@@ -54,6 +54,10 @@ private val TimeFmt = DateTimeFormatter.ofPattern("d MMMM, HH:mm", Ru)
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        // Light system bar background requires dark status-bar icons.
+        window.statusBarColor = android.graphics.Color.rgb(246, 247, 242)
+        androidx.core.view.WindowInsetsControllerCompat(window, window.decorView)
+            .isAppearanceLightStatusBars = true
         setContent {
             MaterialTheme(colorScheme = lightColorScheme(primary = Green, background = Cream, surface = Color.White, onSurface = Ink)) {
                 AppScreen()

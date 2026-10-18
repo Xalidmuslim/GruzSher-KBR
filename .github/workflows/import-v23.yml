@@ -4,6 +4,7 @@ on:
   push:
     paths:
       - 'source/GruzSher-KBR-v2.3-source.tar.xz.b64'
+      - '.github/workflows/import-v23.yml'
   workflow_dispatch:
 
 permissions:
@@ -49,7 +50,7 @@ jobs:
         shell: bash
         run: |
           python -m pip install -r backend/requirements-dev.txt
-          python -m pytest -q backend/tests
+          PYTHONPATH=backend python -m pytest -q backend/tests
 
       - name: Set up Java 17
         uses: actions/setup-java@v4

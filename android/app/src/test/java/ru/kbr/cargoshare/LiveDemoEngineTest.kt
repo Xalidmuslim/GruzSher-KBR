@@ -16,9 +16,10 @@ class LiveDemoEngineTest {
         assertFalse(applyLive(s, LiveEvent.VERIFY_CODE, base + 2000L, "2468").accepted)
         s = action(s, LiveEvent.VERIFY_CODE, base + 3200L, "2468")
         assertEquals(LivePhase.DOCUMENTS, s.phase)
-        s = action(s, LiveEvent.SCAN_PASSPORT, base + 3300L)
-        s = action(s, LiveEvent.SCAN_LICENCE, base + 3400L)
-        s = advanceLive(s, base + 6000L)
+        assertTrue(s.passportStartedAt > 0L)
+        assertEquals(s.passportStartedAt, s.licenceStartedAt)
+        assertFalse(applyLive(s, LiveEvent.SCAN_PASSPORT, base + 3400L).accepted)
+        s = advanceLive(s, base + 5700L)
         assertEquals(LivePhase.PAYMENT, s.phase)
         s = action(s, LiveEvent.START_PAYMENT, base + 6100L)
         s = advanceLive(s, base + 8700L)
@@ -42,23 +43,52 @@ class LiveDemoEngineTest {
 
     @Test fun bookingConfirmationArrivalAndInspectionAreTimed() {
         var s = action(prepare(), LiveEvent.REQUEST_BOOKING, base + 9000L)
-        assertEquals(LivePhase.APPROVAL, s.phase)
-        assertEquals(LivePhase.APPROVAL, advanceLive(s, base + 12999L).phase)
-        s = advanceLive(s, base + 13000L)
         assertEquals(LivePhase.WALK, s.phase)
-        assertEquals(LivePhase.WALK, advanceLive(s, base + 24999L).phase)
-        s = advanceLive(s, base + 25001L)
+        assertTrue(s.bookingId.startsWith("SIM-"))
+        assertEquals("There must be no dispatcher approval screen", LivePhase.WALK,
+            advanceLive(s, base + 9001L).phase)
+        assertEquals(LivePhase.WALK, advanceLive(s, base + 20999L).phase)
+        s = advanceLive(s, base + 21000L)
         assertEquals(LivePhase.INSPECT, s.phase)
-        assertFalse(applyLive(s, LiveEvent.UNLOCK, base + 25002L).accepted)
+        assertFalse(applyLive(s, LiveEvent.UNLOCK, base + 21002L).accepted)
         for (angle in listOf("Спереди", "Сзади", "Слева", "Справа"))
-            s = action(s, LiveEvent.CAPTURE_ANGLE, base + 25003L, angle)
-        s = action(s, LiveEvent.UNLOCK, base + 25005L)
+            s = action(s, LiveEvent.CAPTURE_ANGLE, base + 21003L, angle)
+        s = action(s, LiveEvent.UNLOCK, base + 21005L)
         assertEquals(LivePhase.UNLOCK, s.phase)
-        assertEquals(LivePhase.UNLOCK, advanceLive(s, base + 27504L).phase)
-        s = advanceLive(s, base + 27505L)
+        assertEquals(LivePhase.UNLOCK, advanceLive(s, base + 23504L).phase)
+        s = advanceLive(s, base + 23505L)
         assertEquals(LivePhase.READY, s.phase)
-        s = action(s, LiveEvent.START_DRIVE, base + 27600L)
+        s = action(s, LiveEvent.START_DRIVE, base + 23600L)
         assertEquals(LivePhase.DRIVING, s.phase)
+    }
+
+    @Test fun documentFailureBlocksAutomaticApprovalUntilRetry() {
+        var s = action(LiveDemoSession(), LiveEvent.PICK_CAR, base, "gazelle-next")
+        s = action(s, LiveEvent.REQUEST_CODE, base + 1L, "+79000000000")
+        s = action(s, LiveEvent.VERIFY_CODE, base + 3100L, "2468")
+        s = action(s, LiveEvent.FAIL_DOCUMENT_CHECK, base + 3200L, "Истёк срок")
+        assertEquals(LivePhase.DOCUMENTS, advanceLive(s, base + 10000L).phase)
+        assertFalse(applyLive(s, LiveEvent.REQUEST_BOOKING, base + 10001L).accepted)
+        s = action(s, LiveEvent.RETRY_DOCUMENT_CHECK, base + 10100L)
+        assertEquals("", s.documentIssue)
+        assertEquals(LivePhase.DOCUMENTS, advanceLive(s, base + 12599L).phase)
+        assertEquals(LivePhase.PAYMENT, advanceLive(s, base + 12600L).phase)
+    }
+
+    @Test fun previousApprovalSessionMigratesImmediatelyWithoutApprovalWait() {
+        val saved = LiveDemoSession(phase = LivePhase.APPROVAL,
+            approvalStartedAt = base, bookingId = "SIM-OLD", carId = "gazelle-next")
+        val next = advanceLive(saved, base + 100L)
+        assertEquals(LivePhase.WALK, next.phase)
+        assertEquals("SIM-OLD", next.bookingId)
+    }
+
+    @Test fun oldDocumentsSessionAutomaticallyStartsSampleChecks() {
+        val old = LiveDemoSession(phase = LivePhase.DOCUMENTS, carId = "gazelle-next")
+        val migrated = advanceLive(old, base)
+        assertEquals(base, migrated.passportStartedAt)
+        assertEquals(base, migrated.licenceStartedAt)
+        assertEquals(LivePhase.PAYMENT, advanceLive(migrated, base + LIVE_OPERATION_MS).phase)
     }
 
     @Test fun routeMovesWithClockAndWaitModeStopsProgress() {

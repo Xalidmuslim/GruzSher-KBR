@@ -102,9 +102,9 @@ fun LiveDemoScreen(
     Box(Modifier.fillMaxSize().background(LivePaper)) {
     Column(
         Modifier.fillMaxSize().verticalScroll(journeyScroll)
-            .padding(horizontal = 18.dp)
+            .padding(horizontal = if (session.phase == LivePhase.DRIVING) 12.dp else 18.dp)
             .padding(bottom = if (session.phase in setOf(LivePhase.DRIVING, LivePhase.RETURNING, LivePhase.RETURN)) 106.dp else 30.dp),
-        verticalArrangement = Arrangement.spacedBy(14.dp)
+        verticalArrangement = Arrangement.spacedBy(if (session.phase == LivePhase.DRIVING) 9.dp else 14.dp)
     ) {
         Spacer(Modifier.height(6.dp))
         if (session.phase !in setOf(LivePhase.DRIVING, LivePhase.RETURNING, LivePhase.RETURN, LivePhase.RECEIPT)) {
@@ -120,6 +120,7 @@ fun LiveDemoScreen(
                 Text("Сначала", fontSize = 11.sp)
             }
         }
+        if (session.phase !in setOf(LivePhase.DRIVING, LivePhase.RETURNING, LivePhase.RETURN, LivePhase.RECEIPT)) {
         Surface(shape = RoundedCornerShape(14.dp), color = LivePale) {
             Row(Modifier.fillMaxWidth().padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
                 Icon(Icons.Outlined.Info, null, tint = LiveGreen, modifier = Modifier.size(18.dp))
@@ -127,6 +128,7 @@ fun LiveDemoScreen(
                 Text("Тренажёр: никакие SMS, платежи, команды автомобилю или сообщения оператору не отправляются.",
                     color = LiveGreen, fontSize = 11.sp, lineHeight = 15.sp)
             }
+        }
         }
         }
         if (message != null) {
@@ -566,7 +568,8 @@ fun LiveDemoScreen(
 }
 
 /** Map tiles are real OSM. All route geometry and simulated marker coordinates are illustrative. */
-@Composable internal fun LiveRouteMap(car: Vehicle?, fraction: Float, mode: String) {
+@Composable internal fun LiveRouteMap(car: Vehicle?, fraction: Float, mode: String,
+    modifier: Modifier = Modifier.fillMaxWidth().height(218.dp)) {
     val context = LocalContext.current
     val origin = remember(car?.id) { GeoPoint(car?.latitude ?: 43.4853, car?.longitude ?: 43.6071) }
     val route = remember(origin, mode) {
@@ -583,6 +586,7 @@ fun LiveDemoScreen(
         MapView(context).apply {
             setTileSource(TileSourceFactory.MAPNIK)
             setMultiTouchControls(true)
+            setBuiltInZoomControls(false)
             controller.setZoom(15.0)
             controller.setCenter(route[centerIndexForRoute(route.size)])
             minZoomLevel = 9.0
@@ -609,8 +613,7 @@ fun LiveDemoScreen(
         }
     }
     DisposableEffect(map) { map.onResume(); onDispose { map.onPause(); map.onDetach() } }
-    AndroidView(factory = { map }, modifier = Modifier.fillMaxWidth().height(218.dp)
-        .clip(RoundedCornerShape(20.dp)),
+    AndroidView(factory = { map }, modifier = modifier.clip(RoundedCornerShape(20.dp)),
         update = { view ->
             val f = fraction.coerceIn(0f, 1f)
             val segment = (f * (route.size - 1)).coerceAtMost((route.size - 1).toFloat())

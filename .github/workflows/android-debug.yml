@@ -23,7 +23,7 @@ jobs:
       - name: Install test dependencies
         run: python -m pip install -r backend/requirements-dev.txt
       - name: Run API tests
-        run: python -m pytest -q backend/tests
+        run: PYTHONPATH=backend python -m pytest -q backend/tests
 
   android-preview:
     name: Android unit tests and debug APK

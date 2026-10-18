@@ -464,12 +464,16 @@ fun LiveDemoScreen(
                 outlinePaint.strokeWidth = 8f
             })
             overlays.add(Marker(this).apply {
-                position = origin
-                title = "Учебный автомобиль"
+                position = if (mode == "пешком") route.first() else origin
+                title = if (mode == "пешком") "Учебный пешеход" else "Учебный грузовик"
+                icon = if (mode == "пешком") walkingMapMarker(context) else truckMapMarker(context)
+                setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_CENTER)
             })
             overlays.add(Marker(this).apply {
                 position = route.last()
-                title = "Учебная зона возврата"
+                title = if (mode == "пешком") "Автомобиль" else "Учебная зона возврата"
+                icon = if (mode == "пешком") truckMapMarker(context) else returnZoneMapMarker(context)
+                setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_CENTER)
             })
         }
     }

@@ -89,12 +89,12 @@ private fun AppScreen() {
         if (!BuildConfig.DEMO_SERVER_ENABLED) demoStore.save(bookings, demoState)
     }
     fun chooseTrip(booking: Booking) {
-        liveSelectedCarId = booking.vehicleId
-        val picked = chooseDemoBooking(demoState, booking.id, booking.status)
-        demoNotice = picked.message
-        if (picked.success) {
-            demoState = picked.state
+        val liveTrip = LiveDemoStorage(context.applicationContext).load()
+        if (liveTrip.bookingId == booking.id && booking.id.isNotBlank()) {
+            liveSelectedCarId = booking.vehicleId
             tab = 3
+        } else {
+            error = "Эта заявка относится к прежнему офлайн-сценарию. Текущую поездку можно продолжить через LIVE Демо."
         }
     }
     fun runDemoAction(action: DemoAction) {

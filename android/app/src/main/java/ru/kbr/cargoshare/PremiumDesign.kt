@@ -91,7 +91,7 @@ fun localTruckArtwork(vehicle: Vehicle): String = artworkSource(vehicle)
                     PremiumTheme.GreenDark.copy(alpha = .75f), Color.Transparent)))
                 .padding(15.dp), verticalAlignment = Alignment.CenterVertically) {
                 Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(5.dp)) {
-                    Text("Грузовые автомобили\\nв вашем городе",
+                    Text("Грузовые автомобили\nв вашем городе",
                         color = Color.White, fontWeight = FontWeight.ExtraBold,
                         fontSize = 19.sp, lineHeight = 21.sp)
                     Text("Выбор машины и обучение аренде",

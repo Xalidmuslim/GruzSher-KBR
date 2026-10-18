@@ -180,25 +180,70 @@ fun LiveDemoScreen(
                 }
             }
             LivePhase.DOCUMENTS -> {
-                LiveHeader("03", "Проверка водителя", "Два отдельных этапа распознавания образцов. Камера и реальные документы не используются.")
-                listOf(Triple("Паспорт", session.passportStartedAt, LiveEvent.SCAN_PASSPORT),
-                    Triple("Водительские права", session.licenceStartedAt, LiveEvent.SCAN_LICENCE)).forEach { (name, started, event) ->
-                    val complete = started > 0L && now - started >= LIVE_OPERATION_MS
-                    Surface(shape = RoundedCornerShape(18.dp), color = Color.White) {
-                        Row(Modifier.fillMaxWidth().padding(14.dp), verticalAlignment = Alignment.CenterVertically) {
-                            Icon(if (complete) Icons.Outlined.CheckCircle else Icons.Outlined.Badge, null, tint = LiveGreen)
+                LiveHeader("03", "Автопроверка документов",
+                    "Проверяем учебные образцы паспорта и прав. Реальные документы, камера и внешние базы не используются.")
+                Surface(color = Color.White, shape = RoundedCornerShape(22.dp)) {
+                    Column(Modifier.fillMaxWidth().padding(17.dp),
+                        verticalArrangement = Arrangement.spacedBy(14.dp)) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Icon(Icons.Outlined.VerifiedUser, null, tint = LiveGreen,
+                                modifier = Modifier.size(27.dp))
                             Spacer(Modifier.width(10.dp))
                             Column(Modifier.weight(1f)) {
-                                Text(name, fontWeight = FontWeight.SemiBold, color = LiveInk)
-                                Text(if (complete) "Учебный образец проверен" else if (started > 0) "Идёт анализ изображения…" else "Ожидает проверки",
+                                Text(if (session.documentIssue.isNotEmpty()) "Тестовый отказ"
+                                     else "Идёт автоматическая проверка",
+                                    fontWeight = FontWeight.Bold, fontSize = 16.sp, color = LiveInk)
+                                Text("ДЕМО · без загрузки персональных данных",
                                     fontSize = 11.sp, color = LiveGray)
                             }
-                            if (started == 0L) TextButton(onClick = { perform(event) }) { Text("Сканировать") }
-                            else if (!complete) CircularProgressIndicator(Modifier.size(20.dp), strokeWidth = 2.dp)
+                        }
+                        listOf("Паспорт", "Водительское удостоверение").forEach { name ->
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Icon(if (session.documentIssue.isNotEmpty()) Icons.Outlined.ErrorOutline
+                                     else Icons.Outlined.Badge, null,
+                                    tint = if (session.documentIssue.isNotEmpty())
+                                        Color(0xFFA64A39) else LiveGreen)
+                                Spacer(Modifier.width(10.dp))
+                                Text(name, modifier = Modifier.weight(1f),
+                                    fontSize = 13.sp, color = LiveInk)
+                                if (session.documentIssue.isEmpty())
+                                    CircularProgressIndicator(Modifier.size(17.dp),
+                                        strokeWidth = 2.dp, color = LiveGreen)
+                            }
+                        }
+                        if (session.documentIssue.isNotEmpty()) {
+                            Text("Причина: ${session.documentIssue}. Только учебный отказ.",
+                                fontSize = 12.sp, color = Color(0xFFA64A39))
+                            Button(onClick = { perform(LiveEvent.RETRY_DOCUMENT_CHECK) },
+                                modifier = Modifier.fillMaxWidth(),
+                                shape = RoundedCornerShape(14.dp)) {
+                                Text("Повторить демопроверку")
+                            }
+                        } else {
+                            LinearProgressIndicator(
+                                progress = { ((now - session.passportStartedAt).toFloat() / LIVE_OPERATION_MS)
+                                    .coerceIn(0f, 1f) },
+                                modifier = Modifier.fillMaxWidth().height(5.dp)
+                                    .clip(RoundedCornerShape(4.dp)),
+                                color = LiveGreen, trackColor = LivePale)
                         }
                     }
                 }
-                LiveNote("В настоящей версии здесь появятся камера, распознавание и проверка допустимости водительских прав.")
+                if (session.documentIssue.isEmpty()) {
+                    Text("Тестовые причины отказа", color = LiveGray, fontSize = 11.sp)
+                    Row(horizontalArrangement = Arrangement.spacedBy(5.dp)) {
+                        listOf("Нечитаемый документ", "Истёк срок", "Неверная категория").forEach { issue ->
+                            OutlinedButton(
+                                onClick = { perform(LiveEvent.FAIL_DOCUMENT_CHECK, issue) },
+                                contentPadding = PaddingValues(horizontal = 7.dp, vertical = 3.dp),
+                                modifier = Modifier.weight(1f),
+                                shape = RoundedCornerShape(12.dp)) {
+                                Text(issue, fontSize = 10.sp, maxLines = 2, lineHeight = 12.sp)
+                            }
+                        }
+                    }
+                }
+                LiveNote("После успешной учебной проверки следующий этап откроется автоматически.")
             }
             LivePhase.PAYMENT -> {
                 LiveHeader("04", "Способ оплаты", "Учебная банковская карта, проверка подключения и нулевое списание.")
@@ -217,7 +262,7 @@ fun LiveDemoScreen(
                     (now - session.paymentStartedAt).toFloat() / 1000f)
             }
             LivePhase.CONFIRM -> {
-                LiveHeader("05", "Подтверждение аренды", "Как в настоящем сервисе: тариф, условия и запрос на бронирование.")
+                LiveHeader("05", "Условия аренды", "Выберите срок. Учебная бронь создаётся автоматически после подтверждения условий — без оператора.")
                 if (car != null) {
                     Text("Срок аренды", color = LiveInk, fontWeight = FontWeight.SemiBold)
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -231,14 +276,12 @@ fun LiveDemoScreen(
                     LiveMetricRow("Залог", "0 ₽")
                     LiveMetricRow("Способ оплаты", "Демо-карта •••• 0000")
                     LiveNote("Для настоящего заказа здесь появятся договор, правила аренды и подтверждение платежа.")
-                    LiveButton("Забронировать", Icons.Outlined.ArrowForward) { perform(LiveEvent.REQUEST_BOOKING) }
+                    LiveButton("Подтвердить и идти к автомобилю", Icons.Outlined.ArrowForward) { perform(LiveEvent.REQUEST_BOOKING) }
                 }
             }
             LivePhase.APPROVAL -> {
-                LiveHeader("06", "Ожидаем подтверждение", "Учебный диспетчер обрабатывает запрос. Обычно сюда подключается сервер.")
-                LiveWait("Проверяем доступность и допуск…",
-                    (4L - (now - session.approvalStartedAt) / 1000L).coerceAtLeast(0L),
-                    (now - session.approvalStartedAt).toFloat())
+                // Only shown for an instant when restoring an old v3.3 saved session.
+                LiveWait("Восстанавливаем демобронь без ожидания оператора…", 0L, 1f)
             }
             LivePhase.WALK -> {
                 LiveHeader("07", "Идите к автомобилю", "Демо-пешеход приближается к выбранному грузовику. Таймер идёт по настоящим секундам.")

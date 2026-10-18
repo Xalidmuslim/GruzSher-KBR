@@ -6,6 +6,7 @@ import android.app.TimePickerDialog
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -86,6 +87,7 @@ private fun AppScreen() {
     var tab by remember { mutableIntStateOf(0) }
     var liveSelectedCarId by remember { mutableStateOf<String?>(null) }
     var selected by remember { mutableStateOf<Vehicle?>(null) }
+    val snackbar = remember { SnackbarHostState() }
     LaunchedEffect(tab) {
         if (tab == 1 || tab == 2) liveOverview = LiveDemoStorage(context.applicationContext).load()
     }
@@ -189,7 +191,15 @@ private fun AppScreen() {
         }
     }
 
+    // OS back gesture: dialogs dismiss themselves, tabs return home, home never exits abruptly.
+    BackHandler(enabled = selected == null) {
+        if (tab != 0) tab = 0
+        else scope.launch { snackbar.showSnackbar(
+            "Вы на главном экране. Чтобы свернуть приложение, используйте жест «Домой».",
+            duration = SnackbarDuration.Short) }
+    }
     Scaffold(
+        snackbarHost = { SnackbarHost(hostState = snackbar) },
         containerColor = PremiumTheme.Paper,
         bottomBar = {
             NavigationBar(containerColor = Color.White, tonalElevation = 0.dp) {

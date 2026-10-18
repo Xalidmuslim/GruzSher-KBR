@@ -399,7 +399,6 @@ private fun TruckCard(v: Vehicle, onClick: () -> Unit) {
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun VehicleBookingSheet(
     vehicle: Vehicle,
@@ -409,154 +408,12 @@ private fun VehicleBookingSheet(
     onQuote: suspend (ZonedDateTime, ZonedDateTime) -> Pair<Int, Boolean>,
     onBook: suspend (ZonedDateTime, ZonedDateTime, String) -> Boolean,
 ) {
-    val scope = rememberCoroutineScope()
-    val context = LocalContext.current
-    var start by remember(vehicle.id) {
-        mutableStateOf(ZonedDateTime.now(LocalZone).plusDays(1).withHour(10).withMinute(0).withSecond(0).withNano(0))
-    }
-    var hours by remember(vehicle.id) { mutableIntStateOf(4) }
-    var price by remember(vehicle.id) { mutableStateOf<Int?>(null) }
-    var available by remember(vehicle.id) { mutableStateOf(true) }
-    var quotedIntent by remember(vehicle.id) { mutableStateOf<BookingIntent?>(null) }
-    var message by remember(vehicle.id) { mutableStateOf<String?>(null) }
-    var requesting by remember(vehicle.id) { mutableStateOf(false) }
-    var bookingSubmitting by remember(vehicle.id) { mutableStateOf(false) }
-    var lastBookingIntent by remember(vehicle.id) { mutableStateOf<BookingIntent?>(null) }
-    var stableIntentKey by remember(vehicle.id) { mutableStateOf(UUID.randomUUID().toString()) }
-    ModalBottomSheet(onDismissRequest = onDismiss, containerColor = PremiumTheme.Paper) {
-        Column(Modifier.fillMaxWidth().verticalScroll(rememberScrollState())
-            .padding(horizontal = 18.dp).padding(bottom = 34.dp),
-            verticalArrangement = Arrangement.spacedBy(10.dp)) {
-            PremiumVehicleIntro(vehicle)
-            Button(
-                onClick = onTryLiveDemo,
-                modifier = Modifier.fillMaxWidth().height(53.dp),
-                shape = RoundedCornerShape(18.dp),
-            ) {
-                Icon(Icons.Outlined.ArrowForward, null, modifier = Modifier.size(18.dp))
-                Spacer(Modifier.width(8.dp))
-                Text("Пройти LIVE-демо аренды", fontWeight = FontWeight.Bold)
-            }
-            HorizontalDivider(color = PremiumTheme.Stroke)
-            Text("Выберите время получения", fontWeight = FontWeight.Bold, color = PremiumTheme.Text,
-                fontSize = 17.sp)
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.padding(top = 8.dp)) {
-                OutlinedButton(onClick = {
-                    DatePickerDialog(context, { _, year, month, day ->
-                        start = java.time.LocalDate.of(year, month + 1, day)
-                            .atTime(start.toLocalTime()).atZone(LocalZone)
-                        price = null
-                        quotedIntent = null
-                    }, start.year, start.monthValue - 1, start.dayOfMonth).show()
-                }) { Text(start.format(DateTimeFormatter.ofPattern("dd.MM.yyyy", Ru))) }
-                OutlinedButton(onClick = {
-                    TimePickerDialog(context, { _, h, m ->
-                        start = start.withHour(h).withMinute(m)
-                        price = null
-                        quotedIntent = null
-                    }, start.hour, start.minute, true).show()
-                }) { Text(start.format(DateTimeFormatter.ofPattern("HH:mm", Ru))) }
-            }
-            Spacer(Modifier.height(16.dp))
-            Text("Выберите тариф", fontWeight = FontWeight.Bold, fontSize = 17.sp,
-                color = PremiumTheme.Text)
-            Row(Modifier.padding(top = 8.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                listOf(2, 4, 8, 24).forEach { h ->
-                    FilterChip(
-                        selected = hours == h,
-                        onClick = { hours = h; price = null; quotedIntent = null },
-                        label = { Text(if (h == 24) "Сутки" else "$h ч", fontWeight = FontWeight.SemiBold) },
-                        shape = RoundedCornerShape(15.dp),
-                        colors = FilterChipDefaults.filterChipColors(
-                            containerColor = Color.White,
-                            selectedContainerColor = PremiumTheme.Green,
-                            selectedLabelColor = Color.White)
-                    )
-                }
-            }
-            Spacer(Modifier.height(16.dp))
-            if (price != null) {
-                Surface(color = PremiumTheme.Mint, shape = RoundedCornerShape(19.dp)) {
-                    Column(Modifier.fillMaxWidth().padding(17.dp)) {
-                        Text(if (available) "Итого за ${hours} ч" else "Машина недоступна",
-                            color = PremiumTheme.Green, fontSize = 12.sp)
-                        Text(if (available) "${price} ₽" else "Выберите другое время",
-                            fontSize = 27.sp, fontWeight = FontWeight.ExtraBold,
-                            color = PremiumTheme.GreenDark)
-                        Text("Расчёт по текущему демотарифу, без оплаты",
-                            fontSize = 10.sp, color = PremiumTheme.Muted)
-                    }
-                }
-            }
-            if (message != null) Text(message.orEmpty(), color = Color.Red, fontSize = 13.sp)
-            Spacer(Modifier.height(12.dp))
-            Button(onClick = {
-                val requestedStart = start
-                val requestedEnd = start.plusHours(hours.toLong())
-                val intent = BookingIntent(vehicle.id,
-                    requestedStart.format(DateTimeFormatter.ISO_OFFSET_DATE_TIME),
-                    requestedEnd.format(DateTimeFormatter.ISO_OFFSET_DATE_TIME))
-                if (!validDemoWindow(requestedStart.toInstant(), requestedEnd.toInstant(), Instant.now())) {
-                    price = null
-                    quotedIntent = null
-                    message = "Укажите будущую дату (не более 90 дней) и срок аренды от 2 часов"
-                } else {
-                    requesting = true
-                    scope.launch {
-                        runCatching { onQuote(requestedStart, requestedEnd) }
-                            .onSuccess { (amount, isAvailable) ->
-                                val currentEnd = start.plusHours(hours.toLong())
-                                if (intent == BookingIntent(vehicle.id, start.format(DateTimeFormatter.ISO_OFFSET_DATE_TIME),
-                                        currentEnd.format(DateTimeFormatter.ISO_OFFSET_DATE_TIME))) {
-                                    price = amount
-                                    available = isAvailable
-                                    quotedIntent = intent
-                                    message = null
-                                }
-                            }
-                            .onFailure { message = it.localizedMessage; quotedIntent = null }
-                        requesting = false
-                    }
-                }
-            }, enabled = !requesting && !bookingSubmitting, modifier = Modifier.fillMaxWidth().height(52.dp), shape = RoundedCornerShape(16.dp)) {
-                Text("Проверить цену и доступность")
-            }
-            if (price != null && available && canBook && quotedIntent == BookingIntent(vehicle.id,
-                    start.format(DateTimeFormatter.ISO_OFFSET_DATE_TIME),
-                    start.plusHours(hours.toLong()).format(DateTimeFormatter.ISO_OFFSET_DATE_TIME))) {
-                Spacer(Modifier.height(8.dp))
-                OutlinedButton(onClick = {
-                    if (!bookingSubmitting) {
-                        val end = start.plusHours(hours.toLong())
-                        val intent = BookingIntent(vehicle.id, start.format(DateTimeFormatter.ISO_OFFSET_DATE_TIME),
-                            end.format(DateTimeFormatter.ISO_OFFSET_DATE_TIME))
-                        if (intent != lastBookingIntent) {
-                            lastBookingIntent = intent
-                            stableIntentKey = UUID.randomUUID().toString()
-                        }
-                        bookingSubmitting = true
-                        scope.launch {
-                            onBook(start, end, stableIntentKey)
-                            bookingSubmitting = false
-                        }
-                    }
-                }, enabled = !bookingSubmitting,
-                    modifier = Modifier.fillMaxWidth().height(50.dp), shape = RoundedCornerShape(16.dp)) {
-                    Text(if (bookingSubmitting) "Отправляем заявку…" else "Отправить заявку на аренду")
-                }
-            }
-            Surface(color = PremiumTheme.Mint, shape = RoundedCornerShape(16.dp)) {
-                Row(Modifier.fillMaxWidth().padding(13.dp), verticalAlignment = Alignment.Top) {
-                    Icon(Icons.Outlined.Info, null, tint = PremiumTheme.Green,
-                        modifier = Modifier.size(19.dp))
-                    Spacer(Modifier.width(8.dp))
-                    Text(if (canBook) "ДЕМО: заявка сохраняется на этом телефоне. Нет настоящей оплаты, SMS или доступа к грузовику."
-                         else "Демо-расчёт. Для коммерческой аренды нужен подключённый сервер и вход.",
-                        color = PremiumTheme.GreenDark, fontSize = 11.sp, lineHeight = 16.sp)
-                }
-            }
-        }
-    }
+    FullScreenVehicleBooking(
+        vehicle = vehicle, canBook = canBook,
+        onDismiss = onDismiss,
+        onTryLiveDemo = onTryLiveDemo,
+        onQuote = onQuote, onBook = onBook
+    )
 }
 
 @OptIn(ExperimentalMaterial3Api::class)

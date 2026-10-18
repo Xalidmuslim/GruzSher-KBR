@@ -98,6 +98,38 @@ class LiveDemoEngineTest {
             demoFare(s, 650, base + LIVE_ROUTE_MS + 600_000L))
     }
 
+    @Test fun userCanRequestReturnBeforeAutomaticRouteEnds() {
+        val driving = LiveDemoSession(phase = LivePhase.DRIVING, drivingAt = base)
+        val result = applyLive(driving, LiveEvent.REQUEST_RETURN, base + 8_000L)
+        assertTrue(result.message, result.accepted)
+        assertEquals(LivePhase.RETURNING, result.state.phase)
+        assertEquals(0.1066f, routeFraction(result.state, base + 8_000L), 0.002f)
+        assertEquals(LivePhase.RETURNING,
+            advanceLive(result.state, base + 8_000L + LIVE_RETURN_MS - 1).phase)
+        val arrived = advanceLive(result.state, base + 8_000L + LIVE_RETURN_MS)
+        assertEquals(LivePhase.RETURN, arrived.phase)
+        assertEquals(1f, routeFraction(arrived, base + 8_000L + LIVE_RETURN_MS), 0.001f)
+    }
+
+    @Test fun returnFromWaitResumesTripWithoutLosingTime() {
+        val paused = LiveDemoSession(phase = LivePhase.DRIVING, drivingAt = base, pauseStartedAt = base + 5_000L)
+        val result = applyLive(paused, LiveEvent.REQUEST_RETURN, base + 9_000L)
+        assertTrue(result.accepted)
+        assertEquals(0L, result.state.pauseStartedAt)
+        assertEquals(4L, result.state.pausedSeconds)
+    }
+
+    @Test fun cannotFinishTripStraightFromMovingVehicle() {
+        val s = LiveDemoSession(phase = LivePhase.DRIVING, drivingAt = base)
+        assertFalse(applyLive(s, LiveEvent.FINISH, base + 2_000L).accepted)
+        assertFalse(applyLive(s, LiveEvent.TAKE_RETURN_PHOTO, base + 2_000L).accepted)
+    }
+
+    @Test fun completedReceiptDoesNotIncreaseWhileOpen() {
+        val s = LiveDemoSession(phase = LivePhase.RECEIPT, drivingAt = base, finishedAt = base + 15_000L)
+        assertEquals(demoFare(s, 650, base + 15_000L), demoFare(s, 650, base + 600_000L))
+    }
+
     @Test fun invalidOperationsDoNotModifySession() {
         val s = LiveDemoSession()
         for (event in listOf(LiveEvent.UNLOCK, LiveEvent.START_DRIVE,

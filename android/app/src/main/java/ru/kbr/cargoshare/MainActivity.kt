@@ -422,24 +422,23 @@ private fun VehicleBookingSheet(
     var bookingSubmitting by remember(vehicle.id) { mutableStateOf(false) }
     var lastBookingIntent by remember(vehicle.id) { mutableStateOf<BookingIntent?>(null) }
     var stableIntentKey by remember(vehicle.id) { mutableStateOf(UUID.randomUUID().toString()) }
-    ModalBottomSheet(onDismissRequest = onDismiss, containerColor = Cream) {
-        Column(Modifier.fillMaxWidth().verticalScroll(rememberScrollState()).padding(horizontal = 22.dp).padding(bottom = 36.dp)) {
-            Text(vehicle.name, fontWeight = FontWeight.Bold, fontSize = 25.sp)
-            Text(vehicle.type, fontSize = 14.sp, color = Color.Gray)
-            Spacer(Modifier.height(16.dp))
-            if (vehicle.description.isNotBlank()) {
-                Text(vehicle.description, color = Color.DarkGray, fontSize = 13.sp)
-            }
-            Text("${vehicle.payloadKg} кг · ${vehicle.cargoVolumeM3} м³ · ${vehicle.transmission}", color = Green)
-            Text(vehicle.pickupLocation, color = Color.Gray, fontSize = 13.sp)
-            Spacer(Modifier.height(12.dp))
+    ModalBottomSheet(onDismissRequest = onDismiss, containerColor = PremiumTheme.Paper) {
+        Column(Modifier.fillMaxWidth().verticalScroll(rememberScrollState())
+            .padding(horizontal = 18.dp).padding(bottom = 34.dp),
+            verticalArrangement = Arrangement.spacedBy(10.dp)) {
+            PremiumVehicleIntro(vehicle)
             Button(
                 onClick = onTryLiveDemo,
-                modifier = Modifier.fillMaxWidth().height(54.dp),
-                shape = RoundedCornerShape(16.dp),
-            ) { Text("Пройти аренду в реальном времени (ДЕМО)") }
-            Spacer(Modifier.height(16.dp))
-            Text("Начало аренды", fontWeight = FontWeight.SemiBold)
+                modifier = Modifier.fillMaxWidth().height(53.dp),
+                shape = RoundedCornerShape(18.dp),
+            ) {
+                Icon(Icons.Outlined.ArrowForward, null, modifier = Modifier.size(18.dp))
+                Spacer(Modifier.width(8.dp))
+                Text("Пройти LIVE-демо аренды", fontWeight = FontWeight.Bold)
+            }
+            HorizontalDivider(color = PremiumTheme.Stroke)
+            Text("Выберите время получения", fontWeight = FontWeight.Bold, color = PremiumTheme.Text,
+                fontSize = 17.sp)
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.padding(top = 8.dp)) {
                 OutlinedButton(onClick = {
                     DatePickerDialog(context, { _, year, month, day ->
@@ -458,16 +457,35 @@ private fun VehicleBookingSheet(
                 }) { Text(start.format(DateTimeFormatter.ofPattern("HH:mm", Ru))) }
             }
             Spacer(Modifier.height(16.dp))
-            Text("На сколько часов?", fontWeight = FontWeight.SemiBold)
+            Text("Выберите тариф", fontWeight = FontWeight.Bold, fontSize = 17.sp,
+                color = PremiumTheme.Text)
             Row(Modifier.padding(top = 8.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 listOf(2, 4, 8, 24).forEach { h ->
-                    FilterChip(selected = hours == h, onClick = { hours = h; price = null; quotedIntent = null }, label = { Text(if (h == 24) "Сутки" else "$h ч") })
+                    FilterChip(
+                        selected = hours == h,
+                        onClick = { hours = h; price = null; quotedIntent = null },
+                        label = { Text(if (h == 24) "Сутки" else "$h ч", fontWeight = FontWeight.SemiBold) },
+                        shape = RoundedCornerShape(15.dp),
+                        colors = FilterChipDefaults.filterChipColors(
+                            containerColor = Color.White,
+                            selectedContainerColor = PremiumTheme.Green,
+                            selectedLabelColor = Color.White)
+                    )
                 }
             }
             Spacer(Modifier.height(16.dp))
             if (price != null) {
-                Text(if (available) "Стоимость: $price ₽" else "Автомобиль занят в выбранное время", color = Green,
-                    fontSize = 19.sp, fontWeight = FontWeight.Bold)
+                Surface(color = PremiumTheme.Mint, shape = RoundedCornerShape(19.dp)) {
+                    Column(Modifier.fillMaxWidth().padding(17.dp)) {
+                        Text(if (available) "Итого за ${hours} ч" else "Машина недоступна",
+                            color = PremiumTheme.Green, fontSize = 12.sp)
+                        Text(if (available) "${price} ₽" else "Выберите другое время",
+                            fontSize = 27.sp, fontWeight = FontWeight.ExtraBold,
+                            color = PremiumTheme.GreenDark)
+                        Text("Расчёт по текущему демотарифу, без оплаты",
+                            fontSize = 10.sp, color = PremiumTheme.Muted)
+                    }
+                }
             }
             if (message != null) Text(message.orEmpty(), color = Color.Red, fontSize = 13.sp)
             Spacer(Modifier.height(12.dp))
@@ -526,8 +544,16 @@ private fun VehicleBookingSheet(
                     Text(if (bookingSubmitting) "Отправляем заявку…" else "Отправить заявку на аренду")
                 }
             }
-            Text(if (canBook) "ТОЛЬКО ДЕМО: заявка не поступает оператору, локально сохраняется на телефоне и не даёт доступ к машине." else "Это просмотр и расчёт демотарифа. Чтобы бронировать, подключите сервер и войдите.",
-                fontSize = 11.sp, color = Color.Gray, modifier = Modifier.padding(top = 12.dp))
+            Surface(color = PremiumTheme.Mint, shape = RoundedCornerShape(16.dp)) {
+                Row(Modifier.fillMaxWidth().padding(13.dp), verticalAlignment = Alignment.Top) {
+                    Icon(Icons.Outlined.Info, null, tint = PremiumTheme.Green,
+                        modifier = Modifier.size(19.dp))
+                    Spacer(Modifier.width(8.dp))
+                    Text(if (canBook) "ДЕМО: заявка сохраняется на этом телефоне. Нет настоящей оплаты, SMS или доступа к грузовику."
+                         else "Демо-расчёт. Для коммерческой аренды нужен подключённый сервер и вход.",
+                        color = PremiumTheme.GreenDark, fontSize = 11.sp, lineHeight = 16.sp)
+                }
+            }
         }
     }
 }

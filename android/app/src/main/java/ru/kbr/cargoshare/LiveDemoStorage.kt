@@ -20,6 +20,7 @@ class LiveDemoStorage(context: Context) {
             codeRequestedAt = j.optLong("codeRequestedAt"),
             passportStartedAt = j.optLong("passportStartedAt"),
             licenceStartedAt = j.optLong("licenceStartedAt"),
+            documentIssue = j.optString("documentIssue"),
             paymentStartedAt = j.optLong("paymentStartedAt"),
             durationHours = j.optInt("durationHours", 2),
             approvalStartedAt = j.optLong("approvalStartedAt"),
@@ -52,6 +53,7 @@ class LiveDemoStorage(context: Context) {
             put("codeRequestedAt", s.codeRequestedAt)
             put("passportStartedAt", s.passportStartedAt)
             put("licenceStartedAt", s.licenceStartedAt)
+            put("documentIssue", s.documentIssue)
             put("paymentStartedAt", s.paymentStartedAt)
             put("durationHours", s.durationHours)
             put("approvalStartedAt", s.approvalStartedAt)

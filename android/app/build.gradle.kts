@@ -8,11 +8,11 @@ android {
     namespace = "ru.kbr.cargoshare"
     compileSdk = 35
     defaultConfig {
-        applicationId = "ru.kbr.cargoshare.referencepreview.ux382"
+        applicationId = "ru.kbr.cargoshare.referencepreview.ux383"
         minSdk = 26
         targetSdk = 35
-        versionCode = 61
-        versionName = "3.8.2-map-card-routes-font-control"
+        versionCode = 62
+        versionName = "3.8.3-fixed-bottom-booking-button"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
     buildFeatures {

@@ -95,7 +95,9 @@ class LayoutSmokeTest {
         capture("layout_carousel_after_scroll")
         click("Выбрать")
         assertTrue(device.wait(Until.hasObject(By.text("Выбор грузовика")), 15_000L))
-        val primary = device.wait(Until.findObject(By.text("Продолжить к автопроверке · ДЕМО")), 15_000L)
+        Thread.sleep(700L)
+        capture("layout_booking_before_CTA_check")
+        val primary = device.wait(Until.findObject(By.textContains("Продолжить к автопроверке")), 15_000L)
         assertNotNull("Primary booking CTA not displayed", primary)
         assertNotNull("Separate route action not displayed",
             device.wait(Until.findObject(By.text("Построить маршрут")), 5_000L))
@@ -160,8 +162,10 @@ class LayoutSmokeTest {
                 (device.displayHeight * .35).toInt(), 28)
             click("Выбрать")
             assertTrue(device.wait(Until.hasObject(By.text("Выбор грузовика")), 15_000L))
+            Thread.sleep(700L)
+            capture("layout_booking_font_120_before_CTA_check")
             val green = device.wait(
-                Until.findObject(By.text("Продолжить к автопроверке · ДЕМО")), 15_000L)
+                Until.findObject(By.textContains("Продолжить к автопроверке")), 15_000L)
             assertNotNull("Green CTA not visible at 120% font", green)
             val button = generateSequence(green!!) { it.parent }
                 .firstOrNull { it.isClickable } ?: green

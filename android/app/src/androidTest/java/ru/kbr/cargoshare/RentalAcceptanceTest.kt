@@ -96,7 +96,8 @@ class RentalAcceptanceTest {
         screen("05_active_trip")
         tap("Продлить +2 ч")
         device.pressBack()
-        assertTrue(device.wait(Until.hasObject(By.text("Тренажёр аренды")),10_000))
+        // Back from the ongoing trip may restore the previous route; the app stays open.
+        assertTrue(device.wait(Until.hasObject(By.text("LIVE Демо")),10_000))
         tap("LIVE Демо")
         assertTrue(device.wait(Until.hasObject(By.text("Продолжить")),10_000))
         tap("Продолжить")

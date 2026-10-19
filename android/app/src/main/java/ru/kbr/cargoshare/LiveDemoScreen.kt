@@ -36,6 +36,10 @@ import org.osmdroid.util.GeoPoint
 import org.osmdroid.views.MapView
 import org.osmdroid.views.overlay.Marker
 import org.osmdroid.views.overlay.Polyline
+import org.osmdroid.views.overlay.Polygon
+import kotlin.math.cos
+import kotlin.math.sin
+import kotlin.math.PI
 import java.util.Locale
 import kotlin.math.ceil
 import kotlin.math.roundToInt
@@ -220,10 +224,16 @@ fun LiveDemoScreen(
                 LiveWait("Восстанавливаем демобронь без ожидания оператора…", 0L, 1f)
             }
             LivePhase.WALK -> {
-                LiveHeader("06", "Идите к автомобилю", "Демо-пешеход приближается к выбранному грузовику. Таймер идёт по настоящим секундам.")
-                LiveRouteMap(car, ((now - session.approachStartedAt).toFloat() / LIVE_APPROACH_MS).coerceIn(0f, 1f), "пешком")
-                LiveMetricRow("До автомобиля", "${ceil(((LIVE_APPROACH_MS - (now - session.approachStartedAt)).coerceAtLeast(0L) / 1000.0)).toInt()} сек")
-                LinearProgressIndicator(progress = { ((now - session.approachStartedAt).toFloat() / LIVE_APPROACH_MS).coerceIn(0f, 1f) },
+                val progress = ((now - session.approachStartedAt).toFloat() / LIVE_APPROACH_MS).coerceIn(0f, 1f)
+                val remaining = demoWalkRemainingMeters(car?.latitude ?: 43.4853,
+                    car?.longitude ?: 43.6071, progress)
+                LiveHeader("06", "Идите к автомобилю",
+                    "Демо-пешеход движется к грузовику по учебной траектории.")
+                LiveRouteMap(car, progress, "пешком")
+                LiveMetricRow("До автомобиля", "≈ ${remaining} м · ДЕМО")
+                LiveMetricRow("Осталось времени", "${ceil(((LIVE_APPROACH_MS - (now - session.approachStartedAt)).coerceAtLeast(0L) / 1000.0)).toInt()} сек")
+                LiveNote("Это расстояние по прямой в учебной симуляции. Реальная геопозиция телефона и пешеходные маршруты не используются.")
+                LinearProgressIndicator(progress = { progress },
                     modifier = Modifier.fillMaxWidth(), color = LiveGreen)
             }
             LivePhase.INSPECT -> {
@@ -282,9 +292,14 @@ fun LiveDemoScreen(
                 val seconds = ((LIVE_RETURN_MS - (now - session.returnRequestedAt)).coerceAtLeast(0L) / 1000L)
                 LiveHeader("11", "Едем к стоянке", "Вы выбрали завершение поездки. Машина направляется в учебную зону возврата.")
                 LiveRouteMap(car, progress, "грузовик")
+                val distance = demoReturnRemainingMeters(car?.latitude ?: 43.4853,
+                    car?.longitude ?: 43.6071, progress)
+                LiveMetricRow("До зоны возврата", "≈ ${distance} м · ДЕМО")
+                LiveMetricRow("Завершение", if (distance <= DEMO_PARKING_ZONE_RADIUS_METERS)
+                    "В учебной зоне · сначала осмотр" else "Вне зоны · завершать нельзя")
                 LiveMetricRow("Прибытие", "Через ${seconds} сек")
                 LinearProgressIndicator(progress = { progress }, modifier = Modifier.fillMaxWidth(), color = LiveGreen)
-                LiveNote("Маршрут и геозона условные. После прибытия потребуется фотоосмотр, закрытие дверей и подтверждение окончания.")
+                LiveNote("Зелёный круг разрешает завершение только в демо. Вне него завершение запрещено в учебном сценарии. Это не реальные ограничения парковки.")
             }
             LivePhase.RETURN -> {
                 LiveHeader("12", "Возврат грузовика", "Вы приехали в учебную зону завершения. Сделайте фото, закройте машину и завершите аренду.")
@@ -297,7 +312,7 @@ fun LiveDemoScreen(
                         Column {
                             Text("Учебная зона возврата", color = LiveGreen,
                                 fontWeight = FontWeight.Bold, fontSize = 14.sp)
-                            Text("Маркер условный. Геозона не проверяется по GPS.",
+                            Text("В зелёном круге возврат разрешён только в демо, за пределами — нет. GPS и реальные правила парковки не проверяются.",
                                 fontSize = 11.sp, color = LiveGray)
                         }
                     }
@@ -588,6 +603,25 @@ fun LiveDemoScreen(
             controller.setCenter(route[centerIndexForRoute(route.size)])
             minZoomLevel = 9.0
             maxZoomLevel = 18.0
+            if (mode != "пешком" && !compact) {
+                val parking = route.last()
+                // Illustrative permitted-return geofence, not a real legal parking zone.
+                overlays.add(Polygon().apply {
+                    setPoints(demoCirclePoints(parking.latitude, parking.longitude,
+                        DEMO_PARKING_ZONE_RADIUS_METERS))
+                    fillPaint.color = AndroidColor.argb(70, 0, 172, 102)
+                    outlinePaint.color = AndroidColor.rgb(0, 130, 77)
+                    outlinePaint.strokeWidth = 5f
+                })
+                // Explicit example of an out-of-zone, prohibited-return location.
+                overlays.add(Polygon().apply {
+                    setPoints(demoCirclePoints(parking.latitude + 0.0018,
+                        parking.longitude + 0.0022, 45.0))
+                    fillPaint.color = AndroidColor.argb(60, 218, 54, 53)
+                    outlinePaint.color = AndroidColor.rgb(193, 42, 42)
+                    outlinePaint.strokeWidth = 4f
+                })
+            }
             overlays.add(Polyline().apply {
                 setPoints(route)
                 outlinePaint.color = AndroidColor.rgb(24, 79, 63)
@@ -600,9 +634,7 @@ fun LiveDemoScreen(
                 setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_CENTER)
             })
             overlays.add(Marker(this).apply {
-                position = if (mode == "пешком") route.last() else GeoPoint(
-                    route.last().latitude + 0.00045, route.last().longitude + 0.00045
-                )
+                position = route.last()
                 title = if (mode == "пешком") "Автомобиль" else "Учебная зона возврата"
                 icon = if (mode == "пешком") truckMapMarker(context) else returnZoneMapMarker(context)
                 setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_CENTER)
@@ -648,7 +680,9 @@ fun LiveDemoScreen(
             colors=IconButtonDefaults.filledIconButtonColors(containerColor=Color.White,contentColor=LiveGreen)
         ) {Icon(Icons.Outlined.MyLocation,"Центр учебного маршрута")}
     }
-    Text(if (compact) "© OpenStreetMap" else "Учебная траектория · не GPS · © OpenStreetMap",
+    Text(if (compact) "© OpenStreetMap" else if (mode == "пешком")
+        "Путь · условно · не GPS · © OpenStreetMap"
+        else "Зелёная зона — можно · снаружи нельзя · ДЕМО",
         modifier=Modifier.align(Alignment.BottomCenter).background(Color.White.copy(alpha=.9f)).padding(4.dp),
         color=LiveGray,fontSize=if(compact) 7.sp else 8.sp)
     }
@@ -685,5 +719,16 @@ private fun PremiumReturnStep(number: Int, label: String, completed: Boolean) {
                 Text("✓ Данные образца найдены\n✓ Категория и срок действия",fontSize=10.sp,lineHeight=16.sp,color=LiveGray)
             }
         }
+    }
+}
+
+/** Approximate illustrated circle, not an official GPS or legal-parking geofence. */
+private fun demoCirclePoints(lat: Double, lon: Double, radiusMeters: Double): List<GeoPoint> {
+    val delta = radiusMeters / 111_195.0
+    val lonScale = cos(Math.toRadians(lat)).coerceAtLeast(0.01)
+    return (0..36).map { n ->
+        val radians = 2 * PI * n / 36.0
+        GeoPoint(lat + delta * sin(radians),
+            lon + delta * cos(radians) / lonScale)
     }
 }

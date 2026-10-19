@@ -7,6 +7,7 @@ import android.graphics.Color as AndroidColor
 import android.graphics.drawable.BitmapDrawable
 import android.location.LocationManager
 import android.os.Bundle
+import android.view.MotionEvent
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
@@ -63,7 +64,25 @@ private fun rememberLibreMap(initialLat: Double, initialLon: Double, zoom: Doubl
     val context = LocalContext.current
     val handle = remember(context, initialLat, initialLon, zoom) {
         MapLibre.getInstance(context.applicationContext)
-        LibreMapHandle(MapView(context).apply { onCreate(null) })
+        LibreMapHandle(MapView(context).apply {
+            onCreate(null)
+            // The fleet map is nested inside a Compose LazyColumn. Without this,
+            // vertical single-finger drags can be intercepted as page scrolling.
+            // Do not consume touch events: MapLibre must still receive panning,
+            // marker taps and pinch-to-zoom.
+            setOnTouchListener { view, event ->
+                when (event.actionMasked) {
+                    MotionEvent.ACTION_DOWN,
+                    MotionEvent.ACTION_POINTER_DOWN,
+                    MotionEvent.ACTION_MOVE ->
+                        view.parent?.requestDisallowInterceptTouchEvent(true)
+                    MotionEvent.ACTION_UP,
+                    MotionEvent.ACTION_CANCEL ->
+                        view.parent?.requestDisallowInterceptTouchEvent(false)
+                }
+                false
+            }
+        })
     }
     DisposableEffect(handle) {
         handle.view.onStart()

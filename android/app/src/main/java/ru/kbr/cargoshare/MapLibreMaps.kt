@@ -153,11 +153,6 @@ internal fun MapLibreFleetMap(
             .getBoolean("map_prices_visible", true)
     }
     val handle = rememberLibreMap(CENTER_LAT, CENTER_LON, 12.7)
-    val localZones = rememberLocalParkingZones()
-    val zonesVisible = remember(context) {
-        context.applicationContext.getSharedPreferences("gruzsher_preferences", 0)
-            .getBoolean("map_parking_zones_visible", true)
-    }
     val map = handle.map
     val currentOnSelect by rememberUpdatedState(onSelect)
     var status by remember { mutableStateOf<String?>(null) }
@@ -170,14 +165,10 @@ internal fun MapLibreFleetMap(
     }
     var lastSelected by remember { mutableStateOf<String?>(null) }
 
-    LaunchedEffect(map, cars, shownPrice, selectedVehicleId, localZones, zonesVisible) {
+    LaunchedEffect(map, cars, shownPrice, selectedVehicleId) {
         if (map == null) return@LaunchedEffect
+        // Avoid drawing and observing operational geofences in the fleet catalogue.
         map.clear()
-        if (zonesVisible) {
-            localZones.filter { it.enabled }.forEach { zone ->
-                map.addPolygon(zoneLibrePolygon(zone))
-            }
-        }
         val icons = IconFactory.getInstance(context)
         cars.forEach { vehicle ->
             val lat = vehicle.latitude
@@ -303,22 +294,23 @@ internal fun MapLibreRouteMap(
     LaunchedEffect(map, route, mode, showZones, compact, localZones) {
         if (map == null) return@LaunchedEffect
         map.clear()
-        if (!compact && showZones) localZones.filter { it.enabled }.forEach { zone ->
-            map.addPolygon(zoneLibrePolygon(zone))
-        }
+        if (!compact && mode == "грузовик" && showZones)
+            localZones.filter { it.enabled }.forEach { zone ->
+                map.addPolygon(zoneLibrePolygon(zone))
+            }
         val icons = IconFactory.getInstance(context)
         map.addPolyline(PolylineOptions().addAll(route)
             .color(AndroidColor.rgb(24, 79, 63)).width(5f))
-        if (mode != "пешком" && !compact && showZones) {
+        if (mode == "грузовик" && !compact && showZones) {
             map.addPolygon(PolygonOptions()
                 .addAll(libCircle(last.latitude, last.longitude,
                     DEMO_PARKING_ZONE_RADIUS_METERS))
-                .fillColor(AndroidColor.argb(72, 0, 172, 102))
-                .strokeColor(AndroidColor.rgb(0, 132, 77)))
+                .fillColor(AndroidColor.argb(20, 0, 172, 102))
+                .strokeColor(AndroidColor.argb(145, 0, 132, 77)))
             map.addPolygon(PolygonOptions()
                 .addAll(libCircle(last.latitude + .0018, last.longitude + .0022, 45.0))
-                .fillColor(AndroidColor.argb(65, 216, 53, 53))
-                .strokeColor(AndroidColor.rgb(193, 42, 42)))
+                .fillColor(AndroidColor.argb(24, 216, 53, 53))
+                .strokeColor(AndroidColor.argb(145, 193, 42, 42)))
         }
         val first = (if (mode == "пешком") walkingMapMarker(context)
             else truckMapMarker(context)) as BitmapDrawable
@@ -413,6 +405,6 @@ private fun zoneLibrePolygon(zone: LocalParkingZone): PolygonOptions =
     PolygonOptions().addAll(zone.vertices.map {
         LatLng(it.latitude, it.longitude)
     }).fillColor(if (zone.rule == ParkingRule.ALLOWED)
-        AndroidColor.argb(65, 0, 152, 78) else AndroidColor.argb(75, 220, 48, 48))
+        AndroidColor.argb(18, 0, 152, 78) else AndroidColor.argb(23, 220, 48, 48))
         .strokeColor(if (zone.rule == ParkingRule.ALLOWED)
-            AndroidColor.rgb(0, 133, 69) else AndroidColor.rgb(194, 38, 38))
+            AndroidColor.argb(150, 0, 133, 69) else AndroidColor.argb(150, 194, 38, 38))

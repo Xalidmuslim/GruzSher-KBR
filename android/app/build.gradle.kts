@@ -8,11 +8,11 @@ android {
     namespace = "ru.kbr.cargoshare"
     compileSdk = 35
     defaultConfig {
-        applicationId = "ru.kbr.cargoshare.referencepreview.ux375"
+        applicationId = "ru.kbr.cargoshare.referencepreview.ux376"
         minSdk = 26
         targetSdk = 35
-        versionCode = 54
-        versionName = "3.7.5-modern-gps-distance-card"
+        versionCode = 55
+        versionName = "3.7.6-orange-3d-floating-map"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
     buildFeatures {

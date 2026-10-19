@@ -34,9 +34,11 @@ import androidx.compose.runtime.saveable.rememberSaveableStateHolder
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import kotlinx.coroutines.launch
@@ -64,15 +66,33 @@ class MainActivity : ComponentActivity() {
         androidx.core.view.WindowInsetsControllerCompat(window, window.decorView)
             .isAppearanceLightStatusBars = true
         setContent {
-            MaterialTheme(colorScheme = lightColorScheme(primary = PremiumTheme.Green, onPrimary = Color.White, background = PremiumTheme.Paper, surface = Color.White, onSurface = PremiumTheme.Text)) {
-                AppScreen()
+            // One consistent app typography scale. Multiply Android accessibility
+            // settings; don't modify display density or absolute dp measurements.
+            val appPrefs = remember {
+                applicationContext.getSharedPreferences("gruzsher_preferences", 0)
+            }
+            var appFontScale by remember {
+                mutableFloatStateOf(
+                    normalizeAppFontScale(appPrefs.getFloat(APP_FONT_SCALE_KEY, 1f)))
+            }
+            val systemDensity = LocalDensity.current
+            CompositionLocalProvider(
+                LocalDensity provides Density(
+                    systemDensity.density, systemDensity.fontScale * appFontScale)
+            ) {
+                MaterialTheme(colorScheme = lightColorScheme(primary = PremiumTheme.Green, onPrimary = Color.White, background = PremiumTheme.Paper, surface = Color.White, onSurface = PremiumTheme.Text)) {
+                    AppScreen(appFontScale) { chosen ->
+                        appFontScale = normalizeAppFontScale(chosen)
+                        appPrefs.edit().putFloat(APP_FONT_SCALE_KEY, appFontScale).apply()
+                    }
+                }
             }
         }
     }
 }
 
 @Composable
-private fun AppScreen() {
+private fun AppScreen(fontScale: Float, onFontScaleChange: (Float) -> Unit) {
     val api = remember { Api() }
     val scope = rememberCoroutineScope()
     var vehicles by remember { mutableStateOf(if (BuildConfig.DEBUG) offlineDemoCatalog() else emptyList()) }
@@ -308,7 +328,9 @@ private fun AppScreen() {
                 2 -> DriverDashboard(live = liveOverview, bookings = bookings,
                     onLive = { receiptId=null; navigateTo(3, openDemo = true) },
                     onTrips = { navigateTo(1) }, onMore = { navigateTo(3) },
-                    onFleet = { navigateTo(0) })
+                    onFleet = { navigateTo(0) },
+                    fontScale = fontScale,
+                    onFontScaleChange = onFontScaleChange)
                 else -> if (!showLiveDemo) GruzSherMoreScreen(
                     onDemo = { receiptId = null; navigateTo(3, openDemo = true) },
                     onFleet = { navigateTo(0) },

@@ -289,7 +289,7 @@ private fun PremiumFleetCard(car: Vehicle, modifier: Modifier, selected: Boolean
     val context = LocalContext.current
     val prefs = remember(context) { context.getSharedPreferences("gruzsher_preferences", 0) }
     var favourite by remember(car.id) { mutableStateOf(prefs.getBoolean("favourite_${car.id}", false)) }
-    Card(onClick = onClick, modifier = modifier.height(247.dp),
+    Card(onClick = onClick, modifier = modifier.heightIn(min = 247.dp),
         shape = RoundedCornerShape(19.dp),
         colors = CardDefaults.cardColors(containerColor = Color.White),
         elevation = CardDefaults.cardElevation(1.dp),

@@ -37,6 +37,9 @@ import org.maplibre.android.camera.CameraUpdateFactory
 import org.maplibre.android.geometry.LatLng
 import org.maplibre.android.maps.MapLibreMap
 import org.maplibre.android.maps.MapView
+import org.maplibre.android.style.layers.SymbolLayer
+import org.maplibre.android.style.expressions.Expression
+import org.maplibre.android.style.layers.PropertyFactory
 import kotlin.math.PI
 import kotlin.math.cos
 import kotlin.math.sin
@@ -53,14 +56,14 @@ private val LIBRE_FOREST = Color(0xFF184F3F)
 private const val CENTER_LAT = 43.4853
 private const val CENTER_LON = 43.6071
 
-private class LibreMapHandle(val view: MapView) {
+internal class LibreMapHandle(val view: MapView) {
     var map by mutableStateOf<MapLibreMap?>(null)
     var loading by mutableStateOf(true)
 }
 
 /** Lifecycle is intentionally paired with the Compose AndroidView's lifetime. */
 @Composable
-private fun rememberLibreMap(initialLat: Double, initialLon: Double, zoom: Double): LibreMapHandle {
+internal fun rememberLibreMap(initialLat: Double, initialLon: Double, zoom: Double): LibreMapHandle {
     val context = LocalContext.current
     val handle = remember(context, initialLat, initialLon, zoom) {
         MapLibre.getInstance(context.applicationContext)
@@ -97,7 +100,8 @@ private fun rememberLibreMap(initialLat: Double, initialLon: Double, zoom: Doubl
             map.setMaxZoomPreference(19.0)
             map.cameraPosition = CameraPosition.Builder()
                 .target(LatLng(initialLat, initialLon)).zoom(zoom).build()
-            map.setStyle(LIBRE_STYLE_URL) {
+            map.setStyle(LIBRE_STYLE_URL) { style ->
+                applyRussianLabels(style)
                 handle.map = map
                 handle.loading = false
             }
@@ -110,6 +114,24 @@ private fun rememberLibreMap(initialLat: Double, initialLon: Double, zoom: Doubl
         }
     }
     return handle
+}
+
+/**
+ * Russian OSM labels, where a Russian name is present in vector source data.
+ * Original names remain as a fallback; never transliterate unknown locations.
+ * Avoid road shields, transport refs and airport codes that require their own
+ * dedicated style expressions.
+ */
+private fun applyRussianLabels(style: org.maplibre.android.maps.Style) {
+    val kinds = listOf("place", "settlement", "town", "city", "village",
+        "country", "state", "poi", "park", "water", "street", "road_label", "roadname")
+    val name = Expression.coalesce(
+        Expression.get("name:ru"), Expression.get("name_ru"), Expression.get("name"))
+    style.layers.filterIsInstance<SymbolLayer>()
+        .filter { layer -> kinds.any { layer.id.contains(it, ignoreCase = true) } }
+        .forEach { layer ->
+            runCatching { layer.setProperties(PropertyFactory.textField(name)) }
+        }
 }
 
 private fun zoomLibre(map: MapLibreMap?, increase: Boolean) {

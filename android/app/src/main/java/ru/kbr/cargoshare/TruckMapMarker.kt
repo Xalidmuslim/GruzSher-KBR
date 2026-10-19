@@ -5,9 +5,6 @@ import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.graphics.Color
 import android.graphics.Paint
-import android.graphics.LinearGradient
-import android.graphics.RadialGradient
-import android.graphics.Shader
 import android.graphics.Path
 import android.graphics.RectF
 import android.graphics.drawable.BitmapDrawable
@@ -75,57 +72,57 @@ fun truckMapMarker(context: Context, hourlyRub: Int? = null, selected: Boolean =
 }
 
 /**
- * Three-dimensional orange GPS character on a fully transparent bitmap.
- * No solid badge, dark outline or heading-dependent asset rotation.
+ * Static solid-yellow 3D-style person for phone GPS on both fleet maps.
+ * Flat, fully opaque colour planes create volume: no gradients, dark outlines,
+ * black badge, semi-transparent person or direction-based rotation.
+ * The bitmap background is transparent to leave map tiles unobstructed.
  */
 fun phoneLocationMarker(context: Context): Bitmap {
-    val d = context.resources.displayMetrics.density
+    val density = context.resources.displayMetrics.density
     val bitmap = Bitmap.createBitmap(
-        (40f * d).roundToInt().coerceAtLeast(1),
-        (44f * d).roundToInt().coerceAtLeast(1),
+        (36f * density).roundToInt().coerceAtLeast(1),
+        (42f * density).roundToInt().coerceAtLeast(1),
         Bitmap.Config.ARGB_8888
     )
-    val canvas = Canvas(bitmap).apply { scale(d, d) }
+    val canvas = Canvas(bitmap).apply { scale(density, density) }
+    val yellow = Color.rgb(255, 211, 24)
+    val highlight = Color.rgb(255, 239, 122)
+    val side = Color.rgb(232, 173, 0)
     val paint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
         style = Paint.Style.FILL
         strokeCap = Paint.Cap.ROUND
         strokeJoin = Paint.Join.ROUND
     }
-    val orangeLight = Color.rgb(255, 202, 106)
-    val orange = Color.rgb(255, 139, 31)
-    val orangeShade = Color.rgb(200, 80, 13)
-    val limbGradient = LinearGradient(
-        11f, 18f, 30f, 37f,
-        intArrayOf(orangeLight, orange, orangeShade), null, Shader.TileMode.CLAMP
-    )
-    // Soft diffuse shadow creates physical depth, without any enclosing circle.
-    paint.setShadowLayer(2f, 0.7f, 1.4f, Color.argb(70, 116, 61, 19))
-    paint.shader = limbGradient
+    // All limbs and body are solid, rounded, and have an offset yellow side
+    // face to provide subtle volume instead of translucent gradients.
+    paint.color = side
     paint.strokeWidth = 7f
-    // Limbs sit behind the volume of the torso.
-    canvas.drawLine(17f, 29.5f, 13f, 39f, paint)
-    canvas.drawLine(23f, 29.5f, 27f, 39f, paint)
-    canvas.drawLine(16.5f, 20.7f, 10.3f, 27f, paint)
-    canvas.drawLine(23.5f, 20.7f, 29.7f, 27f, paint)
+    canvas.drawLine(15.7f, 26f, 12f, 36.5f, paint)
+    canvas.drawLine(21f, 26f, 24.7f, 36.5f, paint)
+    canvas.drawLine(14.4f, 18.2f, 8.6f, 25.2f, paint)
+    canvas.drawLine(22.6f, 18.2f, 28.4f, 25.2f, paint)
+    paint.color = yellow
+    paint.strokeWidth = 6.2f
+    canvas.drawLine(14.8f, 25.5f, 11.5f, 36f, paint)
+    canvas.drawLine(20f, 25.5f, 23.8f, 36f, paint)
+    canvas.drawLine(14f, 18.4f, 8.7f, 24.4f, paint)
+    canvas.drawLine(21f, 18.4f, 26.7f, 24.4f, paint)
 
-    paint.shader = LinearGradient(
-        14f, 17f, 27f, 34f,
-        intArrayOf(orangeLight, orange, orangeShade), null, Shader.TileMode.CLAMP
-    )
-    canvas.drawRoundRect(RectF(14f, 16.7f, 26f, 32.7f), 5.2f, 5.2f, paint)
-    paint.clearShadowLayer()
-    // Narrow specular highlight makes the silhouette visibly rounded at map scale.
-    paint.shader = null
-    paint.color = Color.argb(95, 255, 241, 200)
-    canvas.drawRoundRect(RectF(16.1f, 18.3f, 18.7f, 28.4f), 1.5f, 1.5f, paint)
+    // Rounded extruded torso. Shaded right plane has a crisp, solid edge.
+    paint.color = side
+    canvas.drawRoundRect(RectF(12f, 15.2f, 24.2f, 29.8f), 5f, 5f, paint)
+    paint.color = yellow
+    canvas.drawRoundRect(RectF(11.8f, 15f, 21.6f, 29.2f), 4.8f, 4.8f, paint)
+    paint.color = highlight
+    canvas.drawRoundRect(RectF(13f, 16.4f, 15.4f, 25.6f), 1.2f, 1.2f, paint)
 
-    paint.shader = RadialGradient(17.7f, 8.4f, 10f,
-        intArrayOf(Color.rgb(255, 228, 155), orange, orangeShade),
-        floatArrayOf(0f, 0.58f, 1f), Shader.TileMode.CLAMP)
-    paint.setShadowLayer(1.7f, 0.5f, 1.4f, Color.argb(55, 116, 61, 19))
-    canvas.drawCircle(20f, 10.5f, 6.4f, paint)
-    paint.clearShadowLayer()
-    paint.shader = null
+    // Solid spherical head: a small opaque highlight and side shading.
+    paint.color = side
+    canvas.drawCircle(18.8f, 9.2f, 6.7f, paint)
+    paint.color = yellow
+    canvas.drawCircle(17.3f, 8.6f, 6.5f, paint)
+    paint.color = highlight
+    canvas.drawCircle(15.1f, 6.9f, 2.2f, paint)
     return bitmap
 }
 

@@ -8,11 +8,11 @@ android {
     namespace = "ru.kbr.cargoshare"
     compileSdk = 35
     defaultConfig {
-        applicationId = "ru.kbr.cargoshare.referencepreview.ux376"
+        applicationId = "ru.kbr.cargoshare.referencepreview.ux377"
         minSdk = 26
         targetSdk = 35
-        versionCode = 55
-        versionName = "3.7.6-orange-3d-floating-map"
+        versionCode = 56
+        versionName = "3.7.7-yellow-3d-compact-card"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
     buildFeatures {

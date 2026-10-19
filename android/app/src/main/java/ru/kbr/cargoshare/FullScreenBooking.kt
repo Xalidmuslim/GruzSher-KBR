@@ -308,7 +308,7 @@ fun FullScreenVehicleBooking(
                 // Extra clearance covers edge-to-edge fullscreen dialogs with
                 // incomplete gesture-inset reports; scroll content can shrink.
                 Column(Modifier.fillMaxWidth()
-                    .padding(start = 17.dp, end = 17.dp, top = 9.dp, bottom = 58.dp),
+                    .padding(start = 17.dp, end = 17.dp, top = 9.dp, bottom = 16.dp),
                     verticalArrangement = Arrangement.spacedBy(7.dp)) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Column(Modifier.weight(1f)) {
@@ -319,6 +319,30 @@ fun FullScreenVehicleBooking(
                                 color = PremiumTheme.GreenDark)
                         }
                         Text("Без залога", fontSize = 12.sp, color = PremiumTheme.Green)
+                    }
+                    // Secondary map action belongs ABOVE the primary verification
+                    // CTA, not inside a map overlay that can be obscured by panels.
+                    if (vehicle.latitude != null && vehicle.longitude != null) {
+                        OutlinedButton(
+                            onClick = {
+                                detailRoadRoute = null
+                                detailRouteRequested = true
+                                detailRouteTap += 1
+                                pickupMapExpanded = true
+                            },
+                            modifier = Modifier.align(Alignment.End).height(36.dp),
+                            shape = RoundedCornerShape(11.dp),
+                            contentPadding = PaddingValues(horizontal = 12.dp, vertical = 0.dp),
+                            border = BorderStroke(1.dp, PremiumTheme.Green),
+                            colors = ButtonDefaults.outlinedButtonColors(
+                                contentColor = PremiumTheme.GreenDark)
+                        ) {
+                            Icon(Icons.Outlined.AltRoute, contentDescription = null,
+                                modifier = Modifier.size(16.dp))
+                            Spacer(Modifier.width(6.dp))
+                            Text("Построить маршрут", fontSize = 11.sp,
+                                fontWeight = FontWeight.SemiBold)
+                        }
                     }
                     if (offlineTraining) {
                         Button(
@@ -396,11 +420,9 @@ fun FullScreenVehicleBooking(
                 }
                 Box(Modifier.fillMaxWidth().weight(1f)) {
                     // Full-bleed map continues behind the floating address glass.
-                    NalchikMap(listOf(vehicle), onSelect = {
-                        // Select the truck without triggering network routing.
-                        detailRoadRoute = null
-                        detailRouteRequested = false
-                    }, modifier = Modifier.fillMaxSize(), selectedVehicleId = vehicle.id,
+                    // Tapping the only vehicle does not discard a route.
+                    NalchikMap(listOf(vehicle), onSelect = { },
+                        modifier = Modifier.fillMaxSize(), selectedVehicleId = vehicle.id,
                         roadRoute = detailRoadRoute)
 
                     // Reserve an explicit bottom gap for Android gesture navigation.
@@ -430,21 +452,6 @@ fun FullScreenVehicleBooking(
                             Text(pickupCoordinates(vehicle.latitude, vehicle.longitude),
                                 color = PremiumTheme.Muted, fontSize = 10.sp,
                                 lineHeight = 13.sp, maxLines = 1)
-                            Button(onClick = {
-                                detailRoadRoute = null
-                                detailRouteRequested = true
-                                detailRouteTap += 1
-                            }, modifier = Modifier.fillMaxWidth().height(36.dp),
-                                shape = RoundedCornerShape(11.dp),
-                                contentPadding = PaddingValues(horizontal = 10.dp, vertical = 0.dp),
-                                colors = ButtonDefaults.buttonColors(
-                                    containerColor = PremiumTheme.Green)) {
-                                Icon(Icons.Outlined.AltRoute, contentDescription = null,
-                                    modifier = Modifier.size(16.dp))
-                                Spacer(Modifier.width(7.dp))
-                                Text(if (detailRoadRoute != null) "Перестроить маршрут"
-                                    else "Построить маршрут", fontSize = 12.sp)
-                            }
                             if (detailRouteRequested) {
                                 key(vehicle.id, detailRouteTap) {
                                     RoadDirectionsPanel(vehicle) { detailRoadRoute = it }

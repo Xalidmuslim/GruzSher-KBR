@@ -8,11 +8,11 @@ android {
     namespace = "ru.kbr.cargoshare"
     compileSdk = 35
     defaultConfig {
-        applicationId = "ru.kbr.cargoshare.referencepreview.ux372"
+        applicationId = "ru.kbr.cargoshare.referencepreview.ux373"
         minSdk = 26
         targetSdk = 35
-        versionCode = 51
-        versionName = "3.7.2-zone-performance"
+        versionCode = 52
+        versionName = "3.7.3-gps-distance-blue-zones"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
     buildFeatures {

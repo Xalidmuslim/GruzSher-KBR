@@ -397,9 +397,9 @@ fun FullScreenVehicleBooking(
                 Box(Modifier.fillMaxWidth().weight(1f)) {
                     // Full-bleed map continues behind the floating address glass.
                     NalchikMap(listOf(vehicle), onSelect = {
+                        // Select the truck without triggering network routing.
                         detailRoadRoute = null
-                        detailRouteRequested = true
-                        detailRouteTap += 1
+                        detailRouteRequested = false
                     }, modifier = Modifier.fillMaxSize(), selectedVehicleId = vehicle.id,
                         roadRoute = detailRoadRoute)
 
@@ -430,14 +430,25 @@ fun FullScreenVehicleBooking(
                             Text(pickupCoordinates(vehicle.latitude, vehicle.longitude),
                                 color = PremiumTheme.Muted, fontSize = 10.sp,
                                 lineHeight = 13.sp, maxLines = 1)
+                            Button(onClick = {
+                                detailRoadRoute = null
+                                detailRouteRequested = true
+                                detailRouteTap += 1
+                            }, modifier = Modifier.fillMaxWidth().height(36.dp),
+                                shape = RoundedCornerShape(11.dp),
+                                contentPadding = PaddingValues(horizontal = 10.dp, vertical = 0.dp),
+                                colors = ButtonDefaults.buttonColors(
+                                    containerColor = PremiumTheme.Green)) {
+                                Icon(Icons.Outlined.AltRoute, contentDescription = null,
+                                    modifier = Modifier.size(16.dp))
+                                Spacer(Modifier.width(7.dp))
+                                Text(if (detailRoadRoute != null) "Перестроить маршрут"
+                                    else "Построить маршрут", fontSize = 12.sp)
+                            }
                             if (detailRouteRequested) {
                                 key(vehicle.id, detailRouteTap) {
                                     RoadDirectionsPanel(vehicle) { detailRoadRoute = it }
                                 }
-                            } else {
-                                Text("Нажмите метку машины — покажем маршрут по улицам",
-                                    fontSize = 10.sp, color = PremiumTheme.Muted,
-                                    lineHeight = 13.sp, maxLines = 2)
                             }
                         }
                     }

@@ -3,6 +3,7 @@ package ru.kbr.cargoshare
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
@@ -44,6 +45,7 @@ fun PremiumFleetScreen(
     var roadCarId by rememberSaveable { mutableStateOf<String?>(null) }
     var roadRoute by remember { mutableStateOf<RoadRoute?>(null) }
     var roadTap by remember { mutableIntStateOf(0) }
+    var roadRequested by remember { mutableStateOf(false) }
     val shown = remember(cars, filter) { cars.filter { filter == "Все" || fleetClass(it) == filter } }
     val carousel = rememberLazyListState()
     val scroll = rememberLazyListState()
@@ -71,14 +73,14 @@ fun PremiumFleetScreen(
                 DemoPill()
             }
             Box(Modifier.fillMaxWidth().background(PremiumTheme.Paper).zIndex(2f)) {
-                FleetFilters(filter) { filter = it; selectedId = ""; roadCarId = null; roadRoute = null }
+                FleetFilters(filter) { filter = it; selectedId = ""; roadCarId = null; roadRoute = null; roadRequested = false }
             }
             Box(Modifier.fillMaxWidth().weight(1f).clipToBounds().background(PremiumTheme.Mint)) {
                 NalchikMap(shown, {
                     selectedId = it.id
                     roadCarId = it.id
                     roadRoute = null
-                    roadTap += 1
+                    roadRequested = false
                 }, Modifier.fillMaxSize().clipToBounds(), selectedId, roadRoute)
                 Surface(Modifier.align(Alignment.TopStart).padding(14.dp),
                     shape = RoundedCornerShape(24.dp), color = Color.White) {
@@ -87,12 +89,13 @@ fun PremiumFleetScreen(
                         modifier = Modifier.padding(horizontal = 13.dp, vertical = 9.dp))
                 }
                 selectedCar?.let { car ->
-                    Card(onClick = { onSelect(car) },
+                    Card(
                         modifier = Modifier.fillMaxWidth().align(Alignment.BottomCenter)
                             .padding(horizontal = 13.dp, vertical = 43.dp),
                         shape = RoundedCornerShape(19.dp),
                         colors = CardDefaults.cardColors(containerColor = Color.White)) {
-                        Row(Modifier.fillMaxWidth().padding(9.dp),
+                        Row(Modifier.fillMaxWidth()
+                            .clickable { onSelect(car) }.padding(9.dp),
                             verticalAlignment = Alignment.CenterVertically) {
                             TruckArtwork(car, Modifier.size(78.dp, 67.dp))
                             Spacer(Modifier.width(11.dp))
@@ -107,9 +110,26 @@ fun PremiumFleetScreen(
                             Icon(Icons.Outlined.ChevronRight, "Открыть автомобиль",
                                 tint = PremiumTheme.Green)
                         }
-                        if (roadCarId == car.id) {
-                            Box(Modifier.fillMaxWidth().padding(
-                                start = 12.dp, end = 12.dp, bottom = 10.dp)) {
+                        Column(Modifier.fillMaxWidth()
+                            .padding(start = 12.dp, end = 12.dp, bottom = 10.dp),
+                            verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                            Button(onClick = {
+                                roadCarId = car.id
+                                roadRoute = null
+                                roadRequested = true
+                                roadTap += 1
+                            }, modifier = Modifier.fillMaxWidth().height(38.dp),
+                                shape = RoundedCornerShape(12.dp),
+                                contentPadding = PaddingValues(horizontal = 12.dp, vertical = 0.dp),
+                                colors = ButtonDefaults.buttonColors(containerColor = PremiumTheme.Green)) {
+                                Icon(Icons.Outlined.AltRoute, contentDescription = null,
+                                    modifier = Modifier.size(17.dp))
+                                Spacer(Modifier.width(7.dp))
+                                Text(if (roadCarId == car.id && roadRoute != null)
+                                    "Перестроить маршрут" else "Построить маршрут",
+                                    fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                            }
+                            if (roadRequested && roadCarId == car.id) {
                                 key(car.id, roadTap) {
                                     RoadDirectionsPanel(car) { roadRoute = it }
                                 }
@@ -128,7 +148,16 @@ fun PremiumFleetScreen(
         addressCarId?.let { id ->
             shown.firstOrNull { it.id == id }?.let { car ->
                 PickupAddressSheet(car, onDismiss = { addressCarId = null },
-                    onSelect = { addressCarId = null; onSelect(car) })
+                    onSelect = { addressCarId = null; onSelect(car) },
+                    onBuildRoute = {
+                        addressCarId = null
+                        selectedId = car.id
+                        roadCarId = car.id
+                        roadRoute = null
+                        roadRequested = true
+                        roadTap += 1
+                        fullMap = true
+                    })
             }
         }
         return
@@ -216,7 +245,16 @@ fun PremiumFleetScreen(
     addressCarId?.let { id ->
         shown.firstOrNull { it.id == id }?.let { car ->
             PickupAddressSheet(car, onDismiss = { addressCarId = null },
-                onSelect = { addressCarId = null; onSelect(car) })
+                onSelect = { addressCarId = null; onSelect(car) },
+                onBuildRoute = {
+                    addressCarId = null
+                    selectedId = car.id
+                    roadCarId = car.id
+                    roadRoute = null
+                    roadRequested = true
+                    roadTap += 1
+                    fullMap = true
+                })
         }
     }
 }

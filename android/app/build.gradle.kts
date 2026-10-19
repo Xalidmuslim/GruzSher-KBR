@@ -8,11 +8,11 @@ android {
     namespace = "ru.kbr.cargoshare"
     compileSdk = 35
     defaultConfig {
-        applicationId = "ru.kbr.cargoshare.referencepreview.ux378"
+        applicationId = "ru.kbr.cargoshare.referencepreview.ux379"
         minSdk = 26
         targetSdk = 35
-        versionCode = 57
-        versionName = "3.7.8-road-driving-matte-gps"
+        versionCode = 58
+        versionName = "3.7.9-route-button-matte-line"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
     buildFeatures {

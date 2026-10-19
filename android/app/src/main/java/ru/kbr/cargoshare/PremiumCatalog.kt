@@ -389,12 +389,25 @@ internal fun NalchikMap(cars: List<Vehicle>, onSelect: (Vehicle) -> Unit, modifi
         map.overlays.filterIsInstance<Polyline>().forEach { map.overlays.remove(it) }
         val pts = roadRoute?.points?.map { (lat, lon) -> GeoPoint(lat, lon) }.orEmpty()
         if (pts.size >= 2) {
-            val polyline = Polyline(map).apply {
+            // Two matte solid strokes give a subtle raised-road treatment.
+            // Insert both BEFORE vehicle and GPS overlays so the line never
+            // covers either icon, including the origin/endpoints.
+            val backing = Polyline(map).apply {
                 setPoints(pts)
-                outlinePaint.color = android.graphics.Color.rgb(15, 139, 107)
-                outlinePaint.strokeWidth = 6f * context.resources.displayMetrics.density
+                outlinePaint.color = android.graphics.Color.rgb(221, 232, 226)
+                outlinePaint.strokeWidth = 5.5f * context.resources.displayMetrics.density
+                outlinePaint.strokeCap = android.graphics.Paint.Cap.ROUND
+                outlinePaint.strokeJoin = android.graphics.Paint.Join.ROUND
             }
-            map.overlays.add(polyline)
+            val ink = Polyline(map).apply {
+                setPoints(pts)
+                outlinePaint.color = android.graphics.Color.rgb(48, 128, 106)
+                outlinePaint.strokeWidth = 2.8f * context.resources.displayMetrics.density
+                outlinePaint.strokeCap = android.graphics.Paint.Cap.ROUND
+                outlinePaint.strokeJoin = android.graphics.Paint.Join.ROUND
+            }
+            map.overlays.add(0, backing)
+            map.overlays.add(1, ink)
             // Include both origin and destination in the user's map viewport.
             val latitudes = pts.map { it.latitude }
             val longitudes = pts.map { it.longitude }

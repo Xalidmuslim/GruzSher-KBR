@@ -50,6 +50,7 @@ fun ProfessionalProfile(
     var panel by rememberSaveable { mutableStateOf<String?>(null) }
     var mapPrices by remember { mutableStateOf(prefs.getBoolean("map_prices_visible", true)) }
     var parkingZones by remember { mutableStateOf(prefs.getBoolean("map_parking_zones_visible", true)) }
+    var mapEngine by remember { mutableStateOf(normalizeMapEngine(prefs.getString(MAP_ENGINE_KEY, MAP_ENGINE_OSMDROID))) }
     var payment by remember { mutableStateOf(prefs.getString("demo_payment_method", "virtual_0000") ?: "virtual_0000") }
     var supportTopic by rememberSaveable { mutableStateOf("Общий вопрос") }
     var supportDraft by rememberSaveable { mutableStateOf("") }
@@ -245,8 +246,39 @@ fun ProfessionalProfile(
                             modifier = Modifier.fillMaxWidth()) { Text("Перейти в каталог") }
                     }
                     "Настройки" -> {
-                        ProfileHint("Настройки хранятся на телефоне и применяются к " +
-                            "учебным картам после повторного открытия соответствующего экрана.")
+                        ProfileHint("Выбранный движок используется для всех карт: " +
+                            "автопарк, подход к машине и возврат. Карты требуют интернет.")
+                        Text("Картографическая система", fontSize = 16.sp,
+                            fontWeight = FontWeight.Bold, color = ProfileInk)
+                        listOf(
+                            MAP_ENGINE_OSMDROID to ("OpenStreetMap (текущая)" to
+                                "Растровая карта OSMDroid · стабильный вариант"),
+                            MAP_ENGINE_MAPLIBRE to ("MapLibre" to
+                                "Векторная карта OpenFreeMap · без API-ключа")
+                        ).forEach { (engine, label) ->
+                            Surface(onClick = {
+                                mapEngine = engine
+                                prefs.edit().putString(MAP_ENGINE_KEY, engine).apply()
+                            }, shape = RoundedCornerShape(14.dp),
+                                color = if (mapEngine == engine) ProfileMint else Color.White) {
+                                Row(Modifier.fillMaxWidth().padding(13.dp),
+                                    verticalAlignment = Alignment.CenterVertically) {
+                                    Icon(Icons.Outlined.Map, null, tint = ProfileGreen)
+                                    Spacer(Modifier.width(10.dp))
+                                    Column(Modifier.weight(1f)) {
+                                        Text(label.first, fontWeight = FontWeight.SemiBold,
+                                            color = ProfileInk)
+                                        Text(label.second, fontSize = 11.sp, color = ProfileMuted)
+                                    }
+                                    RadioButton(selected = mapEngine == engine, onClick = {
+                                        mapEngine = engine
+                                        prefs.edit().putString(MAP_ENGINE_KEY, engine).apply()
+                                    })
+                                }
+                            }
+                        }
+                        ProfileHint("При нестабильном интернете или если MapLibre не загружает " +
+                            "стиль, выберите OpenStreetMap. Положение грузовиков в демо учебное.")
                         ProfileToggle("Цены на карте", "Показывать стоимость рядом с грузовиками",
                             mapPrices) {
                             mapPrices = it
@@ -367,12 +399,13 @@ fun ProfessionalProfile(
     if (confirmResetSettings) {
         AlertDialog(onDismissRequest = { confirmResetSettings = false },
             title = { Text("Сбросить настройки карты?") },
-            text = { Text("Цены и учебные зоны снова будут показаны.") },
+            text = { Text("Вернётся OpenStreetMap, цены и учебные зоны будут показаны.") },
             confirmButton = {
                 TextButton(onClick = {
-                    mapPrices = true; parkingZones = true
+                    mapPrices = true; parkingZones = true; mapEngine = MAP_ENGINE_OSMDROID
                     prefs.edit().remove("map_prices_visible")
-                        .remove("map_parking_zones_visible").apply()
+                        .remove("map_parking_zones_visible")
+                        .putString(MAP_ENGINE_KEY, MAP_ENGINE_OSMDROID).apply()
                     confirmResetSettings = false
                 }) { Text("Сбросить") }
             }, dismissButton = {

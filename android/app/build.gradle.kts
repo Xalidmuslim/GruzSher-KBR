@@ -8,11 +8,11 @@ android {
     namespace = "ru.kbr.cargoshare"
     compileSdk = 35
     defaultConfig {
-        applicationId = "ru.kbr.cargoshare.referencepreview.ux367"
+        applicationId = "ru.kbr.cargoshare.referencepreview.ux368"
         minSdk = 26
         targetSdk = 35
-        versionCode = 46
-        versionName = "3.6.7-pickup-address"
+        versionCode = 47
+        versionName = "3.6.8-dual-maps"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
     buildFeatures {
@@ -51,6 +51,8 @@ dependencies {
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.9.0")
     implementation("io.coil-kt:coil-compose:2.7.0")
     implementation("org.osmdroid:osmdroid-android:6.1.20")
+    // OpenGL variant is used for wider device compatibility alongside OSMDroid.
+    implementation("org.maplibre.gl:android-sdk:12.3.1")
     implementation("androidx.core:core-ktx:1.15.0")
     testImplementation("junit:junit:4.13.2")
     androidTestImplementation("androidx.test:runner:1.6.2")

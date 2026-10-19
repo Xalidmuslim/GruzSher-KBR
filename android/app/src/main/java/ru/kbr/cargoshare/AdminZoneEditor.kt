@@ -1,6 +1,14 @@
 package ru.kbr.cargoshare
 
 import android.graphics.Color as AndroidColor
+import android.graphics.Bitmap
+import android.graphics.Canvas as AndroidCanvas
+import android.graphics.Paint
+import android.graphics.PointF
+import android.os.SystemClock
+import android.view.GestureDetector
+import android.view.MotionEvent
+import org.maplibre.android.annotations.IconFactory
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
@@ -45,7 +53,10 @@ internal fun AdminZoneEditor(onClose: () -> Unit) {
     var enabled by rememberSaveable { mutableStateOf(true) }
     val draft = remember { mutableStateListOf<ZonePoint>() }
     var listVisible by rememberSaveable { mutableStateOf(false) }
-    var message by remember { mutableStateOf("Коснитесь карты, чтобы добавить вершины зоны.") }
+    var message by remember { mutableStateOf("Нажимайте карту для добавления вершин. Зажмите вершину, чтобы сдвинуть.") }
+    var dragIndex by remember { mutableIntStateOf(-1) }
+    var beforeDrag by remember { mutableStateOf<List<ZonePoint>?>(null) }
+    var lastDragFrame by remember { mutableLongStateOf(0L) }
     var pendingDeleteId by rememberSaveable { mutableStateOf<String?>(null) }
     BackHandler { onClose() }
     val currentOnClick by rememberUpdatedState<(LatLng) -> Unit>({ tap ->
@@ -66,6 +77,82 @@ internal fun AdminZoneEditor(onClose: () -> Unit) {
         }
     }
 
+
+    // Native MapLibre annotations in 12.x are not draggable by simply setting
+    // MarkerOptions.draggable. Detect a LONG PRESS near the coordinate handle
+    // and move that vertex via the map's screen↔geo projection. Normal taps,
+    // pinches and single-finger panning remain handled by MapLibre.
+    DisposableEffect(handle.view, map) {
+        val view = handle.view
+        if (map == null) {
+            onDispose { }
+        } else {
+            val detector = GestureDetector(view.context,
+                object : GestureDetector.SimpleOnGestureListener() {
+                    override fun onDown(e: MotionEvent): Boolean = true
+                    override fun onLongPress(e: MotionEvent) {
+                        val threshold = 48f * view.resources.displayMetrics.density
+                        val target = draft.indexOfFirst { point ->
+                            val screenPoint = map.projection.toScreenLocation(
+                                LatLng(point.latitude, point.longitude))
+                            val deltaX = screenPoint.x - e.x
+                            val deltaY = screenPoint.y - e.y
+                            deltaX * deltaX + deltaY * deltaY <= threshold * threshold
+                        }
+                        if (target >= 0) {
+                            beforeDrag = draft.toList()
+                            dragIndex = target
+                            lastDragFrame = 0L
+                            view.parent?.requestDisallowInterceptTouchEvent(true)
+                            map.uiSettings.isScrollGesturesEnabled = false
+                            message = "Перемещаем вершину ${target + 1}. Отпустите палец, чтобы применить."
+                        }
+                    }
+                })
+            view.setOnTouchListener { v, event ->
+                detector.onTouchEvent(event)
+                when (event.actionMasked) {
+                    MotionEvent.ACTION_DOWN, MotionEvent.ACTION_POINTER_DOWN ->
+                        v.parent?.requestDisallowInterceptTouchEvent(true)
+                    MotionEvent.ACTION_MOVE -> {
+                        if (dragIndex >= 0 && dragIndex < draft.size) {
+                            val nowMs = SystemClock.uptimeMillis()
+                            if (nowMs - lastDragFrame >= 40L) {
+                                val updated = map.projection.fromScreenLocation(
+                                    PointF(event.x, event.y))
+                                draft[dragIndex] = ZonePoint(
+                                    updated.latitude.coerceIn(-90.0, 90.0),
+                                    updated.longitude.coerceIn(-180.0, 180.0))
+                                lastDragFrame = nowMs
+                            }
+                            v.parent?.requestDisallowInterceptTouchEvent(true)
+                        }
+                    }
+                    MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> {
+                        if (dragIndex >= 0 && dragIndex < draft.size &&
+                            event.actionMasked == MotionEvent.ACTION_UP) {
+                            val updated = map.projection.fromScreenLocation(
+                                PointF(event.x, event.y))
+                            draft[dragIndex] = ZonePoint(updated.latitude, updated.longitude)
+                            message = "Вершина ${dragIndex + 1} перемещена. Сохраните изменения."
+                        }
+                        if (dragIndex >= 0) {
+                            dragIndex = -1
+                            map.uiSettings.isScrollGesturesEnabled = true
+                        }
+                        v.parent?.requestDisallowInterceptTouchEvent(false)
+                    }
+                }
+                dragIndex >= 0
+            }
+            onDispose {
+                dragIndex = -1
+                map.uiSettings.isScrollGesturesEnabled = true
+                view.setOnTouchListener(null)
+            }
+        }
+    }
+
     // No animation/camera reset during polygon edits: only annotations refresh.
     LaunchedEffect(map, zones, draft.toList(), rule) {
         if (map == null) return@LaunchedEffect
@@ -78,6 +165,13 @@ internal fun AdminZoneEditor(onClose: () -> Unit) {
             ).strokeColor(if (zone.rule == ParkingRule.ALLOWED)
                 AndroidColor.rgb(0, 130, 73) else AndroidColor.rgb(185, 25, 25)))
         }
+        if (draft.size >= 3) {
+            map.addPolygon(PolygonOptions().addAll(draft.map {
+                LatLng(it.latitude, it.longitude)
+            }).fillColor(if (rule == ParkingRule.ALLOWED)
+                AndroidColor.argb(35, 0, 144, 87) else AndroidColor.argb(38, 215, 57, 60))
+                .strokeColor(AndroidColor.TRANSPARENT))
+        }
         if (draft.size >= 2) {
             map.addPolyline(PolylineOptions()
                 .addAll(draft.map { LatLng(it.latitude, it.longitude) } +
@@ -86,10 +180,11 @@ internal fun AdminZoneEditor(onClose: () -> Unit) {
                 .width(4.5f).color(if (rule == ParkingRule.ALLOWED)
                     AndroidColor.rgb(0, 137, 78) else AndroidColor.rgb(201, 42, 42)))
         }
+        val icons = IconFactory.getInstance(context)
         draft.forEachIndexed { index, point ->
-            // MapLibre SDK 12.3's annotation API supports markers, not addCircle.
             map.addMarker(MarkerOptions()
                 .position(LatLng(point.latitude, point.longitude))
+                .icon(icons.fromBitmap(adminVertexIcon(index + 1, rule)))
                 .title("Вершина ${index + 1}"))
         }
     }
@@ -101,17 +196,24 @@ internal fun AdminZoneEditor(onClose: () -> Unit) {
                 Icon(Icons.Outlined.ArrowBack, "Назад", tint = PremiumTheme.GreenDark)
             }
             Column(Modifier.weight(1f)) {
-                Text("Администратор · учебные зоны", fontSize = 17.sp,
+                Text("Редактор парковочных зон", fontSize = 17.sp,
                     color = PremiumTheme.Text, fontWeight = FontWeight.Bold)
-                Text("Редактор на этом устройстве, без публикации", fontSize = 11.sp,
+                Text("Администратор · локальный учебный проект", fontSize = 11.sp,
                     color = PremiumTheme.Muted)
             }
-            TextButton(onClick = { listVisible = true }) {
-                Text("Зоны (${zones.size})")
+            FilledTonalButton(onClick = { listVisible = true },
+                contentPadding = PaddingValues(horizontal = 10.dp, vertical = 5.dp),
+                colors = ButtonDefaults.filledTonalButtonColors(
+                    containerColor = PremiumTheme.Mint)) {
+                Icon(Icons.Outlined.Layers, null, Modifier.size(17.dp))
+                Spacer(Modifier.width(5.dp))
+                Text("${zones.size} зон", fontSize = 12.sp)
             }
         }
-        Row(Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 6.dp),
-            horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        Row(Modifier.fillMaxWidth().background(Color.White)
+            .padding(horizontal = 14.dp, vertical = 3.dp),
+            horizontalArrangement = Arrangement.spacedBy(10.dp),
+            verticalAlignment = Alignment.CenterVertically) {
             FilterChip(selected = rule == ParkingRule.ALLOWED, onClick = {
                 rule = ParkingRule.ALLOWED
             }, label = { Text("Разрешено") },
@@ -122,6 +224,8 @@ internal fun AdminZoneEditor(onClose: () -> Unit) {
             }, label = { Text("Запрещено") },
                 leadingIcon = { Icon(Icons.Outlined.DoNotDisturb, null,
                     Modifier.size(16.dp)) })
+            Spacer(Modifier.weight(1f))
+            Text("${draft.size}/40", color = PremiumTheme.Muted, fontSize = 12.sp)
         }
         Box(Modifier.fillMaxWidth().weight(1f)) {
             AndroidView(factory = { handle.view }, modifier = Modifier.fillMaxSize())
@@ -131,12 +235,17 @@ internal fun AdminZoneEditor(onClose: () -> Unit) {
                     Text("Загружаем карту…", Modifier.padding(12.dp))
                 }
             }
-            Surface(Modifier.align(Alignment.TopStart).padding(12.dp),
-                color = Color.White.copy(alpha = .95f),
-                shape = RoundedCornerShape(11.dp)) {
-                Text("1. Передвигайте карту. 2. Нажимайте точки контура.",
-                    Modifier.padding(10.dp), fontSize = 11.sp,
-                    color = PremiumTheme.Text)
+            Surface(Modifier.align(Alignment.TopStart).padding(start = 12.dp, top = 11.dp, end = 72.dp),
+                color = Color.White.copy(alpha = .94f), shadowElevation = 2.dp,
+                shape = RoundedCornerShape(12.dp)) {
+                Row(Modifier.padding(horizontal = 11.dp, vertical = 8.dp),
+                    verticalAlignment = Alignment.CenterVertically) {
+                    Icon(Icons.Outlined.EditLocationAlt, null, Modifier.size(18.dp),
+                        tint = PremiumTheme.GreenDark)
+                    Spacer(Modifier.width(7.dp))
+                    Text("Касание — точка · удержание — перемещение",
+                        fontSize = 10.sp, color = PremiumTheme.Text, maxLines = 2)
+                }
             }
             Column(Modifier.align(Alignment.TopEnd).padding(12.dp),
                 verticalArrangement = Arrangement.spacedBy(9.dp)) {
@@ -154,23 +263,29 @@ internal fun AdminZoneEditor(onClose: () -> Unit) {
                 }
             }
         }
-        Surface(color = Color.White, shadowElevation = 5.dp,
-            shape = RoundedCornerShape(topStart = 18.dp, topEnd = 18.dp)) {
-            Column(Modifier.fillMaxWidth().padding(12.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        Surface(color = Color.White, shadowElevation = 4.dp,
+            shape = RoundedCornerShape(topStart = 22.dp, topEnd = 22.dp)) {
+            Column(Modifier.fillMaxWidth().padding(horizontal = 14.dp, vertical = 8.dp),
+                verticalArrangement = Arrangement.spacedBy(5.dp)) {
                 OutlinedTextField(value = title, onValueChange = { title = it.take(60) },
                     modifier = Modifier.fillMaxWidth(), singleLine = true,
                     label = { Text("Название зоны") },
                     placeholder = { Text("Например, Парковка на проспекте") })
-                Text(message, fontSize = 11.sp, color = PremiumTheme.Muted, maxLines = 2)
+                Text(message, fontSize = 11.sp, color = PremiumTheme.Muted, maxLines = 1)
                 Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                     OutlinedButton(onClick = {
-                        if (draft.isNotEmpty()) draft.removeAt(draft.lastIndex)
+                        if (beforeDrag != null) {
+                            draft.clear(); draft.addAll(beforeDrag!!)
+                            beforeDrag = null
+                            message = "Последнее перемещение отменено."
+                        } else if (draft.isNotEmpty()) draft.removeAt(draft.lastIndex)
                     }, enabled = draft.isNotEmpty(), modifier = Modifier.weight(1f)) {
-                        Text("Отменить точку", fontSize = 11.sp)
+                        Icon(Icons.Outlined.Undo, null, Modifier.size(16.dp))
+                        Spacer(Modifier.width(5.dp))
+                        Text("Отменить", fontSize = 11.sp)
                     }
                     OutlinedButton(onClick = {
-                        draft.clear(); editId = null; enabled = true
+                        draft.clear(); editId = null; enabled = true; beforeDrag = null
                         title = ""; message = "Начните рисовать новую зону."
                     }, modifier = Modifier.weight(1f)) {
                         Text("Очистить", fontSize = 11.sp)
@@ -186,7 +301,7 @@ internal fun AdminZoneEditor(onClose: () -> Unit) {
                         val combined = if (editId == null) zones + updated
                             else zones.map { if (it.id == editId) updated else it }
                         if (validZonePoints(vertices) && store.save(combined)) {
-                            draft.clear(); editId = null; title = ""; enabled = true
+                            draft.clear(); editId = null; title = ""; enabled = true; beforeDrag = null
                             message = "Учебная зона сохранена только на этом телефоне."
                         } else message = "Контур некорректен или превышен лимит 30 зон."
                     }) {
@@ -238,7 +353,7 @@ internal fun AdminZoneEditor(onClose: () -> Unit) {
                                 OutlinedButton(onClick = {
                                     editId = zone.id; title = zone.title
                                     rule = zone.rule; enabled = zone.enabled
-                                    draft.clear(); draft.addAll(zone.vertices)
+                                    draft.clear(); draft.addAll(zone.vertices); beforeDrag = null
                                     map?.animateCamera(
                                         org.maplibre.android.camera.CameraUpdateFactory.newLatLngZoom(
                                             LatLng(zone.vertices[0].latitude,
@@ -279,4 +394,24 @@ internal fun AdminZoneEditor(onClose: () -> Unit) {
                 }
             })
     }
+}
+
+/** Premium numbered vertex handles instead of MapLibre's red teardrop pins. */
+private fun adminVertexIcon(number: Int, rule: ParkingRule): Bitmap {
+    val size = 74
+    val bitmap = Bitmap.createBitmap(size, size, Bitmap.Config.ARGB_8888)
+    val canvas = AndroidCanvas(bitmap)
+    val paint = Paint(Paint.ANTI_ALIAS_FLAG)
+    paint.color = AndroidColor.WHITE
+    canvas.drawCircle(37f, 37f, 31f, paint)
+    paint.color = if (rule == ParkingRule.ALLOWED)
+        AndroidColor.rgb(0, 111, 81) else AndroidColor.rgb(183, 37, 46)
+    canvas.drawCircle(37f, 37f, 25f, paint)
+    paint.color = AndroidColor.WHITE
+    paint.textAlign = Paint.Align.CENTER
+    paint.textSize = 26f
+    paint.isFakeBoldText = true
+    canvas.drawText(number.toString(), 37f,
+        37f - (paint.ascent() + paint.descent()) / 2f, paint)
+    return bitmap
 }

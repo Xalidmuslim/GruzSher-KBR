@@ -641,6 +641,7 @@ fun LiveDemoScreen(
         context.applicationContext.getSharedPreferences("gruzsher_preferences", 0)
             .getBoolean("map_parking_zones_visible", true)
     }
+    val localZones = rememberLocalParkingZones()
     val origin = remember(car?.id) { GeoPoint(car?.latitude ?: 43.4853, car?.longitude ?: 43.6071) }
     val route = remember(origin, mode) {
         if (mode == "пешком") listOf(
@@ -651,7 +652,7 @@ fun LiveDemoScreen(
             GeoPoint(origin.latitude + 0.0032, origin.longitude + 0.0024),
             GeoPoint(origin.latitude + 0.0044, origin.longitude + 0.0027))
     }
-    val map = remember(context, car?.id, mode) {
+    val map = remember(context, car?.id, mode, compact, showZones, localZones) {
         Configuration.getInstance().userAgentValue = context.packageName
         MapView(context).apply {
             setTileSource(TileSourceFactory.MAPNIK)
@@ -670,6 +671,20 @@ fun LiveDemoScreen(
             controller.setCenter(route[centerIndexForRoute(route.size)])
             minZoomLevel = 9.0
             maxZoomLevel = 18.0
+            if (!compact && showZones) localZones.filter { it.enabled }.forEach { zone ->
+                overlays.add(Polygon().apply {
+                    setPoints(zone.vertices.map {
+                        GeoPoint(it.latitude, it.longitude)
+                    })
+                    fillPaint.color = if (zone.rule == ParkingRule.ALLOWED)
+                        AndroidColor.argb(60, 0, 153, 78)
+                    else AndroidColor.argb(72, 211, 45, 45)
+                    outlinePaint.color = if (zone.rule == ParkingRule.ALLOWED)
+                        AndroidColor.rgb(0, 135, 73)
+                    else AndroidColor.rgb(191, 34, 34)
+                    outlinePaint.strokeWidth = 5f
+                })
+            }
             if (mode != "пешком" && !compact && showZones) {
                 val parking = route.last()
                 // Illustrative permitted-return geofence, not a real legal parking zone.

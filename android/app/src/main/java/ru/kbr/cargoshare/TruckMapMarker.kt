@@ -5,6 +5,9 @@ import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.graphics.Color
 import android.graphics.Paint
+import android.graphics.LinearGradient
+import android.graphics.RadialGradient
+import android.graphics.Shader
 import android.graphics.Path
 import android.graphics.RectF
 import android.graphics.drawable.BitmapDrawable
@@ -72,35 +75,57 @@ fun truckMapMarker(context: Context, hourlyRub: Int? = null, selected: Boolean =
 }
 
 /**
- * Small yellow person indicating the phone's real, permissioned GPS position.
- * Deliberately different from the green demo walking-route marker.
+ * Three-dimensional orange GPS character on a fully transparent bitmap.
+ * No solid badge, dark outline or heading-dependent asset rotation.
  */
 fun phoneLocationMarker(context: Context): Bitmap {
-    val density = context.resources.displayMetrics.density
+    val d = context.resources.displayMetrics.density
     val bitmap = Bitmap.createBitmap(
-        (32f * density).roundToInt().coerceAtLeast(1),
-        (36f * density).roundToInt().coerceAtLeast(1),
+        (40f * d).roundToInt().coerceAtLeast(1),
+        (44f * d).roundToInt().coerceAtLeast(1),
         Bitmap.Config.ARGB_8888
     )
-    val canvas = Canvas(bitmap).apply { scale(density, density) }
+    val canvas = Canvas(bitmap).apply { scale(d, d) }
     val paint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
         style = Paint.Style.FILL
         strokeCap = Paint.Cap.ROUND
         strokeJoin = Paint.Join.ROUND
     }
-    // Transparent background; a delicate white glow ensures contrast on map tiles.
-    // No enclosing disk, dark ring, black contour or double-stroked stick figure.
-    paint.setShadowLayer(2.6f, 0f, 1f, Color.argb(185, 255, 255, 255))
-    paint.color = Color.rgb(255, 195, 24)
-    paint.strokeWidth = 4.8f
-    canvas.drawLine(16f, 16f, 10f, 21.5f, paint)
-    canvas.drawLine(16f, 16f, 22f, 21.5f, paint)
-    canvas.drawLine(16f, 23f, 11.2f, 31f, paint)
-    canvas.drawLine(16f, 23f, 20.8f, 31f, paint)
-    canvas.drawRoundRect(RectF(12.7f, 13.4f, 19.3f, 24.5f), 3.3f, 3.3f, paint)
-    paint.color = Color.rgb(255, 211, 55)
-    canvas.drawCircle(16f, 8.3f, 4.7f, paint)
+    val orangeLight = Color.rgb(255, 202, 106)
+    val orange = Color.rgb(255, 139, 31)
+    val orangeShade = Color.rgb(200, 80, 13)
+    val limbGradient = LinearGradient(
+        11f, 18f, 30f, 37f,
+        intArrayOf(orangeLight, orange, orangeShade), null, Shader.TileMode.CLAMP
+    )
+    // Soft diffuse shadow creates physical depth, without any enclosing circle.
+    paint.setShadowLayer(2f, 0.7f, 1.4f, Color.argb(70, 116, 61, 19))
+    paint.shader = limbGradient
+    paint.strokeWidth = 7f
+    // Limbs sit behind the volume of the torso.
+    canvas.drawLine(17f, 29.5f, 13f, 39f, paint)
+    canvas.drawLine(23f, 29.5f, 27f, 39f, paint)
+    canvas.drawLine(16.5f, 20.7f, 10.3f, 27f, paint)
+    canvas.drawLine(23.5f, 20.7f, 29.7f, 27f, paint)
+
+    paint.shader = LinearGradient(
+        14f, 17f, 27f, 34f,
+        intArrayOf(orangeLight, orange, orangeShade), null, Shader.TileMode.CLAMP
+    )
+    canvas.drawRoundRect(RectF(14f, 16.7f, 26f, 32.7f), 5.2f, 5.2f, paint)
     paint.clearShadowLayer()
+    // Narrow specular highlight makes the silhouette visibly rounded at map scale.
+    paint.shader = null
+    paint.color = Color.argb(95, 255, 241, 200)
+    canvas.drawRoundRect(RectF(16.1f, 18.3f, 18.7f, 28.4f), 1.5f, 1.5f, paint)
+
+    paint.shader = RadialGradient(17.7f, 8.4f, 10f,
+        intArrayOf(Color.rgb(255, 228, 155), orange, orangeShade),
+        floatArrayOf(0f, 0.58f, 1f), Shader.TileMode.CLAMP)
+    paint.setShadowLayer(1.7f, 0.5f, 1.4f, Color.argb(55, 116, 61, 19))
+    canvas.drawCircle(20f, 10.5f, 6.4f, paint)
+    paint.clearShadowLayer()
+    paint.shader = null
     return bitmap
 }
 

@@ -168,7 +168,7 @@ fun LiveDemoScreen(
     Column(
         Modifier.fillMaxSize().verticalScroll(journeyScroll)
             .padding(horizontal = if (session.phase == LivePhase.DRIVING) 12.dp else 18.dp)
-            .padding(bottom = if (session.phase in setOf(LivePhase.INSPECT, LivePhase.DRIVING, LivePhase.RETURNING, LivePhase.RETURN)) 106.dp else 30.dp),
+            .padding(bottom = if (session.phase in setOf(LivePhase.INSPECT, LivePhase.DRIVING, LivePhase.RETURNING, LivePhase.RETURN)) 136.dp else 36.dp),
         verticalArrangement = Arrangement.spacedBy(if (session.phase == LivePhase.DRIVING) 9.dp else 14.dp)
     ) {
         Spacer(Modifier.height(6.dp))
@@ -466,10 +466,11 @@ fun LiveDemoScreen(
     }
     if (session.phase in setOf(LivePhase.INSPECT, LivePhase.DRIVING, LivePhase.RETURNING, LivePhase.RETURN)) {
         Surface(
-            modifier = Modifier.fillMaxWidth().align(Alignment.BottomCenter),
+            modifier = Modifier.fillMaxWidth().align(Alignment.BottomCenter)
+                .navigationBarsPadding(),
             color = Color.White, shadowElevation = 11.dp, tonalElevation = 2.dp
         ) {
-            Column(Modifier.fillMaxWidth().padding(horizontal = 18.dp, vertical = 10.dp),
+            Column(Modifier.fillMaxWidth().padding(horizontal = 18.dp, vertical = 12.dp),
                 verticalArrangement = Arrangement.spacedBy(3.dp)) {
                 val photoReady = session.returnPhotoAt > 0L
                 val lockReady = session.lockingAt > 0L

@@ -254,7 +254,8 @@ fun FullScreenVehicleBooking(
                         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(7.dp)) {
                             (if (offlineTraining) listOf(2,4,8) else listOf(2,4,8,24)).forEach { h ->
                                 val selected = hours == h
-                                Surface(onClick = { hours = h }, modifier = Modifier.weight(1f),
+                                Surface(onClick = { hours = h },
+                                    modifier = Modifier.weight(1f).height(85.dp),
                                     shape = RoundedCornerShape(16.dp),
                                     color = if (selected) PremiumTheme.Green else Color.White,
                                     border = BorderStroke(1.dp, if (selected) PremiumTheme.Green else PremiumTheme.Stroke)) {
@@ -265,10 +266,9 @@ fun FullScreenVehicleBooking(
                                             fontWeight = FontWeight.ExtraBold,
                                             color = if (selected) Color.White else PremiumTheme.Text)
                                         Text("${if (h == 24) vehicle.dailyPriceRub else minOf(h * vehicle.hourlyPriceRub, vehicle.dailyPriceRub)} ₽",
-                                            fontSize = 11.sp, maxLines = 1,
+                                            fontSize = 10.sp, maxLines = 1,
+                                            overflow = TextOverflow.Ellipsis,
                                             color = if (selected) Color.White else PremiumTheme.Muted)
-                                        if (selected) Text("Выбрано", fontSize = 10.sp,
-                                            color = Color.White.copy(alpha = .8f))
                                     }
                                 }
                             }
@@ -305,10 +305,10 @@ fun FullScreenVehicleBooking(
             }
             Surface(color = Color.White, shadowElevation = 12.dp,
                 modifier = Modifier.fillMaxWidth().navigationBarsPadding()) {
-                // Extra clearance covers edge-to-edge fullscreen dialogs with
-                // incomplete gesture-inset reports; scroll content can shrink.
+                // Always keep the primary green action above the system gesture
+                // zone; content above this fixed footer is independently scrollable.
                 Column(Modifier.fillMaxWidth()
-                    .padding(start = 17.dp, end = 17.dp, top = 9.dp, bottom = 16.dp),
+                    .padding(start = 17.dp, end = 17.dp, top = 9.dp, bottom = 22.dp),
                     verticalArrangement = Arrangement.spacedBy(7.dp)) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Column(Modifier.weight(1f)) {

@@ -103,8 +103,13 @@ fun FullScreenVehicleBooking(
         }
     }
     Dialog(onDismissRequest = onDismiss,
-        properties = DialogProperties(usePlatformDefaultWidth = false, decorFitsSystemWindows = false)) {
-        // Let the dialog fit the OS window. The fixed footer owns the bottom insets.
+        // Let Android fit the dialog to the actual visible window before Compose
+        // lays out the fixed booking footer. Edge-to-edge fullscreen dialogs may
+        // otherwise report zero navigation insets and crop the primary CTA.
+        properties = DialogProperties(usePlatformDefaultWidth = false,
+            decorFitsSystemWindows = true)) {
+        // Reserve system safe drawing area on the full dialog, not on its
+        // scrollable body, so the footer can't slide below Android gesture bar.
         Column(Modifier.fillMaxSize().background(PremiumTheme.Paper)
             .windowInsetsPadding(WindowInsets.safeDrawing).imePadding()) {
             Row(
@@ -305,10 +310,12 @@ fun FullScreenVehicleBooking(
             }
             Surface(color = Color.White, shadowElevation = 12.dp,
                 modifier = Modifier.fillMaxWidth()) {
-                // Extra clearance covers edge-to-edge fullscreen dialogs with
-                // incomplete gesture-inset reports; scroll content can shrink.
+                // Keep the whole green action ABOVE the gesture bar, including
+                // on OEM Android builds that report zero inset to Compose Dialog.
+                // Dialog's content scrolls independently, while this fixed footer
+                // reserves a guaranteed 56dp bottom safety zone.
                 Column(Modifier.fillMaxWidth()
-                    .padding(start = 17.dp, end = 17.dp, top = 9.dp, bottom = 22.dp),
+                    .padding(start = 17.dp, end = 17.dp, top = 9.dp, bottom = 56.dp),
                     verticalArrangement = Arrangement.spacedBy(7.dp)) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Column(Modifier.weight(1f)) {

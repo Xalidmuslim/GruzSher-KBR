@@ -445,8 +445,10 @@ fun TripsDashboard(
 @Composable
 fun DriverDashboard(live: LiveDemoSession, bookings: List<Booking>,
     onLive: () -> Unit, onTrips: () -> Unit,
-    onMore: () -> Unit, onFleet: () -> Unit) {
-    ProfessionalProfile(live, bookings, onLive, onTrips, onMore, onFleet)
+    onMore: () -> Unit, onFleet: () -> Unit,
+    fontScale: Float, onFontScaleChange: (Float) -> Unit) {
+    ProfessionalProfile(live, bookings, onLive, onTrips, onMore, onFleet,
+        fontScale, onFontScaleChange)
 }
 
 @Composable private fun AccountAction(title: String, subtitle: String,

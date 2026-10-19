@@ -83,10 +83,10 @@ fun localTruckArtwork(vehicle: Vehicle): String = artworkSource(vehicle)
 
 @Composable fun PremiumDemoBanner(car: Vehicle?, modifier: Modifier = Modifier, onClick: () -> Unit) {
     Card(onClick = onClick, modifier = modifier.fillMaxWidth(), shape = RoundedCornerShape(20.dp)) {
-        Box(Modifier.fillMaxWidth().height(108.dp).background(PremiumTheme.GreenDark)) {
+        Box(Modifier.fillMaxWidth().heightIn(min = 108.dp).background(PremiumTheme.GreenDark)) {
             AsyncImage("file:///android_asset/premium/live_banner.webp", null,
                 contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize())
-            Row(Modifier.fillMaxSize().background(Brush.horizontalGradient(
+            Row(Modifier.fillMaxWidth().heightIn(min = 108.dp).background(Brush.horizontalGradient(
                 listOf(PremiumTheme.GreenDark.copy(alpha = .97f),
                     PremiumTheme.GreenDark.copy(alpha = .75f), Color.Transparent)))
                 .padding(15.dp), verticalAlignment = Alignment.CenterVertically) {
@@ -107,9 +107,9 @@ fun localTruckArtwork(vehicle: Vehicle): String = artworkSource(vehicle)
 }
 
 @Composable fun StageBanner(title: String, subtitle: String) {
-    Box(Modifier.fillMaxWidth().height(156.dp).clip(RoundedCornerShape(20.dp)).background(PremiumTheme.GreenDark)) {
+    Box(Modifier.fillMaxWidth().heightIn(min = 156.dp).clip(RoundedCornerShape(20.dp)).background(PremiumTheme.GreenDark)) {
         AsyncImage("file:///android_asset/premium/live_banner.webp", null, contentScale=ContentScale.Crop, modifier=Modifier.fillMaxSize())
-        Column(Modifier.fillMaxSize().background(Brush.horizontalGradient(
+        Column(Modifier.fillMaxWidth().heightIn(min = 156.dp).background(Brush.horizontalGradient(
             listOf(PremiumTheme.GreenDark.copy(alpha=.96f), PremiumTheme.GreenDark.copy(alpha=.78f), Color.Transparent)
         )).padding(horizontal = 16.dp, vertical = 13.dp), verticalArrangement=Arrangement.Center) {
             Text("● LIVE Поездка · ДЕМО", color=Color.White, fontSize=10.sp)

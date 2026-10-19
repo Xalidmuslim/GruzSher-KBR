@@ -9,6 +9,10 @@ import android.os.SystemClock
 import android.view.GestureDetector
 import android.view.MotionEvent
 import org.maplibre.android.annotations.IconFactory
+import org.maplibre.android.annotations.Icon
+import org.maplibre.android.annotations.Marker
+import org.maplibre.android.annotations.Polygon
+import org.maplibre.android.annotations.Polyline
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
@@ -56,7 +60,8 @@ internal fun AdminZoneEditor(onClose: () -> Unit) {
     var message by remember { mutableStateOf("Нажимайте карту для добавления вершин. Зажмите вершину, чтобы сдвинуть.") }
     var dragIndex by remember { mutableIntStateOf(-1) }
     var beforeDrag by remember { mutableStateOf<List<ZonePoint>?>(null) }
-    var lastDragFrame by remember { mutableLongStateOf(0L) }
+    // A mutable primitive avoids recomposition on every touch-move frame.
+    val lastDragFrame = remember { longArrayOf(0L) }
     var pendingDeleteId by rememberSaveable { mutableStateOf<String?>(null) }
     BackHandler { onClose() }
     val currentOnClick by rememberUpdatedState<(LatLng) -> Unit>({ tap ->
@@ -102,7 +107,7 @@ internal fun AdminZoneEditor(onClose: () -> Unit) {
                         if (target >= 0) {
                             beforeDrag = draft.toList()
                             dragIndex = target
-                            lastDragFrame = 0L
+                            lastDragFrame[0] = 0L
                             view.parent?.requestDisallowInterceptTouchEvent(true)
                             map.uiSettings.isScrollGesturesEnabled = false
                             message = "Перемещаем вершину ${target + 1}. Отпустите палец, чтобы применить."
@@ -117,13 +122,13 @@ internal fun AdminZoneEditor(onClose: () -> Unit) {
                     MotionEvent.ACTION_MOVE -> {
                         if (dragIndex >= 0 && dragIndex < draft.size) {
                             val nowMs = SystemClock.uptimeMillis()
-                            if (nowMs - lastDragFrame >= 40L) {
+                            if (nowMs - lastDragFrame[0] >= 48L) {
                                 val updated = map.projection.fromScreenLocation(
                                     PointF(event.x, event.y))
                                 draft[dragIndex] = ZonePoint(
                                     updated.latitude.coerceIn(-90.0, 90.0),
                                     updated.longitude.coerceIn(-180.0, 180.0))
-                                lastDragFrame = nowMs
+                                lastDragFrame[0] = nowMs
                             }
                             v.parent?.requestDisallowInterceptTouchEvent(true)
                         }
@@ -153,39 +158,61 @@ internal fun AdminZoneEditor(onClose: () -> Unit) {
         }
     }
 
-    // No animation/camera reset during polygon edits: only annotations refresh.
-    LaunchedEffect(map, zones, draft.toList(), rule) {
+    // Cache native annotations and numbered icons per map. Previously map.clear()
+    // recreated every polygon, marker and bitmap on EACH drag frame.
+    val render = remember(map) { AdminZoneAnnotations() }
+    LaunchedEffect(map, zones, draft.size, rule) {
         if (map == null) return@LaunchedEffect
         map.clear()
         zones.filter { it.enabled }.forEach { zone ->
             map.addPolygon(PolygonOptions().addAll(
                 zone.vertices.map { LatLng(it.latitude, it.longitude) }
             ).fillColor(if (zone.rule == ParkingRule.ALLOWED)
-                AndroidColor.argb(75, 0, 159, 88) else AndroidColor.argb(80, 220, 55, 55)
+                AndroidColor.argb(19, 0, 159, 88) else AndroidColor.argb(23, 220, 55, 55)
             ).strokeColor(if (zone.rule == ParkingRule.ALLOWED)
-                AndroidColor.rgb(0, 130, 73) else AndroidColor.rgb(185, 25, 25)))
+                AndroidColor.argb(140, 0, 130, 73) else AndroidColor.argb(140, 185, 25, 25)))
         }
-        if (draft.size >= 3) {
-            map.addPolygon(PolygonOptions().addAll(draft.map {
-                LatLng(it.latitude, it.longitude)
-            }).fillColor(if (rule == ParkingRule.ALLOWED)
-                AndroidColor.argb(35, 0, 144, 87) else AndroidColor.argb(38, 215, 57, 60))
-                .strokeColor(AndroidColor.TRANSPARENT))
+        val vertices = draft.map { LatLng(it.latitude, it.longitude) }
+        render.fill = if (vertices.size >= 3) map.addPolygon(
+            PolygonOptions().addAll(vertices)
+                .fillColor(if (rule == ParkingRule.ALLOWED)
+                    AndroidColor.argb(18, 0, 144, 87) else AndroidColor.argb(21, 215, 57, 60))
+                .strokeColor(AndroidColor.TRANSPARENT)) else null
+        render.border = if (vertices.size >= 2) map.addPolyline(
+            PolylineOptions().addAll(
+                vertices + if (vertices.size >= 3) listOf(vertices.first()) else emptyList())
+                .width(1.8f).color(if (rule == ParkingRule.ALLOWED)
+                    AndroidColor.argb(190, 0, 125, 76)
+                else AndroidColor.argb(190, 185, 40, 48))) else null
+        render.handles.clear()
+        val factory = IconFactory.getInstance(context)
+        vertices.forEachIndexed { index, position ->
+            val key = rule to (index + 1)
+            val icon = render.icons.getOrPut(key) {
+                factory.fromBitmap(adminVertexIcon(index + 1, rule))
+            }
+            render.handles.add(map.addMarker(MarkerOptions()
+                .position(position).icon(icon).title("Вершина ${index + 1}")))
         }
-        if (draft.size >= 2) {
-            map.addPolyline(PolylineOptions()
-                .addAll(draft.map { LatLng(it.latitude, it.longitude) } +
-                    if (draft.size >= 3) listOf(LatLng(draft.first().latitude,
-                        draft.first().longitude)) else emptyList())
-                .width(4.5f).color(if (rule == ParkingRule.ALLOWED)
-                    AndroidColor.rgb(0, 137, 78) else AndroidColor.rgb(201, 42, 42)))
+    }
+    // Coordinate-only updates: no new layers, markers or bitmaps during dragging.
+    LaunchedEffect(map, draft.toList()) {
+        val currentMap = map ?: return@LaunchedEffect
+        val positions = draft.map { LatLng(it.latitude, it.longitude) }
+        render.fill?.takeIf { positions.size >= 3 }?.let { polygon ->
+            polygon.points = positions
+            currentMap.updatePolygon(polygon)
         }
-        val icons = IconFactory.getInstance(context)
-        draft.forEachIndexed { index, point ->
-            map.addMarker(MarkerOptions()
-                .position(LatLng(point.latitude, point.longitude))
-                .icon(icons.fromBitmap(adminVertexIcon(index + 1, rule)))
-                .title("Вершина ${index + 1}"))
+        render.border?.takeIf { positions.size >= 2 }?.let { border ->
+            border.points = positions +
+                if (positions.size >= 3) listOf(positions.first()) else emptyList()
+            currentMap.updatePolyline(border)
+        }
+        render.handles.forEachIndexed { index, marker ->
+            if (index < positions.size && marker.position != positions[index]) {
+                marker.position = positions[index]
+                currentMap.updateMarker(marker)
+            }
         }
     }
 
@@ -414,4 +441,12 @@ private fun adminVertexIcon(number: Int, rule: ParkingRule): Bitmap {
     canvas.drawText(number.toString(), 37f,
         37f - (paint.ascent() + paint.descent()) / 2f, paint)
     return bitmap
+}
+
+/** Lifetime of reusable editing annotations, scoped to one native map instance. */
+private class AdminZoneAnnotations {
+    var fill: Polygon? = null
+    var border: Polyline? = null
+    val handles = mutableListOf<Marker>()
+    val icons = mutableMapOf<Pair<ParkingRule, Int>, Icon>()
 }

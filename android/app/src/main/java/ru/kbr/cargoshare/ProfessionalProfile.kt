@@ -286,7 +286,7 @@ fun ProfessionalProfile(
                             prefs.edit().putBoolean("map_prices_visible", it).apply()
                         }
                         ProfileToggle("Учебные зоны возврата",
-                            "Показывать зелёную и красную области на маршруте", parkingZones) {
+                            "Показывать только во время поездки, не при выборе машины", parkingZones) {
                             parkingZones = it
                             prefs.edit().putBoolean("map_parking_zones_visible", it).apply()
                         }

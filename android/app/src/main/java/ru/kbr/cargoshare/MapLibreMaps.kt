@@ -294,14 +294,14 @@ internal fun MapLibreRouteMap(
     LaunchedEffect(map, route, mode, showZones, compact, localZones) {
         if (map == null) return@LaunchedEffect
         map.clear()
-        if (!compact && mode == "грузовик" && showZones)
+        if (shouldShowParkingZones(showZones, mode, compact))
             localZones.filter { it.enabled }.forEach { zone ->
                 map.addPolygon(zoneLibrePolygon(zone))
             }
         val icons = IconFactory.getInstance(context)
         map.addPolyline(PolylineOptions().addAll(route)
             .color(AndroidColor.rgb(24, 79, 63)).width(5f))
-        if (mode == "грузовик" && !compact && showZones) {
+        if (shouldShowParkingZones(showZones, mode, compact)) {
             map.addPolygon(PolygonOptions()
                 .addAll(libCircle(last.latitude, last.longitude,
                     DEMO_PARKING_ZONE_RADIUS_METERS))

@@ -682,7 +682,7 @@ fun LiveDemoScreen(
             controller.setCenter(route[centerIndexForRoute(route.size)])
             minZoomLevel = 9.0
             maxZoomLevel = 18.0
-            if (mode == "грузовик" && !compact && showZones)
+            if (shouldShowParkingZones(showZones, mode, compact))
                 localZones.filter { it.enabled }.forEach { zone ->
                 overlays.add(Polygon().apply {
                     setPoints(zone.vertices.map {
@@ -697,7 +697,7 @@ fun LiveDemoScreen(
                     outlinePaint.strokeWidth = 1.8f
                 })
             }
-            if (mode == "грузовик" && !compact && showZones) {
+            if (shouldShowParkingZones(showZones, mode, compact)) {
                 val parking = route.last()
                 // Illustrative permitted-return geofence, not a real legal parking zone.
                 overlays.add(Polygon().apply {

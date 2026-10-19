@@ -245,7 +245,16 @@ fun PremiumFleetScreen(
     addressCarId?.let { id ->
         shown.firstOrNull { it.id == id }?.let { car ->
             PickupAddressSheet(car, onDismiss = { addressCarId = null },
-                onSelect = { addressCarId = null; onSelect(car) })
+                onSelect = { addressCarId = null; onSelect(car) },
+                onBuildRoute = {
+                    addressCarId = null
+                    selectedId = car.id
+                    roadCarId = car.id
+                    roadRoute = null
+                    roadRequested = true
+                    roadTap += 1
+                    fullMap = true
+                })
         }
     }
 }

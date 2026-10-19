@@ -682,37 +682,38 @@ fun LiveDemoScreen(
             controller.setCenter(route[centerIndexForRoute(route.size)])
             minZoomLevel = 9.0
             maxZoomLevel = 18.0
-            if (!compact && showZones) localZones.filter { it.enabled }.forEach { zone ->
+            if (mode == "грузовик" && !compact && showZones)
+                localZones.filter { it.enabled }.forEach { zone ->
                 overlays.add(Polygon().apply {
                     setPoints(zone.vertices.map {
                         GeoPoint(it.latitude, it.longitude)
                     })
                     fillPaint.color = if (zone.rule == ParkingRule.ALLOWED)
-                        AndroidColor.argb(60, 0, 153, 78)
-                    else AndroidColor.argb(72, 211, 45, 45)
+                        AndroidColor.argb(18, 0, 153, 78)
+                    else AndroidColor.argb(23, 211, 45, 45)
                     outlinePaint.color = if (zone.rule == ParkingRule.ALLOWED)
-                        AndroidColor.rgb(0, 135, 73)
-                    else AndroidColor.rgb(191, 34, 34)
-                    outlinePaint.strokeWidth = 5f
+                        AndroidColor.argb(150, 0, 135, 73)
+                    else AndroidColor.argb(150, 191, 34, 34)
+                    outlinePaint.strokeWidth = 1.8f
                 })
             }
-            if (mode != "пешком" && !compact && showZones) {
+            if (mode == "грузовик" && !compact && showZones) {
                 val parking = route.last()
                 // Illustrative permitted-return geofence, not a real legal parking zone.
                 overlays.add(Polygon().apply {
                     setPoints(demoCirclePoints(parking.latitude, parking.longitude,
                         DEMO_PARKING_ZONE_RADIUS_METERS))
-                    fillPaint.color = AndroidColor.argb(70, 0, 172, 102)
-                    outlinePaint.color = AndroidColor.rgb(0, 130, 77)
-                    outlinePaint.strokeWidth = 5f
+                    fillPaint.color = AndroidColor.argb(20, 0, 172, 102)
+                    outlinePaint.color = AndroidColor.argb(145, 0, 130, 77)
+                    outlinePaint.strokeWidth = 1.8f
                 })
                 // Explicit example of an out-of-zone, prohibited-return location.
                 overlays.add(Polygon().apply {
                     setPoints(demoCirclePoints(parking.latitude + 0.0018,
                         parking.longitude + 0.0022, 45.0))
-                    fillPaint.color = AndroidColor.argb(60, 218, 54, 53)
-                    outlinePaint.color = AndroidColor.rgb(193, 42, 42)
-                    outlinePaint.strokeWidth = 4f
+                    fillPaint.color = AndroidColor.argb(23, 218, 54, 53)
+                    outlinePaint.color = AndroidColor.argb(145, 193, 42, 42)
+                    outlinePaint.strokeWidth = 1.8f
                 })
             }
             overlays.add(Polyline().apply {

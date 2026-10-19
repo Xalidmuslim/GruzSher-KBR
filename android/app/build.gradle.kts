@@ -8,11 +8,11 @@ android {
     namespace = "ru.kbr.cargoshare"
     compileSdk = 35
     defaultConfig {
-        applicationId = "ru.kbr.cargoshare.referencepreview.ux369"
+        applicationId = "ru.kbr.cargoshare.referencepreview.ux370"
         minSdk = 26
         targetSdk = 35
-        versionCode = 48
-        versionName = "3.6.9-map-pickup-address"
+        versionCode = 49
+        versionName = "3.7.0-admin-zones-ru"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
     buildFeatures {

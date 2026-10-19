@@ -106,7 +106,7 @@ fun FullScreenVehicleBooking(
         properties = DialogProperties(usePlatformDefaultWidth = false, decorFitsSystemWindows = true)) {
         // Let the dialog fit the OS window. The fixed footer owns the bottom insets.
         Column(Modifier.fillMaxSize().background(PremiumTheme.Paper)
-            .statusBarsPadding().imePadding()) {
+            .statusBarsPadding().navigationBarsPadding().imePadding()) {
             Row(
                 Modifier.fillMaxWidth().background(Color.White).padding(start = 11.dp,
                     end = 18.dp, top = 7.dp, bottom = 7.dp),
@@ -304,11 +304,11 @@ fun FullScreenVehicleBooking(
                     fontSize = 11.sp, color = PremiumTheme.Muted, lineHeight = 16.sp)
             }
             Surface(color = Color.White, shadowElevation = 12.dp,
-                modifier = Modifier.fillMaxWidth().navigationBarsPadding()) {
+                modifier = Modifier.fillMaxWidth()) {
                 // Extra clearance covers edge-to-edge fullscreen dialogs with
                 // incomplete gesture-inset reports; scroll content can shrink.
                 Column(Modifier.fillMaxWidth()
-                    .padding(start = 17.dp, end = 17.dp, top = 9.dp, bottom = 16.dp),
+                    .padding(start = 17.dp, end = 17.dp, top = 9.dp, bottom = 22.dp),
                     verticalArrangement = Arrangement.spacedBy(7.dp)) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Column(Modifier.weight(1f)) {

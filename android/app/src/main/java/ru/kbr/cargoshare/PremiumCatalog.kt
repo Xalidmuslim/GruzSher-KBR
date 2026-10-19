@@ -293,10 +293,9 @@ internal fun NalchikMap(cars: List<Vehicle>, onSelect: (Vehicle) -> Unit, modifi
     val locationOverlay = remember(map) {
         MyLocationNewOverlay(GpsMyLocationProvider(context), map).apply {
             val person = phoneLocationMarker(context)
+            setDirectionArrow(person, person)
             setPersonIcon(person)
-            setDirectionIcon(person)
-            setPersonAnchor(0.5f, 0.5f)
-            setDirectionAnchor(0.5f, 0.5f)
+            setPersonHotspot(person.width / 2f, person.height / 2f)
         }
     }
     // The GPS-backed location provider requires precise location permission.

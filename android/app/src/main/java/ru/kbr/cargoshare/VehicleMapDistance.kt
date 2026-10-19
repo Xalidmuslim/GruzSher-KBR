@@ -57,43 +57,49 @@ internal fun VehicleMapDistance(vehicle: Vehicle) {
     val hasDistance = directMeters.isFinite()
     val locationEnabled = locationServiceEnabled(context)
 
-    HorizontalDivider(color = PremiumTheme.Paper)
-    Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+    Row(
+        Modifier.fillMaxWidth().padding(top = 3.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(7.dp)
+    ) {
         Icon(Icons.Outlined.NearMe, contentDescription = null,
-            tint = PremiumTheme.GreenDark, modifier = Modifier.size(17.dp))
-        Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(1.dp)) {
-            Text("До автомобиля · по прямой", fontSize = 11.sp,
-                fontWeight = FontWeight.Medium, color = PremiumTheme.GreenDark)
-            Text(when {
-                !validCarPoint -> "Нет координат машины"
-                !permissionGranted -> "Разрешите доступ к GPS"
-                !locationEnabled -> "Включите геолокацию"
-                loading -> "Определяем расстояние…"
-                hasDistance -> humanDistance(directMeters)
-                else -> "GPS пока недоступен"
-            }, color = if (hasDistance) PremiumTheme.GreenDark else PremiumTheme.Muted,
-                fontSize = if (hasDistance) 21.sp else 12.sp,
-                fontWeight = if (hasDistance) FontWeight.Bold else FontWeight.Normal,
-                maxLines = 2)
-        }
+            tint = PremiumTheme.GreenDark, modifier = Modifier.size(16.dp))
+        Text("До машины", fontSize = 11.sp,
+            fontWeight = FontWeight.SemiBold, color = PremiumTheme.GreenDark)
+        Text(when {
+            !validCarPoint -> "Нет координат"
+            !permissionGranted -> "Нужен GPS"
+            !locationEnabled -> "GPS выключен"
+            loading -> "Определяем…"
+            hasDistance -> humanDistance(directMeters)
+            else -> "GPS недоступен"
+        }, modifier = Modifier.weight(1f),
+            textAlign = androidx.compose.ui.text.style.TextAlign.End,
+            color = if (hasDistance) PremiumTheme.GreenDark else PremiumTheme.Muted,
+            fontSize = if (hasDistance) 19.sp else 11.sp,
+            fontWeight = if (hasDistance) FontWeight.Bold else FontWeight.Normal,
+            maxLines = 1)
         if (validCarPoint && !hasDistance && !loading) {
-            TextButton(onClick = {
-                when {
-                    !permissionGranted -> requestPermission.launch(arrayOf(
-                        Manifest.permission.ACCESS_FINE_LOCATION,
-                        Manifest.permission.ACCESS_COARSE_LOCATION))
-                    !locationEnabled -> {
-                        runCatching {
-                            context.startActivity(Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS)
-                                .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
+            TextButton(
+                onClick = {
+                    when {
+                        !permissionGranted -> requestPermission.launch(arrayOf(
+                            Manifest.permission.ACCESS_FINE_LOCATION,
+                            Manifest.permission.ACCESS_COARSE_LOCATION))
+                        !locationEnabled -> {
+                            runCatching {
+                                context.startActivity(Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS)
+                                    .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
+                            }
+                            retry += 1
                         }
-                        retry += 1
+                        else -> retry += 1
                     }
-                    else -> retry += 1
-                }
-            }, contentPadding = PaddingValues(horizontal = 4.dp, vertical = 0.dp)) {
-                Text(if (!permissionGranted) "Разрешить" else "Обновить", fontSize = 11.sp)
+                },
+                modifier = Modifier.heightIn(min = 32.dp),
+                contentPadding = PaddingValues(horizontal = 4.dp, vertical = 0.dp)
+            ) {
+                Text(if (!permissionGranted) "Доступ" else "Обновить", fontSize = 10.sp)
             }
         }
     }

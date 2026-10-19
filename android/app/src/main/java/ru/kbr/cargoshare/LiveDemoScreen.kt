@@ -1,6 +1,7 @@
 package ru.kbr.cargoshare
 
 import android.graphics.Color as AndroidColor
+import androidx.activity.compose.BackHandler
 import android.view.MotionEvent
 import android.graphics.drawable.GradientDrawable
 import androidx.compose.foundation.background
@@ -68,12 +69,13 @@ fun LiveDemoScreen(
     var supportText by remember { mutableStateOf("") }
     var sentSupport by remember { mutableStateOf<String?>(null) }
     var showReturnConfirm by remember { mutableStateOf(false) }
+    var routeExpanded by rememberSaveable { mutableStateOf(false) }
     var reportKind by remember { mutableStateOf<String?>(null) }
     var reportText by remember { mutableStateOf("") }
     var previewAngle by remember { mutableStateOf<String?>(null) }
     val journeyScroll = rememberScrollState()
     // Stage changes must restart at the stage heading, never inherit the preceding stage's offset.
-    LaunchedEffect(session.phase) { journeyScroll.scrollTo(0) }
+    LaunchedEffect(session.phase) { journeyScroll.scrollTo(0); routeExpanded = false }
 
     val car = cars.find { it.id == session.carId } ?: cars.firstOrNull()
     fun perform(event: LiveEvent, value: String = "") {
@@ -108,6 +110,51 @@ fun LiveDemoScreen(
         }
     }
     LaunchedEffect(Unit) { if (selectedBookingId == null) onTripChanged(session) }
+    BackHandler(enabled = routeExpanded) { routeExpanded = false }
+    if (routeExpanded) {
+        val walking = session.phase == LivePhase.WALK
+        val progress = if (walking)
+            ((now - session.approachStartedAt).toFloat() / LIVE_APPROACH_MS).coerceIn(0f, 1f)
+        else routeFraction(session, now)
+        val mode = if (walking) "пешком" else "грузовик"
+        val lat = car?.latitude ?: 43.4853
+        val lon = car?.longitude ?: 43.6071
+        Column(Modifier.fillMaxSize().background(LivePaper)) {
+            Row(Modifier.fillMaxWidth().padding(start = 8.dp, end = 15.dp, top = 6.dp, bottom = 6.dp),
+                verticalAlignment = Alignment.CenterVertically) {
+                IconButton(onClick = { routeExpanded = false }) {
+                    Icon(Icons.Outlined.ArrowBack, contentDescription = "Закрыть карту",
+                        tint = LiveGreen)
+                }
+                Column(Modifier.weight(1f)) {
+                    Text("Карта маршрута", fontSize = 19.sp,
+                        fontWeight = FontWeight.Bold, color = LiveInk)
+                    Text(if (walking) "К автомобилю · Нальчик" else "К учебной парковке · Нальчик",
+                        color = LiveGray, fontSize = 11.sp)
+                }
+                DemoPill()
+            }
+            Box(Modifier.fillMaxWidth().weight(1f)) {
+                LiveRouteMap(car, progress, mode,
+                    modifier = Modifier.fillMaxSize(), compact = false)
+                Surface(Modifier.align(Alignment.BottomStart)
+                    .padding(start = 12.dp, end = 12.dp, bottom = 45.dp),
+                    shape = RoundedCornerShape(18.dp),
+                    color = Color.White, shadowElevation = 4.dp) {
+                    Column(Modifier.padding(horizontal = 15.dp, vertical = 10.dp)) {
+                        Text(if (walking) "До автомобиля" else "До учебной парковки",
+                            color = LiveGray, fontSize = 12.sp)
+                        Text("≈ " + (if (walking) demoWalkRemainingMeters(lat, lon, progress)
+                            else demoReturnRemainingMeters(lat, lon, progress)) + " м",
+                            color = LiveGreen, fontWeight = FontWeight.Bold, fontSize = 21.sp)
+                        Text("Учебная симуляция · не GPS",
+                            color = LiveGray, fontSize = 10.sp)
+                    }
+                }
+            }
+        }
+        return
+    }
     Box(Modifier.fillMaxSize().background(LivePaper)) {
     Column(
         Modifier.fillMaxSize().verticalScroll(journeyScroll)
@@ -229,7 +276,7 @@ fun LiveDemoScreen(
                     car?.longitude ?: 43.6071, progress)
                 LiveHeader("06", "Идите к автомобилю",
                     "Демо-пешеход движется к грузовику по учебной траектории.")
-                LiveRouteMap(car, progress, "пешком")
+                LiveRouteMap(car, progress, "пешком", onExpand = { routeExpanded = true })
                 LiveMetricRow("До автомобиля", "≈ ${remaining} м · ДЕМО")
                 LiveMetricRow("Осталось времени", "${ceil(((LIVE_APPROACH_MS - (now - session.approachStartedAt)).coerceAtLeast(0L) / 1000.0)).toInt()} сек")
                 LiveNote("Это расстояние по прямой в учебной симуляции. Реальная геопозиция телефона и пешеходные маршруты не используются.")
@@ -276,7 +323,10 @@ fun LiveDemoScreen(
                 LiveButton("Начать поездку", Icons.Outlined.PlayArrow) { perform(LiveEvent.START_DRIVE) }
             }
             LivePhase.DRIVING -> {
-                PremiumTripDashboard(session, car, now) { if(it==LiveEvent.REPORT_INCIDENT) reportKind="incident" else perform(it) }
+                PremiumTripDashboard(session, car, now,
+                    onExpandMap = { routeExpanded = true }) {
+                    if(it==LiveEvent.REPORT_INCIDENT) reportKind="incident" else perform(it)
+                }
                 if (session.assistance) {
                     LiveNote("Учебная поддержка: «Здравствуйте! Мы видим вашу тестовую поездку. Какой у вас вопрос?»")
                     session.events.filter { it.startsWith("Демо-чат:") }.takeLast(6).forEach { LiveNote(it) }
@@ -291,7 +341,7 @@ fun LiveDemoScreen(
                 val progress = routeFraction(session, now)
                 val seconds = ((LIVE_RETURN_MS - (now - session.returnRequestedAt)).coerceAtLeast(0L) / 1000L)
                 LiveHeader("11", "Едем к стоянке", "Вы выбрали завершение поездки. Машина направляется в учебную зону возврата.")
-                LiveRouteMap(car, progress, "грузовик")
+                LiveRouteMap(car, progress, "грузовик", onExpand = { routeExpanded = true })
                 val distance = demoReturnRemainingMeters(car?.latitude ?: 43.4853,
                     car?.longitude ?: 43.6071, progress)
                 LiveMetricRow("До зоны возврата", "≈ ${distance} м · ДЕМО")
@@ -303,7 +353,7 @@ fun LiveDemoScreen(
             }
             LivePhase.RETURN -> {
                 LiveHeader("12", "Возврат грузовика", "Вы приехали в учебную зону завершения. Сделайте фото, закройте машину и завершите аренду.")
-                LiveRouteMap(car, 1f, "грузовик")
+                LiveRouteMap(car, 1f, "грузовик", onExpand = { routeExpanded = true })
                 Surface(color = LivePale, shape = RoundedCornerShape(15.dp)) {
                     Row(Modifier.fillMaxWidth().padding(13.dp), verticalAlignment = Alignment.CenterVertically) {
                         Icon(Icons.Outlined.LocalParking, null,
@@ -572,7 +622,8 @@ fun LiveDemoScreen(
 
 /** Map tiles are real OSM. All route geometry and simulated marker coordinates are illustrative. */
 @Composable internal fun LiveRouteMap(car: Vehicle?, fraction: Float, mode: String,
-    modifier: Modifier = Modifier.fillMaxWidth().height(218.dp), compact: Boolean = false) {
+    modifier: Modifier = Modifier.fillMaxWidth().height(218.dp), compact: Boolean = false,
+    onExpand: (() -> Unit)? = null) {
     val context = LocalContext.current
     val origin = remember(car?.id) { GeoPoint(car?.latitude ?: 43.4853, car?.longitude ?: 43.6071) }
     val route = remember(origin, mode) {
@@ -661,6 +712,14 @@ fun LiveDemoScreen(
             moving.title = if (mode == "пешком") "Учебный пешеход" else "Учебный грузовик"
             view.invalidate()
         })
+    if (onExpand != null) {
+        FilledIconButton(onClick = onExpand,
+            modifier = Modifier.align(Alignment.TopEnd).padding(end = 12.dp, top = 12.dp),
+            colors = IconButtonDefaults.filledIconButtonColors(
+                containerColor = Color.White, contentColor = LiveGreen)) {
+            Icon(Icons.Outlined.Fullscreen, "Развернуть карту")
+        }
+    }
     if (!compact) {
         // Controls avoid the bottom status overlays and remain touchable on small screens.
         Column(Modifier.align(Alignment.TopStart).padding(start = 10.dp, top = 70.dp),
@@ -676,13 +735,14 @@ fun LiveDemoScreen(
         }
         FilledIconButton(
             onClick={map.controller.animateTo(route[centerIndexForRoute(route.size)]);map.controller.setZoom(15.0)},
-            modifier=Modifier.align(Alignment.TopEnd).padding(end = 12.dp, top = 12.dp),
+            modifier=Modifier.align(Alignment.TopEnd).padding(end = 12.dp,
+                top = if (onExpand != null) 67.dp else 12.dp),
             colors=IconButtonDefaults.filledIconButtonColors(containerColor=Color.White,contentColor=LiveGreen)
         ) {Icon(Icons.Outlined.MyLocation,"Центр учебного маршрута")}
     }
     Text(if (compact) "© OpenStreetMap" else if (mode == "пешком")
         "Путь · условно · не GPS · © OpenStreetMap"
-        else "Зелёная зона — можно · снаружи нельзя · ДЕМО",
+        else "Зона возврата: зелёная — можно · снаружи — нельзя",
         modifier=Modifier.align(Alignment.BottomCenter).background(Color.White.copy(alpha=.9f)).padding(4.dp),
         color=LiveGray,fontSize=if(compact) 7.sp else 8.sp)
     }

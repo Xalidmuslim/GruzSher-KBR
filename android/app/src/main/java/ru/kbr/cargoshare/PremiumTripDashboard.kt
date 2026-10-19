@@ -24,6 +24,7 @@ import kotlin.math.roundToInt
 @Composable
 fun PremiumTripDashboard(
     session: LiveDemoSession, car: Vehicle?, now: Long,
+    onExpandMap: () -> Unit = {},
     onAction: (LiveEvent) -> Unit,
 ) {
     val fraction = routeFraction(session,now)
@@ -44,7 +45,8 @@ fun PremiumTripDashboard(
         Modifier.fillMaxWidth().height(203.dp).clip(RoundedCornerShape(24.dp))
             .background(PremiumTheme.Mint)
     ) {
-        LiveRouteMap(car, fraction, "грузовик", Modifier.fillMaxSize())
+        LiveRouteMap(car, fraction, "грузовик", Modifier.fillMaxSize(),
+            onExpand = onExpandMap)
         Surface(
             modifier = Modifier.align(Alignment.TopStart).padding(12.dp),
             color = Color.White, shadowElevation = 4.dp, shape = RoundedCornerShape(14.dp)
@@ -62,7 +64,7 @@ fun PremiumTripDashboard(
             modifier = Modifier.align(Alignment.BottomStart).padding(12.dp),
             color = PremiumTheme.GreenDark, shape = RoundedCornerShape(12.dp)
         ) {
-            Text("${demoSpeedKmh(session)} км/ч · ДЕМО",
+            Text("${demoSpeedKmh(session)} км/ч",
                 modifier = Modifier.padding(horizontal = 11.dp, vertical = 8.dp),
                 fontSize = 11.sp, color = Color.White, fontWeight = FontWeight.Bold)
         }

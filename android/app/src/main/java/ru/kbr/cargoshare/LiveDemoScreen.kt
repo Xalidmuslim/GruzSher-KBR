@@ -622,11 +622,12 @@ fun LiveDemoScreen(
 }
 @Composable private fun LiveButton(label: String, icon: androidx.compose.ui.graphics.vector.ImageVector,
     enabled: Boolean = true, click: () -> Unit) {
-    Button(onClick = click, enabled = enabled, modifier = Modifier.fillMaxWidth().height(54.dp),
+    Button(onClick = click, enabled = enabled, modifier = Modifier.fillMaxWidth().heightIn(min = 54.dp),
         shape = RoundedCornerShape(16.dp)) {
         Icon(icon, null, Modifier.size(19.dp))
         Spacer(Modifier.width(7.dp))
-        Text(label, fontSize = 13.sp, fontWeight = FontWeight.Bold)
+        Text(label, fontSize = 13.sp, fontWeight = FontWeight.Bold,
+            maxLines = 2, lineHeight = 16.sp)
     }
 }
 

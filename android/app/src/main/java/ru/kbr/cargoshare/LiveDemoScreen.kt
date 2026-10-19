@@ -168,7 +168,7 @@ fun LiveDemoScreen(
     Column(
         Modifier.fillMaxSize().verticalScroll(journeyScroll)
             .padding(horizontal = if (session.phase == LivePhase.DRIVING) 12.dp else 18.dp)
-            .padding(bottom = if (session.phase in setOf(LivePhase.INSPECT, LivePhase.DRIVING, LivePhase.RETURNING, LivePhase.RETURN)) 106.dp else 30.dp),
+            .padding(bottom = if (session.phase in setOf(LivePhase.INSPECT, LivePhase.DRIVING, LivePhase.RETURNING, LivePhase.RETURN)) 132.dp else 30.dp),
         verticalArrangement = Arrangement.spacedBy(if (session.phase == LivePhase.DRIVING) 9.dp else 14.dp)
     ) {
         Spacer(Modifier.height(6.dp))
@@ -466,7 +466,8 @@ fun LiveDemoScreen(
     }
     if (session.phase in setOf(LivePhase.INSPECT, LivePhase.DRIVING, LivePhase.RETURNING, LivePhase.RETURN)) {
         Surface(
-            modifier = Modifier.fillMaxWidth().align(Alignment.BottomCenter),
+            modifier = Modifier.fillMaxWidth().align(Alignment.BottomCenter)
+                .navigationBarsPadding(),
             color = Color.White, shadowElevation = 11.dp, tonalElevation = 2.dp
         ) {
             Column(Modifier.fillMaxWidth().padding(horizontal = 18.dp, vertical = 10.dp),
@@ -498,14 +499,15 @@ fun LiveDemoScreen(
                         }
                     },
                     enabled = enabled,
-                    modifier = Modifier.fillMaxWidth().height(54.dp),
+                    modifier = Modifier.fillMaxWidth().heightIn(min = 54.dp),
                     shape = RoundedCornerShape(17.dp),
                     colors = ButtonDefaults.buttonColors(containerColor = LiveGreen),
                 ) {
                     Icon(if (session.phase == LivePhase.DRIVING) Icons.Outlined.Flag
                         else Icons.Outlined.CheckCircle, null, modifier = Modifier.size(18.dp))
                     Spacer(Modifier.width(8.dp))
-                    Text(target, fontWeight = FontWeight.Bold, fontSize = 15.sp)
+                    Text(target, fontWeight = FontWeight.Bold, fontSize = 14.sp,
+                        maxLines = 2, lineHeight = 17.sp)
                 }
                 Text("ДЕМО · нет реального управления замками или списаний",
                     color = LiveGray, fontSize = 10.sp,

@@ -396,32 +396,34 @@ fun FullScreenVehicleBooking(
                     NalchikMap(listOf(vehicle), onSelect = { },
                         modifier = Modifier.fillMaxSize(), selectedVehicleId = vehicle.id)
 
+                    // Reserve an explicit bottom gap for Android gesture navigation.
+                    // The compact, free-floating chip never stretches below the
+                    // screen boundary and leaves visible map on all four sides.
                     Surface(
                         modifier = Modifier.align(Alignment.BottomCenter)
                             .fillMaxWidth()
-                            .padding(horizontal = 15.dp, vertical = 14.dp),
-                        color = Color.White.copy(alpha = 0.91f),
-                        shape = RoundedCornerShape(20.dp),
-                        shadowElevation = 7.dp
+                            .padding(start = 16.dp, end = 16.dp, bottom = 44.dp),
+                        color = Color.White.copy(alpha = 0.94f),
+                        shape = RoundedCornerShape(18.dp),
+                        shadowElevation = 6.dp
                     ) {
-                        Column(Modifier.fillMaxWidth()
-                            .heightIn(max = 180.dp)
-                            .verticalScroll(rememberScrollState())
-                            .padding(horizontal = 14.dp, vertical = 10.dp),
-                            verticalArrangement = Arrangement.spacedBy(3.dp)) {
-                            Text("Адрес автомобиля", color = PremiumTheme.GreenDark,
-                                fontWeight = FontWeight.Bold, fontSize = 12.sp)
+                        Column(
+                            Modifier.fillMaxWidth()
+                                .padding(horizontal = 13.dp, vertical = 9.dp),
+                            verticalArrangement = Arrangement.spacedBy(2.dp)
+                        ) {
+                            Text("Адрес автомобиля",
+                                color = PremiumTheme.GreenDark,
+                                fontWeight = FontWeight.Bold, fontSize = 11.sp,
+                                lineHeight = 14.sp)
                             Text(pickupAddress?.value ?: "Определяем адрес…",
-                                color = PremiumTheme.Text, fontSize = 13.sp,
-                                lineHeight = 16.sp, maxLines = 2,
+                                color = PremiumTheme.Text, fontSize = 12.sp,
+                                lineHeight = 16.sp, maxLines = 1,
                                 overflow = TextOverflow.Ellipsis)
                             Text(pickupCoordinates(vehicle.latitude, vehicle.longitude),
-                                color = PremiumTheme.Muted, fontSize = 10.sp)
+                                color = PremiumTheme.Muted, fontSize = 10.sp,
+                                lineHeight = 13.sp, maxLines = 1)
                             VehicleMapDistance(vehicle)
-                            if (isTrainingPickup(vehicle.pickupLocation)) {
-                                Text("Учебная точка автомобиля",
-                                    color = PremiumTheme.Muted, fontSize = 9.sp)
-                            }
                         }
                     }
                 }

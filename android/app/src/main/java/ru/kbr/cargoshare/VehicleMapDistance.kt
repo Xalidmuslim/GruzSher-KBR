@@ -16,7 +16,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import kotlin.math.roundToInt
 
 /**
  * The expanded pickup map displays the direct distance from real phone GPS
@@ -60,22 +59,23 @@ internal fun VehicleMapDistance(vehicle: Vehicle) {
 
     HorizontalDivider(color = PremiumTheme.Paper)
     Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(9.dp)) {
+        horizontalArrangement = Arrangement.spacedBy(8.dp)) {
         Icon(Icons.Outlined.NearMe, contentDescription = null,
-            tint = PremiumTheme.GreenDark, modifier = Modifier.size(20.dp))
-        Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(3.dp)) {
-            Text("Расстояние до автомобиля", fontSize = 12.sp,
-                fontWeight = FontWeight.SemiBold, color = PremiumTheme.GreenDark)
+            tint = PremiumTheme.GreenDark, modifier = Modifier.size(17.dp))
+        Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(1.dp)) {
+            Text("До автомобиля · по прямой", fontSize = 11.sp,
+                fontWeight = FontWeight.Medium, color = PremiumTheme.GreenDark)
             Text(when {
-                !validCarPoint -> "Координаты автомобиля недоступны"
-                !permissionGranted -> "Разрешите доступ к геопозиции"
-                !locationEnabled -> "Включите геолокацию телефона"
+                !validCarPoint -> "Нет координат машины"
+                !permissionGranted -> "Разрешите доступ к GPS"
+                !locationEnabled -> "Включите геолокацию"
                 loading -> "Определяем расстояние…"
                 hasDistance -> humanDistance(directMeters)
-                else -> "Не удалось получить GPS-координаты"
+                else -> "GPS пока недоступен"
             }, color = if (hasDistance) PremiumTheme.GreenDark else PremiumTheme.Muted,
-                fontSize = if (hasDistance) 20.sp else 12.sp,
-                fontWeight = if (hasDistance) FontWeight.Bold else FontWeight.Normal)
+                fontSize = if (hasDistance) 21.sp else 12.sp,
+                fontWeight = if (hasDistance) FontWeight.Bold else FontWeight.Normal,
+                maxLines = 2)
         }
         if (validCarPoint && !hasDistance && !loading) {
             TextButton(onClick = {
@@ -92,17 +92,9 @@ internal fun VehicleMapDistance(vehicle: Vehicle) {
                     }
                     else -> retry += 1
                 }
-            }) {
-                Text(if (!permissionGranted) "Разрешить" else "Повторить", fontSize = 11.sp)
+            }, contentPadding = PaddingValues(horizontal = 4.dp, vertical = 0.dp)) {
+                Text(if (!permissionGranted) "Разрешить" else "Обновить", fontSize = 11.sp)
             }
-        }
-    }
-    if (hasDistance) {
-        Text("По прямой от вашего телефона до метки машины, не по дорогам.",
-            color = PremiumTheme.Muted, fontSize = 10.sp, lineHeight = 13.sp)
-        phoneFix?.takeIf { it.hasAccuracy() }?.let {
-            Text("Точность геопозиции телефона: ±${it.accuracy.roundToInt()} м",
-                color = PremiumTheme.Muted, fontSize = 10.sp)
         }
     }
 }

@@ -150,7 +150,8 @@ internal fun MapLibreFleetMap(
     cars: List<Vehicle>,
     onSelect: (Vehicle) -> Unit,
     modifier: Modifier = Modifier,
-    selectedVehicleId: String? = null
+    selectedVehicleId: String? = null,
+    roadRoute: RoadRoute? = null
 ) {
     val context = LocalContext.current
     val shownPrice = remember(context) {
@@ -207,7 +208,7 @@ internal fun MapLibreFleetMap(
     }
     var lastSelected by remember { mutableStateOf<String?>(null) }
 
-    LaunchedEffect(map, cars, shownPrice, selectedVehicleId) {
+    LaunchedEffect(map, cars, shownPrice, selectedVehicleId, roadRoute) {
         if (map == null) return@LaunchedEffect
         // Avoid drawing and observing operational geofences in the fleet catalogue.
         map.clear()
@@ -225,6 +226,23 @@ internal fun MapLibreFleetMap(
                     .title(vehicle.name)
                     .snippet(vehicle.pickupLocation)
                     .icon(icons.fromBitmap(bitmap.bitmap)))
+            }
+        }
+        // Road route comes from the same OSRM response as the distance chip.
+        // map.clear() above also clears stale lines when a car is reselected.
+        roadRoute?.points?.takeIf { it.size >= 2 }?.let { coords ->
+            val routePoints = coords.map { (lat, lon) -> LatLng(lat, lon) }
+            map.addPolyline(PolylineOptions()
+                .addAll(routePoints)
+                .color(AndroidColor.rgb(15, 139, 107))
+                .width(6f))
+            val north = coords.maxOf { it.first }
+            val south = coords.minOf { it.first }
+            val east = coords.maxOf { it.second }
+            val west = coords.minOf { it.second }
+            if (north > south && east > west) {
+                map.animateCamera(CameraUpdateFactory.newLatLngBounds(
+                    org.maplibre.android.geometry.LatLngBounds.from(north, east, south, west), 76))
             }
         }
         phonePosition?.let { location ->

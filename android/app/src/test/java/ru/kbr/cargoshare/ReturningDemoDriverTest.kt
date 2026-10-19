@@ -27,7 +27,7 @@ class ReturningDemoDriverTest {
         val reset = applyLive(finished.state, LiveEvent.RESET, now + 1000L).state
         assertTrue(reset.returningDemoDriver)
         assertEquals(LivePhase.CHOOSE, reset.phase)
-        val again = applyLive(reset, LiveEvent.PICK_CAR, now + 1100L, "lada-largus")
+        val again = applyLive(reset, LiveEvent.PICK_CAR, now + 1100L, "largus-van")
         assertTrue(again.accepted)
         assertEquals(LivePhase.CONFIRM, again.state.phase)
         assertFalse(again.state.termsAccepted)

@@ -200,11 +200,11 @@ fun applyLive(s: LiveDemoSession, event: LiveEvent, now: Long, value: String = "
                     "Учебный возврат доступен сразу; местоположение машины не проверялось")
             }
         LiveEvent.TAKE_RETURN_PHOTO -> if (c.phase != LivePhase.RETURN || c.returnPhotoAt != 0L) invalid(c, "Дождитесь точки возврата")
-            else valid(c.copy(returnPhotoAt = now), "Фиксируем фото при возврате…")
-        LiveEvent.LOCK_DOORS -> if (c.phase != LivePhase.RETURN || c.returnPhotoAt == 0L || c.lockingAt != 0L || !c.returnConditionChecked || now < c.returnPhotoAt + LIVE_OPERATION_MS)
+            else valid(c.copy(returnPhotoAt = now), "Учебный фотоосмотр отмечен; фото не загружается")
+        LiveEvent.LOCK_DOORS -> if (c.phase != LivePhase.RETURN || c.returnPhotoAt == 0L || c.lockingAt != 0L || !c.returnConditionChecked || now < c.returnPhotoAt)
             invalid(c, "Сначала сфотографируйте машину при возврате")
-            else valid(c.copy(lockingAt = now), "Отправляем учебную команду закрытия…")
-        LiveEvent.FINISH -> if (c.phase != LivePhase.RETURN || c.lockingAt == 0L || now < c.lockingAt + LIVE_OPERATION_MS)
+            else valid(c.copy(lockingAt = now), "Демо: закрытие дверей отмечено; настоящая команда не отправляется")
+        LiveEvent.FINISH -> if (c.phase != LivePhase.RETURN || c.lockingAt == 0L || now < c.lockingAt)
             invalid(c, "Проверьте фото и дождитесь закрытия дверей")
             else valid(c.copy(phase = LivePhase.RECEIPT, locked = true,
                 finishedAt = now, returningDemoDriver = true),

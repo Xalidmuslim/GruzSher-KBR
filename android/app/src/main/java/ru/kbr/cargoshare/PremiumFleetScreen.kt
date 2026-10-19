@@ -50,7 +50,15 @@ fun PremiumFleetScreen(
     val carousel = rememberLazyListState()
     val scroll = rememberLazyListState()
     val scope = rememberCoroutineScope()
+    val androidContext = LocalContext.current
     val selectedMapCar = shown.firstOrNull { it.id == roadCarId }
+    var selectedStreetAddress by remember(roadCarId) { mutableStateOf<String?>(null) }
+    LaunchedEffect(selectedMapCar?.id, selectedMapCar?.latitude, selectedMapCar?.longitude) {
+        selectedStreetAddress = null
+        selectedMapCar?.let { car ->
+            selectedStreetAddress = findPickupAddress(androidContext, car).value
+        }
+    }
     LaunchedEffect(carousel.firstVisibleItemIndex, shown) {
         shown.getOrNull(carousel.firstVisibleItemIndex)?.let { selectedId = it.id }
     }
@@ -94,6 +102,7 @@ fun PremiumFleetScreen(
             }
             selectedMapCar?.let { car ->
                 Surface(
+                    onClick = { onSelect(car) },
                     modifier = Modifier.fillMaxWidth()
                         .padding(horizontal = 11.dp, vertical = 5.dp),
                     shape = RoundedCornerShape(16.dp),
@@ -105,14 +114,17 @@ fun PremiumFleetScreen(
                         verticalArrangement = Arrangement.spacedBy(4.dp)) {
                         Row(verticalAlignment = Alignment.CenterVertically,
                             horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                            TruckArtwork(car, Modifier.size(52.dp, 44.dp))
+                            TruckArtwork(car, Modifier.size(98.dp, 77.dp))
                             Column(Modifier.weight(1f)) {
                                 Text(car.name, fontWeight = FontWeight.Bold,
                                     fontSize = 13.sp, color = PremiumTheme.Text,
                                     maxLines = 1, overflow = TextOverflow.Ellipsis)
-                                Text("${car.hourlyPriceRub} ₽/ч · Учебная точка",
-                                    fontSize = 10.sp, color = PremiumTheme.Muted,
-                                    maxLines = 1)
+                                Text("${car.hourlyPriceRub} ₽/ч", fontSize = 13.sp,
+                                    fontWeight = FontWeight.Bold, color = PremiumTheme.GreenDark)
+                                Text(selectedStreetAddress ?: "Определяем адрес…",
+                                    fontSize = 11.sp, color = PremiumTheme.Muted,
+                                    maxLines = 2, lineHeight = 14.sp,
+                                    overflow = TextOverflow.Ellipsis)
                             }
                             TextButton(onClick = { onSelect(car) },
                                 modifier = Modifier.height(34.dp),

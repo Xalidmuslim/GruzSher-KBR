@@ -116,6 +116,12 @@ class LiveDemoEngineTest {
         assertTrue(s.locked)
     }
 
+    @Test fun uncheckingTheVehicleConditionAfterVirtualLockStillBlocksFinish() {
+        val s = LiveDemoSession(phase = LivePhase.RETURN, returnPhotoAt = base,
+            lockingAt = base + 10L, returnConditionChecked = false)
+        assertFalse(applyLive(s, LiveEvent.FINISH, base + 10L).accepted)
+    }
+
     @Test fun financialDisplayIsExplicitlyVirtual() {
         val s = LiveDemoSession(phase = LivePhase.DRIVING, durationHours = 2,
             drivingAt = base, extraHours = 2)

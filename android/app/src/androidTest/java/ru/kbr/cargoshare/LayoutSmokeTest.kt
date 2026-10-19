@@ -22,7 +22,14 @@ class LayoutSmokeTest {
     private val context = inst.targetContext
 
     private fun click(text: String, wait: Long = 15_000L) {
+        if (!device.wait(Until.hasObject(By.text(text)), 3_000L)) {
+            runCatching {
+                UiScrollable(UiSelector().scrollable(true))
+                    .scrollIntoView(UiSelector().text(text))
+            }
+        }
         val found = device.wait(Until.findObject(By.text(text)), wait)
+        if (found == null) capture("missing_action")
         assertNotNull("Missing UI element: $text", found)
         val target = generateSequence(found!!) { it.parent }.firstOrNull { it.isClickable } ?: found
         target.click()
@@ -69,7 +76,14 @@ class LayoutSmokeTest {
         context.getSharedPreferences("gruzsher_live_demo_v1", 0).edit().clear().commit()
         context.startActivity(context.packageManager.getLaunchIntentForPackage(context.packageName)!!
             .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK))
-        assertTrue(device.wait(Until.hasObject(By.text("Найти грузовик")), 30_000L))
+        // Capture unconditionally: a startup/permission overlay otherwise
+        // produces no visual evidence and hides the root cause.
+        Thread.sleep(2500L)
+        capture("layout_startup")
+        if (!device.wait(Until.hasObject(By.textContains("Найти грузовик")), 20_000L)) {
+            capture("layout_startup_unexpected")
+            fail("Fleet home title not visible after launch; inspect captured layout_startup* screenshots")
+        }
         capture("layout_home")
 
         click("Выбрать")

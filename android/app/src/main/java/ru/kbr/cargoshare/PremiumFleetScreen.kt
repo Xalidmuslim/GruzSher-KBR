@@ -83,6 +83,7 @@ fun PremiumFleetScreen(
                     roadCarId = it.id
                     roadRoute = null
                     roadRequested = false
+                    addressCarId = it.id
                 }, Modifier.fillMaxSize().clipToBounds(), selectedId, roadRoute)
                 Surface(Modifier.align(Alignment.TopStart).padding(12.dp),
                     shape = RoundedCornerShape(20.dp), color = Color.White.copy(alpha = .94f)) {
@@ -152,8 +153,8 @@ fun PremiumFleetScreen(
         }
         addressCarId?.let { id ->
             shown.firstOrNull { it.id == id }?.let { car ->
-                PickupAddressSheet(car, onDismiss = { addressCarId = null },
-                    onSelect = { addressCarId = null; onSelect(car) },
+                MapVehicleDetailsSheet(vehicle = car, onDismiss = { addressCarId = null },
+                onDetails = { addressCarId = null; onSelect(car) },
                     onBuildRoute = {
                         addressCarId = null
                         selectedId = car.id
@@ -249,8 +250,8 @@ fun PremiumFleetScreen(
     }
     addressCarId?.let { id ->
         shown.firstOrNull { it.id == id }?.let { car ->
-            PickupAddressSheet(car, onDismiss = { addressCarId = null },
-                onSelect = { addressCarId = null; onSelect(car) },
+            MapVehicleDetailsSheet(vehicle = car, onDismiss = { addressCarId = null },
+                onDetails = { addressCarId = null; onSelect(car) },
                 onBuildRoute = {
                     addressCarId = null
                     selectedId = car.id

@@ -38,6 +38,7 @@ import org.osmdroid.tileprovider.tilesource.TileSourceFactory
 import org.osmdroid.util.GeoPoint
 import org.osmdroid.views.MapView
 import org.osmdroid.views.overlay.Marker
+import org.osmdroid.views.overlay.Polyline
 import org.osmdroid.views.overlay.mylocation.GpsMyLocationProvider
 import org.osmdroid.views.overlay.mylocation.MyLocationNewOverlay
 
@@ -234,10 +235,10 @@ private fun PremiumTruckCard(vehicle: Vehicle, onClick: () -> Unit) {
 }
 
 @Composable
-internal fun NalchikMap(cars: List<Vehicle>, onSelect: (Vehicle) -> Unit, modifier: Modifier = Modifier, selectedVehicleId: String? = null) {
+internal fun NalchikMap(cars: List<Vehicle>, onSelect: (Vehicle) -> Unit, modifier: Modifier = Modifier, selectedVehicleId: String? = null, roadRoute: RoadRoute? = null) {
     // One shared setting controls both inline/fullscreen fleet and LIVE routes.
     if (rememberMapEngine() == MAP_ENGINE_MAPLIBRE) {
-        MapLibreFleetMap(cars, onSelect, modifier, selectedVehicleId)
+        MapLibreFleetMap(cars, onSelect, modifier, selectedVehicleId, roadRoute)
         return
     }
     val context = LocalContext.current
@@ -379,6 +380,30 @@ internal fun NalchikMap(cars: List<Vehicle>, onSelect: (Vehicle) -> Unit, modifi
             map.controller.animateTo(GeoPoint(selected.latitude, selected.longitude))
         }
         lastSelection = selectedVehicleId
+        map.invalidate()
+    }
+    // Real road geometry is drawn separately from marker/selection overlays.
+    // Remove it on vehicle changes or failed route requests; never draw a
+    // straight fallback line and call it a street route.
+    LaunchedEffect(map, roadRoute) {
+        map.overlays.filterIsInstance<Polyline>().forEach { map.overlays.remove(it) }
+        val pts = roadRoute?.points?.map { (lat, lon) -> GeoPoint(lat, lon) }.orEmpty()
+        if (pts.size >= 2) {
+            val polyline = Polyline(map).apply {
+                setPoints(pts)
+                outlinePaint.color = android.graphics.Color.rgb(15, 139, 107)
+                outlinePaint.strokeWidth = 6f * context.resources.displayMetrics.density
+            }
+            map.overlays.add(polyline)
+            // Include both origin and destination in the user's map viewport.
+            val latitudes = pts.map { it.latitude }
+            val longitudes = pts.map { it.longitude }
+            map.post {
+                map.zoomToBoundingBox(org.osmdroid.util.BoundingBox(
+                    latitudes.maxOrNull()!!, longitudes.maxOrNull()!!,
+                    latitudes.minOrNull()!!, longitudes.minOrNull()!!), true, 90)
+            }
+        }
         map.invalidate()
     }
     DisposableEffect(map, permissionGranted) {

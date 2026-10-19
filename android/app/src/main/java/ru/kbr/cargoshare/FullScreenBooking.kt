@@ -4,6 +4,7 @@ import android.app.DatePickerDialog
 import android.app.TimePickerDialog
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -59,6 +60,12 @@ fun FullScreenVehicleBooking(
     var submitting by remember(vehicle.id) { mutableStateOf(false) }
     var note by remember(vehicle.id) { mutableStateOf<String?>(null) }
     var booked by remember(vehicle.id) { mutableStateOf(false) }
+    var pickupMapExpanded by remember(vehicle.id) { mutableStateOf(false) }
+    var pickupAddress by remember(vehicle.id) { mutableStateOf<PickupAddressDetails?>(null) }
+    LaunchedEffect(vehicle.id, vehicle.latitude, vehicle.longitude, vehicle.pickupLocation) {
+        pickupAddress = null
+        pickupAddress = findPickupAddress(context, vehicle)
+    }
     val end = remember(start, hours) { start.plusHours(hours.toLong()) }
     LaunchedEffect(vehicle.id, start, hours) {
         quotedPrice = null
@@ -164,15 +171,35 @@ fun FullScreenVehicleBooking(
                         horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                         Icon(Icons.Outlined.Place, null, tint = PremiumTheme.Green,
                             modifier = Modifier.size(25.dp))
-                        Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                            Text("Учебная точка получения", color = PremiumTheme.Text,
+                        Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(5.dp)) {
+                            Text("Адрес автомобиля", color = PremiumTheme.Text,
                                 fontSize = 13.sp, fontWeight = FontWeight.Bold)
-                            Text(vehicle.pickupLocation, fontSize = 11.sp,
-                                color = PremiumTheme.Muted)
+                            Text(pickupAddress?.value ?: "Определяем адрес…",
+                                fontSize = 12.sp, lineHeight = 16.sp,
+                                color = PremiumTheme.Text, fontWeight = FontWeight.SemiBold)
+                            Text(pickupCoordinates(vehicle.latitude, vehicle.longitude),
+                                fontSize = 10.sp, color = PremiumTheme.GreenDark)
+                            if (isTrainingPickup(vehicle.pickupLocation)) {
+                                Text("Ближайший адрес — ориентир, стоянка учебная",
+                                    color = PremiumTheme.Muted, fontSize = 10.sp, lineHeight = 13.sp)
+                            } else {
+                                Text(pickupAddress?.source ?: "Местоположение из каталога",
+                                    color = PremiumTheme.Muted, fontSize = 10.sp, lineHeight = 13.sp)
+                            }
                         }
-                        Column(Modifier.width(115.dp)) {
+                        Box(Modifier.width(122.dp).height(96.dp)
+                            .clip(RoundedCornerShape(14.dp))) {
                             LiveRouteMap(vehicle, 0f, "пешком",
-                                Modifier.fillMaxWidth().height(78.dp), compact = true)
+                                Modifier.fillMaxSize(), compact = true)
+                            Surface(shape = RoundedCornerShape(9.dp), color = Color.White.copy(alpha = .94f),
+                                modifier = Modifier.align(Alignment.TopEnd).padding(5.dp)) {
+                                Icon(Icons.Outlined.Fullscreen, "Открыть карту на весь экран",
+                                    tint = PremiumTheme.GreenDark,
+                                    modifier = Modifier.padding(5.dp).size(18.dp))
+                            }
+                            // Intercept mini-map taps intentionally: this is a preview,
+                            // not a separately scrollable map inside the booking sheet.
+                            Box(Modifier.fillMaxSize().clickable { pickupMapExpanded = true })
                         }
                     }
                 }
@@ -338,6 +365,52 @@ fun FullScreenVehicleBooking(
                             Icon(Icons.Outlined.PlayArrow, null, Modifier.size(17.dp))
                             Spacer(Modifier.width(6.dp))
                             Text("Пройти учебный сценарий", fontSize = 12.sp)
+                        }
+                    }
+                }
+            }
+        }
+    }
+    if (pickupMapExpanded) {
+        Dialog(onDismissRequest = { pickupMapExpanded = false },
+            properties = DialogProperties(usePlatformDefaultWidth = false,
+                decorFitsSystemWindows = true)) {
+            Column(Modifier.fillMaxSize().background(PremiumTheme.Paper)
+                .statusBarsPadding().navigationBarsPadding()) {
+                Row(Modifier.fillMaxWidth().background(Color.White)
+                    .padding(horizontal = 10.dp, vertical = 6.dp),
+                    verticalAlignment = Alignment.CenterVertically) {
+                    IconButton(onClick = { pickupMapExpanded = false }) {
+                        Icon(Icons.Outlined.ArrowBack, "Закрыть карту",
+                            tint = PremiumTheme.GreenDark)
+                    }
+                    Column(Modifier.weight(1f)) {
+                        Text(vehicle.name, fontSize = 19.sp, fontWeight = FontWeight.Bold,
+                            color = PremiumTheme.GreenDark)
+                        Text("Расположение автомобиля на карте", fontSize = 11.sp,
+                            color = PremiumTheme.Muted)
+                    }
+                }
+                Box(Modifier.fillMaxWidth().weight(1f)) {
+                    NalchikMap(listOf(vehicle), onSelect = { },
+                        modifier = Modifier.fillMaxSize(), selectedVehicleId = vehicle.id)
+                    Surface(modifier = Modifier.align(Alignment.BottomCenter)
+                        .padding(horizontal = 13.dp, vertical = 20.dp),
+                        color = Color.White,
+                        shape = RoundedCornerShape(17.dp), shadowElevation = 4.dp) {
+                        Column(Modifier.fillMaxWidth().padding(13.dp),
+                            verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                            Text("Адрес автомобиля", color = PremiumTheme.GreenDark,
+                                fontWeight = FontWeight.Bold, fontSize = 13.sp)
+                            Text(pickupAddress?.value ?: "Определяем адрес…",
+                                color = PremiumTheme.Text, fontSize = 12.sp)
+                            Text(pickupCoordinates(vehicle.latitude, vehicle.longitude),
+                                color = PremiumTheme.Muted, fontSize = 11.sp)
+                            if (isTrainingPickup(vehicle.pickupLocation)) {
+                                Text("Учебные координаты. Адрес рядом — ориентир, а не подтверждённая стоянка.",
+                                    color = PremiumTheme.Muted, fontSize = 10.sp,
+                                    lineHeight = 14.sp)
+                            }
                         }
                     }
                 }

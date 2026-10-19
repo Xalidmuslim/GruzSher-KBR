@@ -204,7 +204,7 @@ fun applyLive(s: LiveDemoSession, event: LiveEvent, now: Long, value: String = "
         LiveEvent.LOCK_DOORS -> if (c.phase != LivePhase.RETURN || c.returnPhotoAt == 0L || c.lockingAt != 0L || !c.returnConditionChecked || now < c.returnPhotoAt)
             invalid(c, "Сначала сфотографируйте машину при возврате")
             else valid(c.copy(lockingAt = now), "Демо: закрытие дверей отмечено; настоящая команда не отправляется")
-        LiveEvent.FINISH -> if (c.phase != LivePhase.RETURN || c.lockingAt == 0L || now < c.lockingAt)
+        LiveEvent.FINISH -> if (c.phase != LivePhase.RETURN || c.returnPhotoAt == 0L || !c.returnConditionChecked || c.lockingAt == 0L || now < c.lockingAt)
             invalid(c, "Проверьте фото и дождитесь закрытия дверей")
             else valid(c.copy(phase = LivePhase.RECEIPT, locked = true,
                 finishedAt = now, returningDemoDriver = true),

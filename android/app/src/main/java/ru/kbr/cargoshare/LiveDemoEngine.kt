@@ -129,7 +129,7 @@ fun applyLive(s: LiveDemoSession, event: LiveEvent, now: Long, value: String = "
         LiveEvent.PICK_CAR -> if (c.phase != LivePhase.CHOOSE || value !in offlineDemoCatalog().map { it.id }) invalid(c, "Выберите грузовик из учебного каталога")
             else valid(c.copy(
                 phase = if (c.returningDemoDriver) LivePhase.CONFIRM else LivePhase.PHONE,
-                carId = value, termsAccepted = false, durationHours = 2),
+                carId = value, termsAccepted = false),
                 if (c.returningDemoDriver)
                     "Повторная учебная аренда: номер, документы и виртуальная карта сохранены как пройденные"
                 else "Автомобиль выбран")

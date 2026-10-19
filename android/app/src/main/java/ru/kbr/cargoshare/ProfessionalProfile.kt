@@ -48,6 +48,7 @@ fun ProfessionalProfile(
     var alias by remember { mutableStateOf(prefs.getString("profile_alias", "Демо-пользователь") ?: "Демо-пользователь") }
     var draftAlias by rememberSaveable { mutableStateOf(alias) }
     var panel by rememberSaveable { mutableStateOf<String?>(null) }
+    var adminOpen by rememberSaveable { mutableStateOf(false) }
     var mapPrices by remember { mutableStateOf(prefs.getBoolean("map_prices_visible", true)) }
     var parkingZones by remember { mutableStateOf(prefs.getBoolean("map_parking_zones_visible", true)) }
     var mapEngine by remember { mutableStateOf(normalizeMapEngine(prefs.getString(MAP_ENGINE_KEY, MAP_ENGINE_OSMDROID))) }
@@ -65,6 +66,10 @@ fun ProfessionalProfile(
         live.carId.isNotBlank()
     val favourites = offlineDemoCatalog().filter { prefs.getBoolean("favourite_${it.id}", false) }
 
+    if (adminOpen) {
+        AdminZoneEditor(onClose = { adminOpen = false })
+        return
+    }
     Column(Modifier.fillMaxSize().background(ProfilePaper)) {
         Row(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 9.dp),
             verticalAlignment = Alignment.CenterVertically) {
@@ -148,6 +153,9 @@ fun ProfessionalProfile(
                 ProfileMenuItem("Настройки", "Отображение карты и локальные данные",
                     Icons.Outlined.Settings) { panel = "Настройки" }
                 HorizontalDivider(color = ProfileMint)
+                ProfileMenuItem("Администратор · демо", "Рисование разрешённых и запрещённых зон",
+                    Icons.Outlined.Map) { adminOpen = true }
+                HorizontalDivider(color = ProfileMint)
                 ProfileMenuItem("О приложении", "Версия и ограничения",
                     Icons.Outlined.Info) { panel = "О приложении" }
             }
@@ -170,18 +178,11 @@ fun ProfessionalProfile(
                     color = ProfileInk)
                 when (page) {
                     "Мои данные" -> {
-                        ProfileHint("Никнейм сохраняется только на этом устройстве. " +
-                            "Учебный аккаунт не содержит настоящего имени, телефона или паспорта.")
-                        OutlinedTextField(value = draftAlias,
-                            onValueChange = { draftAlias = it.take(40) },
-                            label = { Text("Отображаемое имя") },
-                            singleLine = true, modifier = Modifier.fillMaxWidth())
-                        Button(onClick = {
-                            alias = draftAlias.trim().ifBlank { "Демо-пользователь" }
-                            prefs.edit().putString("profile_alias", alias).apply()
+                        ProfileDataForm(prefs) { savedName ->
+                            alias = savedName
+                            draftAlias = savedName
                             panel = null
-                        }, modifier = Modifier.fillMaxWidth(),
-                            enabled = draftAlias.isNotBlank()) { Text("Сохранить") }
+                        }
                     }
                     "Документы" -> {
                         ProfileHint("Здесь виден только результат учебной симуляции. " +
@@ -289,8 +290,9 @@ fun ProfessionalProfile(
                             parkingZones = it
                             prefs.edit().putBoolean("map_parking_zones_visible", it).apply()
                         }
-                        ProfileHint("Язык приложения: русский. Для дополнительных языков " +
-                            "потребуется полноценный перевод всех экранов.")
+                        ProfileHint("MapLibre использует русские названия, если они " +
+                            "есть в картографических данных; для остальных остаётся оригинал. " +
+                            "Администратор управляет только локальными учебными зонами.")
                         OutlinedButton(onClick = { confirmResetSettings = true },
                             modifier = Modifier.fillMaxWidth()) {
                             Text("Восстановить настройки карты")

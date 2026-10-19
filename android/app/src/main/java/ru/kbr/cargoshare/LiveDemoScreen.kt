@@ -632,6 +632,10 @@ fun LiveDemoScreen(
 @Composable internal fun LiveRouteMap(car: Vehicle?, fraction: Float, mode: String,
     modifier: Modifier = Modifier.fillMaxWidth().height(218.dp), compact: Boolean = false,
     onExpand: (() -> Unit)? = null) {
+    if (rememberMapEngine() == MAP_ENGINE_MAPLIBRE) {
+        MapLibreRouteMap(car, fraction, mode, modifier, compact, onExpand)
+        return
+    }
     val context = LocalContext.current
     val showZones = remember(context) {
         context.applicationContext.getSharedPreferences("gruzsher_preferences", 0)

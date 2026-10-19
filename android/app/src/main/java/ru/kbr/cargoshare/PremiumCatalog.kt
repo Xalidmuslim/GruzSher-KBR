@@ -235,6 +235,11 @@ private fun PremiumTruckCard(vehicle: Vehicle, onClick: () -> Unit) {
 
 @Composable
 internal fun NalchikMap(cars: List<Vehicle>, onSelect: (Vehicle) -> Unit, modifier: Modifier = Modifier, selectedVehicleId: String? = null) {
+    // One shared setting controls both inline/fullscreen fleet and LIVE routes.
+    if (rememberMapEngine() == MAP_ENGINE_MAPLIBRE) {
+        MapLibreFleetMap(cars, onSelect, modifier, selectedVehicleId)
+        return
+    }
     val context = LocalContext.current
     val showPrices = remember(context) {
         context.applicationContext.getSharedPreferences("gruzsher_preferences", 0)

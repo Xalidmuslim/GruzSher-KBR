@@ -78,38 +78,29 @@ fun truckMapMarker(context: Context, hourlyRub: Int? = null, selected: Boolean =
 fun phoneLocationMarker(context: Context): Bitmap {
     val density = context.resources.displayMetrics.density
     val bitmap = Bitmap.createBitmap(
-        (36f * density).roundToInt().coerceAtLeast(1),
+        (32f * density).roundToInt().coerceAtLeast(1),
         (36f * density).roundToInt().coerceAtLeast(1),
         Bitmap.Config.ARGB_8888
     )
     val canvas = Canvas(bitmap).apply { scale(density, density) }
-    val paint = Paint(Paint.ANTI_ALIAS_FLAG)
-    paint.color = Color.WHITE
-    canvas.drawCircle(18f, 18f, 16f, paint)
-    paint.color = Color.rgb(47, 50, 42)
-    paint.style = Paint.Style.STROKE
-    paint.strokeWidth = 1.5f
-    canvas.drawCircle(18f, 18f, 15.2f, paint)
-
-    fun limb(x1: Float, y1: Float, x2: Float, y2: Float) {
-        paint.strokeCap = Paint.Cap.ROUND
-        paint.color = Color.rgb(47, 50, 42)
-        paint.strokeWidth = 5.5f
-        canvas.drawLine(x1, y1, x2, y2, paint)
-        paint.color = Color.rgb(255, 202, 35)
-        paint.strokeWidth = 3.4f
-        canvas.drawLine(x1, y1, x2, y2, paint)
+    val paint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        style = Paint.Style.FILL
+        strokeCap = Paint.Cap.ROUND
+        strokeJoin = Paint.Join.ROUND
     }
-    limb(18f, 15f, 18f, 23f)
-    limb(18f, 17f, 12.5f, 21f)
-    limb(18f, 17f, 23.5f, 21f)
-    limb(18f, 23f, 13f, 30f)
-    limb(18f, 23f, 23f, 30f)
-    paint.style = Paint.Style.FILL
-    paint.color = Color.rgb(47, 50, 42)
-    canvas.drawCircle(18f, 9.5f, 4.8f, paint)
-    paint.color = Color.rgb(255, 202, 35)
-    canvas.drawCircle(18f, 9.5f, 3.3f, paint)
+    // Transparent background; a delicate white glow ensures contrast on map tiles.
+    // No enclosing disk, dark ring, black contour or double-stroked stick figure.
+    paint.setShadowLayer(2.6f, 0f, 1f, Color.argb(185, 255, 255, 255))
+    paint.color = Color.rgb(255, 195, 24)
+    paint.strokeWidth = 4.8f
+    canvas.drawLine(16f, 16f, 10f, 21.5f, paint)
+    canvas.drawLine(16f, 16f, 22f, 21.5f, paint)
+    canvas.drawLine(16f, 23f, 11.2f, 31f, paint)
+    canvas.drawLine(16f, 23f, 20.8f, 31f, paint)
+    canvas.drawRoundRect(RectF(12.7f, 13.4f, 19.3f, 24.5f), 3.3f, 3.3f, paint)
+    paint.color = Color.rgb(255, 211, 55)
+    canvas.drawCircle(16f, 8.3f, 4.7f, paint)
+    paint.clearShadowLayer()
     return bitmap
 }
 

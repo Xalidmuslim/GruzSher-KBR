@@ -4,6 +4,13 @@ import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
 import android.content.Intent
+import android.Manifest
+import android.location.Location
+import android.provider.Settings
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.material.icons.outlined.GpsFixed
+import kotlin.math.roundToInt
 import android.location.Geocoder
 import android.net.Uri
 import androidx.compose.foundation.layout.*
@@ -81,6 +88,37 @@ internal fun PickupAddressSheet(
         mutableStateOf<PickupAddressDetails?>(null)
     }
     var feedback by remember { mutableStateOf<String?>(null) }
+    var gpsPermission by remember { mutableStateOf(hasPhoneLocationPermission(context)) }
+    var refreshLocation by remember(car.id) { mutableIntStateOf(0) }
+    var gpsLocation by remember(car.id) { mutableStateOf<Location?>(null) }
+    var gpsBusy by remember(car.id) { mutableStateOf(false) }
+    var gpsStatus by remember(car.id) { mutableStateOf<String?>(null) }
+    val askGpsPermission = rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestMultiplePermissions()) {
+        gpsPermission = hasPhoneLocationPermission(context)
+        if (!gpsPermission) gpsStatus = "Нет доступа к геолокации телефона."
+        else refreshLocation += 1
+    }
+    LaunchedEffect(car.id, gpsPermission, refreshLocation) {
+        gpsLocation = null
+        gpsStatus = null
+        if (!gpsPermission) {
+            gpsStatus = "Для расчёта расстояния нужен доступ к местоположению."
+            return@LaunchedEffect
+        }
+        if (!locationServiceEnabled(context)) {
+            gpsStatus = "Геолокация отключена в настройках телефона."
+            return@LaunchedEffect
+        }
+        gpsBusy = true
+        try {
+            gpsLocation = currentPhoneLocation(context)
+            if (gpsLocation == null)
+                gpsStatus = "Не удалось получить свежие координаты GPS. Попробуйте на открытом воздухе."
+        } finally {
+            gpsBusy = false
+        }
+    }
     LaunchedEffect(car.id, car.latitude, car.longitude, car.pickupLocation) {
         address = findPickupAddress(context, car)
     }
@@ -122,9 +160,65 @@ internal fun PickupAddressSheet(
                         fontWeight = FontWeight.SemiBold, color = PremiumTheme.GreenDark)
                 }
             }
+            // The phone's real current position is used. The catalogue's truck
+            // position remains a static training point until telematics connects.
+            Surface(color = PremiumTheme.Mint, shape = RoundedCornerShape(17.dp)) {
+                Column(Modifier.fillMaxWidth().padding(14.dp),
+                    verticalArrangement = Arrangement.spacedBy(7.dp)) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(Icons.Outlined.GpsFixed, null,
+                            tint = PremiumTheme.GreenDark, modifier = Modifier.size(21.dp))
+                        Spacer(Modifier.width(8.dp))
+                        Text("Расстояние от вас", fontWeight = FontWeight.Bold,
+                            color = PremiumTheme.GreenDark, modifier = Modifier.weight(1f))
+                    }
+                    val current = gpsLocation
+                    val lat = car.latitude
+                    val lon = car.longitude
+                    if (current != null && lat != null && lon != null &&
+                        lat in -90.0..90.0 && lon in -180.0..180.0) {
+                        val meters = airDistanceMeters(current.latitude, current.longitude, lat, lon)
+                        Text(humanDistance(meters), fontSize = 27.sp,
+                            fontWeight = FontWeight.ExtraBold, color = PremiumTheme.GreenDark)
+                        Text("По прямой от текущей геопозиции телефона до метки автомобиля. " +
+                            "Это не расстояние по дорогам.",
+                            color = PremiumTheme.Muted, fontSize = 11.sp, lineHeight = 16.sp)
+                        if (current.hasAccuracy()) {
+                            Text("Точность координат телефона: примерно ±${current.accuracy.roundToInt()} м",
+                                color = PremiumTheme.Muted, fontSize = 10.sp)
+                        }
+                    } else if (gpsBusy) {
+                        LinearProgressIndicator(Modifier.fillMaxWidth())
+                        Text("Получаем координаты телефона…",
+                            fontSize = 12.sp, color = PremiumTheme.Muted)
+                    } else {
+                        Text(gpsStatus ?: "Местоположение пока недоступно",
+                            fontSize = 12.sp, color = PremiumTheme.Muted)
+                        OutlinedButton(onClick = {
+                            if (!hasPhoneLocationPermission(context)) {
+                                askGpsPermission.launch(arrayOf(
+                                    Manifest.permission.ACCESS_FINE_LOCATION,
+                                    Manifest.permission.ACCESS_COARSE_LOCATION))
+                            } else if (!locationServiceEnabled(context)) {
+                                val opened = runCatching {
+                                    context.startActivity(Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS)
+                                        .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
+                                }.isSuccess
+                                if (!opened) gpsStatus = "Включите геолокацию в настройках Android."
+                            } else {
+                                refreshLocation += 1
+                            }
+                        }, modifier = Modifier.fillMaxWidth()) {
+                            Text(if (!gpsPermission) "Разрешить доступ к GPS"
+                                else if (!locationServiceEnabled(context)) "Включить геолокацию"
+                                else "Повторить определение")
+                        }
+                    }
+                }
+            }
             if (isTrainingPickup(car.pickupLocation)) {
-                Text("Это учебная точка, не фактическое местоположение автомобиля. " +
-                    "Номер дома и место парковки должны подтверждаться владельцем.",
+                Text("Координаты грузовика пока учебные, не передаются реальным GPS-трекером. " +
+                    "Реальная геопозиция телефона не подтверждает фактическую стоянку грузовика.",
                     fontSize = 11.sp, color = PremiumTheme.Muted, lineHeight = 16.sp)
             }
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp),

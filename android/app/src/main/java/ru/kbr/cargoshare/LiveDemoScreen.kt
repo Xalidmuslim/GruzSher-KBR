@@ -405,7 +405,7 @@ fun LiveDemoScreen(
                     LiveNote("Шаг 1 из 3 · Сделайте учебный фотоосмотр машины, затем подтвердите закрытие дверей.")
                 } else if (session.lockingAt == 0L) {
                     LiveNote("Шаг 2 из 3 · Фотоосмотр отмечен. Закройте учебный автомобиль.")
-                }                 else LiveNote("Шаг 3 из 3 · Двери закрыты. Подтвердите завершение и получите чек.")
+                } else LiveNote("Шаг 3 из 3 · Двери закрыты. Подтвердите завершение и получите чек.")
             }
             LivePhase.RECEIPT -> {
                 StageBanner("Поездка завершена", "Спасибо за учебную аренду!")
@@ -485,7 +485,7 @@ fun LiveDemoScreen(
                 }
                 val enabled = (session.phase == LivePhase.INSPECT && session.inspected.size == 4) || session.phase == LivePhase.DRIVING ||
                     (session.phase == LivePhase.RETURN && (session.returnPhotoAt == 0L || photoReady &&
-                        (session.lockingAt == 0L && session.returnConditionChecked || lockReady)))
+                        session.returnConditionChecked && (session.lockingAt == 0L || lockReady)))
                 Button(
                     onClick = {
                         when {

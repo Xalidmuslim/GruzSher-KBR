@@ -41,6 +41,9 @@ fun PremiumFleetScreen(
     var selectedId by rememberSaveable { mutableStateOf("") }
     // Open an address sheet only when a customer explicitly taps a truck pin.
     var addressCarId by rememberSaveable { mutableStateOf<String?>(null) }
+    var roadCarId by rememberSaveable { mutableStateOf<String?>(null) }
+    var roadRoute by remember { mutableStateOf<RoadRoute?>(null) }
+    var roadTap by remember { mutableIntStateOf(0) }
     val shown = remember(cars, filter) { cars.filter { filter == "Все" || fleetClass(it) == filter } }
     val carousel = rememberLazyListState()
     val scroll = rememberLazyListState()
@@ -68,13 +71,15 @@ fun PremiumFleetScreen(
                 DemoPill()
             }
             Box(Modifier.fillMaxWidth().background(PremiumTheme.Paper).zIndex(2f)) {
-                FleetFilters(filter) { filter = it; selectedId = "" }
+                FleetFilters(filter) { filter = it; selectedId = ""; roadCarId = null; roadRoute = null }
             }
             Box(Modifier.fillMaxWidth().weight(1f).clipToBounds().background(PremiumTheme.Mint)) {
                 NalchikMap(shown, {
                     selectedId = it.id
-                    addressCarId = it.id
-                }, Modifier.fillMaxSize().clipToBounds(), selectedId)
+                    roadCarId = it.id
+                    roadRoute = null
+                    roadTap += 1
+                }, Modifier.fillMaxSize().clipToBounds(), selectedId, roadRoute)
                 Surface(Modifier.align(Alignment.TopStart).padding(14.dp),
                     shape = RoundedCornerShape(24.dp), color = Color.White) {
                     Text("Грузовики · ${shown.size}", fontSize = 11.sp,
@@ -101,6 +106,14 @@ fun PremiumFleetScreen(
                             }
                             Icon(Icons.Outlined.ChevronRight, "Открыть автомобиль",
                                 tint = PremiumTheme.Green)
+                        }
+                        if (roadCarId == car.id) {
+                            Box(Modifier.fillMaxWidth().padding(
+                                start = 12.dp, end = 12.dp, bottom = 10.dp)) {
+                                key(car.id, roadTap) {
+                                    RoadDirectionsPanel(car) { roadRoute = it }
+                                }
+                            }
                         }
                     }
                 }

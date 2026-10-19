@@ -8,11 +8,11 @@ android {
     namespace = "ru.kbr.cargoshare"
     compileSdk = 35
     defaultConfig {
-        applicationId = "ru.kbr.cargoshare.referencepreview.ux377"
+        applicationId = "ru.kbr.cargoshare.referencepreview.ux378"
         minSdk = 26
         targetSdk = 35
-        versionCode = 56
-        versionName = "3.7.7-yellow-3d-compact-card"
+        versionCode = 57
+        versionName = "3.7.8-road-driving-matte-gps"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
     buildFeatures {
@@ -55,6 +55,7 @@ dependencies {
     implementation("org.maplibre.gl:android-sdk:12.3.1")
     implementation("androidx.core:core-ktx:1.15.0")
     testImplementation("junit:junit:4.13.2")
+    testImplementation("org.json:json:20240303")
     androidTestImplementation("androidx.test:runner:1.6.2")
     androidTestImplementation("androidx.test.ext:junit:1.2.1")
     androidTestImplementation("androidx.test.uiautomator:uiautomator:2.3.0")

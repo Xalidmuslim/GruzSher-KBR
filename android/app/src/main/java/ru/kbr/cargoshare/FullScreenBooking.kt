@@ -61,6 +61,9 @@ fun FullScreenVehicleBooking(
     var note by remember(vehicle.id) { mutableStateOf<String?>(null) }
     var booked by remember(vehicle.id) { mutableStateOf(false) }
     var pickupMapExpanded by remember(vehicle.id) { mutableStateOf(false) }
+    var detailRoadRoute by remember(vehicle.id) { mutableStateOf<RoadRoute?>(null) }
+    var detailRouteRequested by remember(vehicle.id) { mutableStateOf(false) }
+    var detailRouteTap by remember(vehicle.id) { mutableIntStateOf(0) }
     var pickupAddress by remember(vehicle.id) { mutableStateOf<PickupAddressDetails?>(null) }
     LaunchedEffect(vehicle.id, vehicle.latitude, vehicle.longitude, vehicle.pickupLocation) {
         pickupAddress = null
@@ -393,8 +396,12 @@ fun FullScreenVehicleBooking(
                 }
                 Box(Modifier.fillMaxWidth().weight(1f)) {
                     // Full-bleed map continues behind the floating address glass.
-                    NalchikMap(listOf(vehicle), onSelect = { },
-                        modifier = Modifier.fillMaxSize(), selectedVehicleId = vehicle.id)
+                    NalchikMap(listOf(vehicle), onSelect = {
+                        detailRoadRoute = null
+                        detailRouteRequested = true
+                        detailRouteTap += 1
+                    }, modifier = Modifier.fillMaxSize(), selectedVehicleId = vehicle.id,
+                        roadRoute = detailRoadRoute)
 
                     // Reserve an explicit bottom gap for Android gesture navigation.
                     // The compact, free-floating chip never stretches below the
@@ -423,7 +430,15 @@ fun FullScreenVehicleBooking(
                             Text(pickupCoordinates(vehicle.latitude, vehicle.longitude),
                                 color = PremiumTheme.Muted, fontSize = 10.sp,
                                 lineHeight = 13.sp, maxLines = 1)
-                            VehicleMapDistance(vehicle)
+                            if (detailRouteRequested) {
+                                key(vehicle.id, detailRouteTap) {
+                                    RoadDirectionsPanel(vehicle) { detailRoadRoute = it }
+                                }
+                            } else {
+                                Text("Нажмите метку машины — покажем маршрут по улицам",
+                                    fontSize = 10.sp, color = PremiumTheme.Muted,
+                                    lineHeight = 13.sp, maxLines = 2)
+                            }
                         }
                     }
                 }

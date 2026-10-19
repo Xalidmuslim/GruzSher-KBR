@@ -85,9 +85,9 @@ fun phoneLocationMarker(context: Context): Bitmap {
         Bitmap.Config.ARGB_8888
     )
     val canvas = Canvas(bitmap).apply { scale(density, density) }
-    val yellow = Color.rgb(255, 211, 24)
-    val highlight = Color.rgb(255, 239, 122)
-    val side = Color.rgb(232, 173, 0)
+    val yellow = Color.rgb(255, 211, 29)
+    val highlight = Color.rgb(255, 220, 56)
+    val side = Color.rgb(220, 172, 15)
     val paint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
         style = Paint.Style.FILL
         strokeCap = Paint.Cap.ROUND
@@ -113,16 +113,12 @@ fun phoneLocationMarker(context: Context): Bitmap {
     canvas.drawRoundRect(RectF(12f, 15.2f, 24.2f, 29.8f), 5f, 5f, paint)
     paint.color = yellow
     canvas.drawRoundRect(RectF(11.8f, 15f, 21.6f, 29.2f), 4.8f, 4.8f, paint)
-    paint.color = highlight
-    canvas.drawRoundRect(RectF(13f, 16.4f, 15.4f, 25.6f), 1.2f, 1.2f, paint)
 
-    // Solid spherical head: a small opaque highlight and side shading.
+    // Matte 3D head: subtle opaque side plane, no shiny specular spot.
     paint.color = side
     canvas.drawCircle(18.8f, 9.2f, 6.7f, paint)
     paint.color = yellow
     canvas.drawCircle(17.3f, 8.6f, 6.5f, paint)
-    paint.color = highlight
-    canvas.drawCircle(15.1f, 6.9f, 2.2f, paint)
     return bitmap
 }
 

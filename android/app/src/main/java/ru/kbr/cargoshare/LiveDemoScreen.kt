@@ -60,6 +60,12 @@ fun LiveDemoScreen(
     onBackToMap: () -> Unit
 ) {
     val context = LocalContext.current
+    val routeSettings = remember(context) {
+        context.applicationContext.getSharedPreferences("gruzsher_preferences", 0)
+    }
+    val selectedPayment = remember(context) {
+        routeSettings.getString("demo_payment_method", "virtual_0000") ?: "virtual_0000"
+    }
     val store = remember { LiveDemoStorage(context.applicationContext) }
     var session by remember(selectedBookingId) { mutableStateOf(selectedBookingId?.let(store::receipt) ?: store.load()) }
     var now by remember { mutableLongStateOf(System.currentTimeMillis()) }
@@ -234,7 +240,8 @@ fun LiveDemoScreen(
                     Column(Modifier.fillMaxWidth().padding(20.dp)) {
                         Text("ГРУЗШЕР · ТЕСТОВАЯ КАРТА", color = Color.White, fontSize = 12.sp)
                         Spacer(Modifier.height(18.dp))
-                        Text("••••  ••••  ••••  0000", color = Color.White, fontSize = 23.sp, fontWeight = FontWeight.Bold)
+                        Text("••••  ••••  ••••  " + if (selectedPayment == "virtual_1111") "1111" else "0000",
+                            color = Color.White, fontSize = 23.sp, fontWeight = FontWeight.Bold)
                         Spacer(Modifier.height(16.dp))
                         Text("ДЕМО • НЕ ПЛАТЁЖНОЕ СРЕДСТВО", color = Color.White.copy(alpha = 0.8f), fontSize = 10.sp)
                     }
@@ -625,6 +632,10 @@ fun LiveDemoScreen(
     modifier: Modifier = Modifier.fillMaxWidth().height(218.dp), compact: Boolean = false,
     onExpand: (() -> Unit)? = null) {
     val context = LocalContext.current
+    val showZones = remember(context) {
+        context.applicationContext.getSharedPreferences("gruzsher_preferences", 0)
+            .getBoolean("map_parking_zones_visible", true)
+    }
     val origin = remember(car?.id) { GeoPoint(car?.latitude ?: 43.4853, car?.longitude ?: 43.6071) }
     val route = remember(origin, mode) {
         if (mode == "пешком") listOf(
@@ -654,7 +665,7 @@ fun LiveDemoScreen(
             controller.setCenter(route[centerIndexForRoute(route.size)])
             minZoomLevel = 9.0
             maxZoomLevel = 18.0
-            if (mode != "пешком" && !compact) {
+            if (mode != "пешком" && !compact && showZones) {
                 val parking = route.last()
                 // Illustrative permitted-return geofence, not a real legal parking zone.
                 overlays.add(Polygon().apply {
@@ -742,7 +753,8 @@ fun LiveDemoScreen(
     }
     Text(if (compact) "© OpenStreetMap" else if (mode == "пешком")
         "Путь · условно · не GPS · © OpenStreetMap"
-        else "Зона возврата: зелёная — можно · снаружи — нельзя",
+        else if (showZones) "Зона возврата: зелёная — можно · снаружи — нельзя"
+        else "Учебный маршрут · не GPS",
         modifier=Modifier.align(Alignment.BottomCenter).background(Color.White.copy(alpha=.9f)).padding(4.dp),
         color=LiveGray,fontSize=if(compact) 7.sp else 8.sp)
     }

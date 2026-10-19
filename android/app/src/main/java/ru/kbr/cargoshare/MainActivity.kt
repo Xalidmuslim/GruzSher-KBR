@@ -307,7 +307,8 @@ private fun AppScreen() {
                 })
                 2 -> DriverDashboard(live = liveOverview, bookings = bookings,
                     onLive = { receiptId=null; navigateTo(3, openDemo = true) },
-                    onTrips = { navigateTo(1) }, onMore = { navigateTo(3) })
+                    onTrips = { navigateTo(1) }, onMore = { navigateTo(3) },
+                    onFleet = { navigateTo(0) })
                 else -> if (!showLiveDemo) GruzSherMoreScreen(
                     onDemo = { receiptId = null; navigateTo(3, openDemo = true) },
                     onFleet = { navigateTo(0) },

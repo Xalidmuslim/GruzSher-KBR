@@ -236,6 +236,10 @@ private fun PremiumTruckCard(vehicle: Vehicle, onClick: () -> Unit) {
 @Composable
 internal fun NalchikMap(cars: List<Vehicle>, onSelect: (Vehicle) -> Unit, modifier: Modifier = Modifier, selectedVehicleId: String? = null) {
     val context = LocalContext.current
+    val showPrices = remember(context) {
+        context.applicationContext.getSharedPreferences("gruzsher_preferences", 0)
+            .getBoolean("map_prices_visible", true)
+    }
     // A saveable primitive camera buffer, not Compose observable states. MapListener
     // fires dozens of times per pinch/drag; recomposing the screen on every tick
     // used to make the map background and overlays flicker.
@@ -324,12 +328,13 @@ internal fun NalchikMap(cars: List<Vehicle>, onSelect: (Vehicle) -> Unit, modifi
     val markerSignature = remember(cars) {
         cars.joinToString("|") { "${it.id}:${it.latitude}:${it.longitude}:${it.name}:${it.hourlyPriceRub}" }
     }
-    val markerIcons = remember(context, markerSignature) {
+    val markerIcons = remember(context, markerSignature, showPrices) {
         cars.associate { vehicle ->
-            // Keep truck icons upright and tariffs legible.
+            // Apply the user's saved display preference, never mutate catalogue prices.
+            val displayedRate = if (showPrices) vehicle.hourlyPriceRub else null
             vehicle.id to Pair(
-                truckMapMarker(context, hourlyRub = vehicle.hourlyPriceRub),
-                truckMapMarker(context, hourlyRub = vehicle.hourlyPriceRub, selected = true)
+                truckMapMarker(context, hourlyRub = displayedRate),
+                truckMapMarker(context, hourlyRub = displayedRate, selected = true)
             )
         }
     }

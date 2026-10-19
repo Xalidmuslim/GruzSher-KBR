@@ -2,6 +2,7 @@ package ru.kbr.cargoshare
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
@@ -39,7 +40,8 @@ private val ProfilePaper = PremiumTheme.Paper
 fun ProfessionalProfile(
     live: LiveDemoSession, bookings: List<Booking>,
     onLive: () -> Unit, onTrips: () -> Unit,
-    onMore: () -> Unit, onFleet: () -> Unit
+    onMore: () -> Unit, onFleet: () -> Unit,
+    fontScale: Float, onFontScaleChange: (Float) -> Unit
 ) {
     val context = LocalContext.current
     val prefs = remember(context) {
@@ -150,7 +152,7 @@ fun ProfessionalProfile(
                 ProfileMenuItem("Вопросы и ответы", "Бронирование, возврат, тарифы",
                     Icons.Outlined.HelpOutline) { panel = "Вопросы и ответы" }
                 HorizontalDivider(color = ProfileMint)
-                ProfileMenuItem("Настройки", "Отображение карты и локальные данные",
+                ProfileMenuItem("Настройки", "Размер текста, карты и локальные данные",
                     Icons.Outlined.Settings) { panel = "Настройки" }
                 HorizontalDivider(color = ProfileMint)
                 ProfileMenuItem("Администратор · демо", "Рисование разрешённых и запрещённых зон",
@@ -247,6 +249,29 @@ fun ProfessionalProfile(
                             modifier = Modifier.fillMaxWidth()) { Text("Перейти в каталог") }
                     }
                     "Настройки" -> {
+                        Text("Размер шрифта", fontSize = 16.sp,
+                            fontWeight = FontWeight.Bold, color = ProfileInk)
+                        ProfileHint("Размер применяется ко всем разделам и сохраняется " +
+                            "на этом телефоне. Системный размер шрифта Android также учитывается.")
+                        Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            APP_FONT_SCALE_OPTIONS.forEach { size ->
+                                val percent = (size * 100).toInt()
+                                FilterChip(
+                                    selected = kotlin.math.abs(fontScale - size) < .01f,
+                                    onClick = { onFontScaleChange(size) },
+                                    label = { Text("$percent%", maxLines = 1) },
+                                    colors = FilterChipDefaults.filterChipColors(
+                                        selectedContainerColor = ProfileGreen,
+                                        selectedLabelColor = Color.White),
+                                    modifier = Modifier.heightIn(min = 44.dp)
+                                )
+                            }
+                        }
+                        Text("Пример: грузовик · 650 ₽/ч · Нальчик",
+                            color = ProfileInk, fontSize = 13.sp,
+                            modifier = Modifier.fillMaxWidth().padding(bottom = 9.dp))
+                        HorizontalDivider(color = ProfileMint)
                         ProfileHint("Выбранный движок используется для всех карт: " +
                             "автопарк, подход к машине и возврат. Карты требуют интернет.")
                         Text("Картографическая система", fontSize = 16.sp,

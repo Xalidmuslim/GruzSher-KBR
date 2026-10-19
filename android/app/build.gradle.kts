@@ -8,11 +8,11 @@ android {
     namespace = "ru.kbr.cargoshare"
     compileSdk = 35
     defaultConfig {
-        applicationId = "ru.kbr.cargoshare.referencepreview.ux381"
+        applicationId = "ru.kbr.cargoshare.referencepreview.ux382"
         minSdk = 26
         targetSdk = 35
-        versionCode = 60
-        versionName = "3.8.1-map-vehicle-info-layout-audit"
+        versionCode = 61
+        versionName = "3.8.2-map-card-routes-font-control"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
     buildFeatures {

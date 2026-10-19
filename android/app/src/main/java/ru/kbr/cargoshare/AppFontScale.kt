@@ -7,4 +7,5 @@ internal const val APP_FONT_SCALE_KEY = "app_font_scale"
 internal val APP_FONT_SCALE_OPTIONS = listOf(.9f, 1.0f, 1.1f, 1.2f)
 
 internal fun normalizeAppFontScale(value: Float): Float =
-    APP_FONT_SCALE_OPTIONS.minByOrNull { kotlin.math.abs(it - value) } ?: 1f
+    if (!value.isFinite()) 1f
+    else APP_FONT_SCALE_OPTIONS.minByOrNull { kotlin.math.abs(it - value) } ?: 1f

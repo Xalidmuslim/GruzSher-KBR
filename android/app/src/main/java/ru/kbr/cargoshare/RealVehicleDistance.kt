@@ -86,7 +86,10 @@ internal suspend fun currentPhoneLocation(context: Context): Location? {
                     val listener = LocationListener { fix ->
                         if (fix.latitude in -90.0..90.0 &&
                             fix.longitude in -180.0..180.0 &&
-                            !continuation.isCompleted) continuation.resume(fix)
+                            !continuation.isCompleted) {
+                            continuation.resume(fix)
+                            listeners.forEach { runCatching { manager.removeUpdates(it) } }
+                        }
                     }
                     listeners.add(listener)
                     @Suppress("MissingPermission")
@@ -99,10 +102,6 @@ internal suspend fun currentPhoneLocation(context: Context): Location? {
                 if (!continuation.isCompleted) continuation.resume(null)
             }
             continuation.invokeOnCancellation {
-                listeners.forEach { runCatching { manager.removeUpdates(it) } }
-            }
-            // Cancellation normally unregisters; also unregister on successful fix.
-            continuation.invokeOnCompletion {
                 listeners.forEach { runCatching { manager.removeUpdates(it) } }
             }
         }

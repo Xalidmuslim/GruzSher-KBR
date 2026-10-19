@@ -168,21 +168,21 @@ internal fun AdminZoneEditor(onClose: () -> Unit) {
             map.addPolygon(PolygonOptions().addAll(
                 zone.vertices.map { LatLng(it.latitude, it.longitude) }
             ).fillColor(if (zone.rule == ParkingRule.ALLOWED)
-                AndroidColor.argb(19, 0, 159, 88) else AndroidColor.argb(23, 220, 55, 55)
+                AndroidColor.argb(28, 39, 110, 225) else AndroidColor.argb(23, 220, 55, 55)
             ).strokeColor(if (zone.rule == ParkingRule.ALLOWED)
-                AndroidColor.argb(140, 0, 130, 73) else AndroidColor.argb(140, 185, 25, 25)))
+                AndroidColor.argb(165, 38, 99, 205) else AndroidColor.argb(140, 185, 25, 25)))
         }
         val vertices = draft.map { LatLng(it.latitude, it.longitude) }
         render.fill = if (vertices.size >= 3) map.addPolygon(
             PolygonOptions().addAll(vertices)
                 .fillColor(if (rule == ParkingRule.ALLOWED)
-                    AndroidColor.argb(18, 0, 144, 87) else AndroidColor.argb(21, 215, 57, 60))
+                    AndroidColor.argb(30, 40, 117, 243) else AndroidColor.argb(21, 215, 57, 60))
                 .strokeColor(AndroidColor.TRANSPARENT)) else null
         render.border = if (vertices.size >= 2) map.addPolyline(
             PolylineOptions().addAll(
                 vertices + if (vertices.size >= 3) listOf(vertices.first()) else emptyList())
                 .width(1.8f).color(if (rule == ParkingRule.ALLOWED)
-                    AndroidColor.argb(190, 0, 125, 76)
+                    AndroidColor.argb(185, 41, 96, 215)
                 else AndroidColor.argb(190, 185, 40, 48))) else null
         render.handles.clear()
         val factory = IconFactory.getInstance(context)
@@ -432,7 +432,7 @@ private fun adminVertexIcon(number: Int, rule: ParkingRule): Bitmap {
     paint.color = AndroidColor.WHITE
     canvas.drawCircle(37f, 37f, 31f, paint)
     paint.color = if (rule == ParkingRule.ALLOWED)
-        AndroidColor.rgb(0, 111, 81) else AndroidColor.rgb(183, 37, 46)
+        AndroidColor.rgb(38, 100, 216) else AndroidColor.rgb(183, 37, 46)
     canvas.drawCircle(37f, 37f, 25f, paint)
     paint.color = AndroidColor.WHITE
     paint.textAlign = Paint.Align.CENTER

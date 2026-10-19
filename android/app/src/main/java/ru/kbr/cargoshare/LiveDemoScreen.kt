@@ -783,12 +783,11 @@ fun LiveDemoScreen(
             colors=IconButtonDefaults.filledIconButtonColors(containerColor=Color.White,contentColor=LiveGreen)
         ) {Icon(Icons.Outlined.MyLocation,"Центр учебного маршрута")}
     }
-    Text(if (compact) "© OpenStreetMap" else if (mode == "пешком")
-        "Путь · условно · не GPS · © OpenStreetMap"
-        else if (showZones) "Зона возврата: зелёная — можно · снаружи — нельзя"
-        else "Учебный маршрут · не GPS",
-        modifier=Modifier.align(Alignment.BottomCenter).background(Color.White.copy(alpha=.9f)).padding(4.dp),
-        color=LiveGray,fontSize=if(compact) 7.sp else 8.sp)
+    Text("© OpenStreetMap",
+        modifier=Modifier.align(Alignment.BottomStart)
+            .background(Color.White.copy(alpha=.86f), RoundedCornerShape(5.dp))
+            .padding(horizontal=4.dp,vertical=2.dp),
+        color=LiveGray,fontSize=7.sp)
     }
 }
 

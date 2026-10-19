@@ -91,6 +91,9 @@ internal fun rememberLibreMap(initialLat: Double, initialLon: Double, zoom: Doub
         handle.view.onStart()
         handle.view.onResume()
         handle.view.getMapAsync { map ->
+            // Keep required OpenFreeMap/OSM attribution accessible through native info.
+            map.uiSettings.isLogoEnabled = false
+            map.uiSettings.isAttributionEnabled = true
             map.uiSettings.isCompassEnabled = true
             map.uiSettings.isZoomGesturesEnabled = true
             map.uiSettings.isScrollGesturesEnabled = true
@@ -254,11 +257,6 @@ internal fun MapLibreFleetMap(
                 Text(it, Modifier.padding(8.dp), fontSize = 11.sp)
             }
         }
-        Text("MapLibre · OpenFreeMap · © OpenStreetMap",
-            modifier = Modifier.align(Alignment.BottomStart)
-                .background(Color.White.copy(alpha = .88f), RoundedCornerShape(7.dp))
-                .padding(horizontal = 5.dp, vertical = 2.dp),
-            fontSize = 8.sp, color = LIBRE_FOREST)
     }
 }
 
@@ -379,14 +377,6 @@ internal fun MapLibreRouteMap(
                 Icon(Icons.Outlined.MyLocation, "Центр учебного маршрута")
             }
         }
-        Text(if (compact) "MapLibre · © OSM"
-            else if (mode == "пешком") "Учебная траектория · не GPS"
-            else if (showZones) "Зелёная зона — можно · вне зоны — нельзя"
-            else "Учебная траектория · не GPS",
-            modifier = Modifier.align(Alignment.BottomCenter)
-                .background(Color.White.copy(alpha = .89f),
-                    RoundedCornerShape(8.dp)).padding(4.dp),
-            fontSize = if (compact) 8.sp else 10.sp, color = LIBRE_FOREST)
     }
 }
 

@@ -38,6 +38,7 @@ import org.osmdroid.tileprovider.tilesource.TileSourceFactory
 import org.osmdroid.util.GeoPoint
 import org.osmdroid.views.MapView
 import org.osmdroid.views.overlay.Marker
+import org.osmdroid.views.overlay.Polygon
 import org.osmdroid.views.overlay.mylocation.GpsMyLocationProvider
 import org.osmdroid.views.overlay.mylocation.MyLocationNewOverlay
 
@@ -241,6 +242,11 @@ internal fun NalchikMap(cars: List<Vehicle>, onSelect: (Vehicle) -> Unit, modifi
         return
     }
     val context = LocalContext.current
+    val localZones = rememberLocalParkingZones()
+    val showZones = remember(context) {
+        context.applicationContext.getSharedPreferences("gruzsher_preferences", 0)
+            .getBoolean("map_parking_zones_visible", true)
+    }
     val showPrices = remember(context) {
         context.applicationContext.getSharedPreferences("gruzsher_preferences", 0)
             .getBoolean("map_prices_visible", true)
@@ -290,6 +296,23 @@ internal fun NalchikMap(cars: List<Vehicle>, onSelect: (Vehicle) -> Unit, modifi
         }
     }
     val locationOverlay = remember(map) { MyLocationNewOverlay(GpsMyLocationProvider(context), map) }
+    LaunchedEffect(map, localZones, showZones) {
+        // Update saved zones without rebuilding the native map or losing camera state.
+        map.overlays.removeAll { it is Polygon }
+        if (showZones) localZones.filter { it.enabled }.forEach { zone ->
+            map.overlays.add(Polygon().apply {
+                setPoints(zone.vertices.map { GeoPoint(it.latitude, it.longitude) })
+                fillPaint.color = if (zone.rule == ParkingRule.ALLOWED)
+                    android.graphics.Color.argb(60, 0, 152, 79)
+                else android.graphics.Color.argb(70, 218, 44, 44)
+                outlinePaint.color = if (zone.rule == ParkingRule.ALLOWED)
+                    android.graphics.Color.rgb(0, 132, 73)
+                else android.graphics.Color.rgb(190, 35, 35)
+                outlinePaint.strokeWidth = 4f
+            })
+        }
+        map.invalidate()
+    }
     // The GPS-backed location provider requires precise location permission.
     var permissionGranted by remember {
         mutableStateOf(ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED)

@@ -8,11 +8,11 @@ android {
     namespace = "ru.kbr.cargoshare"
     compileSdk = 35
     defaultConfig {
-        applicationId = "ru.kbr.cargoshare.referencepreview.ux371"
+        applicationId = "ru.kbr.cargoshare.referencepreview.ux372"
         minSdk = 26
         targetSdk = 35
-        versionCode = 50
-        versionName = "3.7.1-returning-admin-drag"
+        versionCode = 51
+        versionName = "3.7.2-zone-performance"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
     buildFeatures {

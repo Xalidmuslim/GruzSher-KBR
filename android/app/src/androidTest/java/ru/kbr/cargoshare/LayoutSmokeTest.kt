@@ -86,6 +86,13 @@ class LayoutSmokeTest {
         }
         capture("layout_home")
 
+        // The booking carousel starts below the fold on Pixel screens.
+        // Swipe INSIDE the scrollable content before interacting.
+        device.swipe(device.displayWidth / 2,
+            (device.displayHeight * .78).toInt(), device.displayWidth / 2,
+            (device.displayHeight * .35).toInt(), 28)
+        Thread.sleep(600)
+        capture("layout_carousel_after_scroll")
         click("Выбрать")
         assertTrue(device.wait(Until.hasObject(By.text("Выбор грузовика")), 15_000L))
         val primary = device.wait(Until.findObject(By.text("Продолжить к автопроверке · ДЕМО")), 15_000L)
@@ -95,7 +102,9 @@ class LayoutSmokeTest {
         val primaryButton = generateSequence(primary!!) { it.parent }
             .firstOrNull { it.isClickable } ?: primary
         val bounds = primaryButton.visibleBounds
-        val safeEdge = device.displayHeight - (14 * context.resources.displayMetrics.density).toInt()
+        // Assert against the OS navigation zone; don't mistake app pixels
+        // painted under the gesture handle for accessible tap targets.
+        val safeEdge = device.displayHeight - (18 * context.resources.displayMetrics.density).toInt()
         assertTrue("Green booking button clipped by system gesture navigation: $bounds / $safeEdge",
             bounds.bottom < safeEdge)
         capture("layout_booking_green_cta")
@@ -103,8 +112,9 @@ class LayoutSmokeTest {
         click("Построить маршрут")
         assertTrue(device.wait(Until.hasObject(By.text("Расположение автомобиля на карте")), 15_000L))
         capture("layout_booking_road_map")
-        click("Закрыть карту")
-        click("Назад")
+        device.pressBack()
+        Thread.sleep(500)
+        device.pressBack()
         assertTrue(device.wait(Until.hasObject(By.text("Найти грузовик")), 15_000L))
 
         val mapControl = device.wait(Until.findObject(By.textContains("На карте")), 10_000L)

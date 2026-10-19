@@ -152,8 +152,8 @@ fun PremiumFleetScreen(
         }
         addressCarId?.let { id ->
             shown.firstOrNull { it.id == id }?.let { car ->
-                PickupAddressSheet(car, onDismiss = { addressCarId = null },
-                    onSelect = { addressCarId = null; onSelect(car) },
+                FleetMapVehicleSheet(car, onDismiss = { addressCarId = null },
+                    onOpenDetails = { addressCarId = null; onSelect(car) },
                     onBuildRoute = {
                         addressCarId = null
                         selectedId = car.id
@@ -249,8 +249,8 @@ fun PremiumFleetScreen(
     }
     addressCarId?.let { id ->
         shown.firstOrNull { it.id == id }?.let { car ->
-            PickupAddressSheet(car, onDismiss = { addressCarId = null },
-                onSelect = { addressCarId = null; onSelect(car) },
+            FleetMapVehicleSheet(car, onDismiss = { addressCarId = null },
+                onOpenDetails = { addressCarId = null; onSelect(car) },
                 onBuildRoute = {
                     addressCarId = null
                     selectedId = car.id

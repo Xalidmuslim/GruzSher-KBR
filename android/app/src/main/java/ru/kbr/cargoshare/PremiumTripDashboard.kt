@@ -48,19 +48,6 @@ fun PremiumTripDashboard(
         LiveRouteMap(car, fraction, "грузовик", Modifier.fillMaxSize(),
             onExpand = onExpandMap)
         Surface(
-            modifier = Modifier.align(Alignment.TopStart).padding(12.dp),
-            color = Color.White, shadowElevation = 4.dp, shape = RoundedCornerShape(14.dp)
-        ) {
-            Row(Modifier.padding(horizontal = 13.dp, vertical = 9.dp),
-                verticalAlignment = Alignment.CenterVertically) {
-                Icon(Icons.Outlined.Navigation, null, tint = PremiumTheme.Green,
-                    modifier = Modifier.size(17.dp))
-                Spacer(Modifier.width(6.dp))
-                Text("Нальчик · учебный маршрут",
-                    fontSize = 11.sp, color = PremiumTheme.Text, fontWeight = FontWeight.Bold)
-            }
-        }
-        Surface(
             modifier = Modifier.align(Alignment.BottomStart).padding(12.dp),
             color = PremiumTheme.GreenDark, shape = RoundedCornerShape(12.dp)
         ) {

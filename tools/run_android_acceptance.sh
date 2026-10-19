@@ -2,7 +2,8 @@
 # Keep the Gradle exit status, but collect real emulator screenshots regardless.
 set +e
 if [[ "${GITHUB_REF_NAME:-}" == "feature/gruzsher-v381-map-vehicle-card-layout-audit" ||
-      "${GITHUB_REF_NAME:-}" == "feature/gruzsher-v382-card-route-font-safeareas" ]]; then
+      "${GITHUB_REF_NAME:-}" == "feature/gruzsher-v382-card-route-font-safeareas" ||
+      "${GITHUB_REF_NAME:-}" == "feature/gruzsher-v383-booking-footer-safe-insets" ]]; then
   # Dedicated layout QA: capture phone-sized real APK frames without requiring
   # the legacy screenshot-reference labels to remain identical.
   gradle -p android --no-daemon connectedDebugAndroidTest \

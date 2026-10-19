@@ -17,6 +17,8 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.clipToBounds
+import androidx.compose.ui.zIndex
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
@@ -49,7 +51,8 @@ fun PremiumFleetScreen(
 
     if (fullMap) {
         Column(Modifier.fillMaxSize().background(PremiumTheme.Paper)) {
-            Row(Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 3.dp),
+            Row(Modifier.fillMaxWidth().background(PremiumTheme.Paper).zIndex(2f)
+                    .padding(horizontal = 12.dp, vertical = 3.dp),
                 verticalAlignment = Alignment.CenterVertically) {
                 IconButton(onClick = { fullMap = false }) {
                     Icon(Icons.Outlined.ArrowBack, "Назад к автомобилям", tint = PremiumTheme.GreenDark)
@@ -62,9 +65,12 @@ fun PremiumFleetScreen(
                 }
                 DemoPill()
             }
-            FleetFilters(filter) { filter = it; selectedId = "" }
-            Box(Modifier.fillMaxWidth().weight(1f).background(PremiumTheme.Mint)) {
-                NalchikMap(shown, { selectedId = it.id }, Modifier.fillMaxSize(), selectedId)
+            Box(Modifier.fillMaxWidth().background(PremiumTheme.Paper).zIndex(2f)) {
+                FleetFilters(filter) { filter = it; selectedId = "" }
+            }
+            Box(Modifier.fillMaxWidth().weight(1f).clipToBounds().background(PremiumTheme.Mint)) {
+                NalchikMap(shown, { selectedId = it.id },
+                    Modifier.fillMaxSize().clipToBounds(), selectedId)
                 Surface(Modifier.align(Alignment.TopStart).padding(14.dp),
                     shape = RoundedCornerShape(24.dp), color = Color.White) {
                     Text("Грузовики · ${shown.size}", fontSize = 11.sp,

@@ -1,10 +1,9 @@
 package ru.kbr.cargoshare
 
 import android.content.Intent
-import androidx.activity.ComponentActivity
 import androidx.compose.ui.test.assertExists
 import androidx.compose.ui.test.assertIsDisplayed
-import androidx.compose.ui.test.junit4.createAndroidComposeRule
+import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
@@ -21,7 +20,7 @@ import org.junit.runner.RunWith
 /** Live UI checks for map vehicle card and overlapping / cut-off action buttons. */
 @RunWith(AndroidJUnit4::class)
 class FleetLayoutSafetyTest {
-    @get:Rule val composeRule = createAndroidComposeRule<ComponentActivity>()
+    @get:Rule val composeRule = createComposeRule()
 
     private val exampleCar = Vehicle(
         id = "layout-qa-1",

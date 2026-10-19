@@ -214,6 +214,23 @@ internal fun MapLibreFleetMap(
         map.clear()
         phoneMarker = null
         val icons = IconFactory.getInstance(context)
+        // Draw the subtle two-layer road path FIRST; all pins are above it.
+        // The wide muted backing provides a matte, slightly raised effect.
+        roadRoute?.points?.takeIf { it.size >= 2 }?.let { coords ->
+            val routePoints = coords.map { (lat, lon) -> LatLng(lat, lon) }
+            map.addPolyline(PolylineOptions().addAll(routePoints)
+                .color(AndroidColor.rgb(221, 232, 226)).width(5.5f))
+            map.addPolyline(PolylineOptions().addAll(routePoints)
+                .color(AndroidColor.rgb(48, 128, 106)).width(2.8f))
+            val north = coords.maxOf { it.first }
+            val south = coords.minOf { it.first }
+            val east = coords.maxOf { it.second }
+            val west = coords.minOf { it.second }
+            if (north > south && east > west) {
+                map.animateCamera(CameraUpdateFactory.newLatLngBounds(
+                    org.maplibre.android.geometry.LatLngBounds.from(north, east, south, west), 100))
+            }
+        }
         cars.forEach { vehicle ->
             val lat = vehicle.latitude
             val lon = vehicle.longitude
@@ -228,30 +245,13 @@ internal fun MapLibreFleetMap(
                     .icon(icons.fromBitmap(bitmap.bitmap)))
             }
         }
-        // Road route comes from the same OSRM response as the distance chip.
-        // map.clear() above also clears stale lines when a car is reselected.
-        roadRoute?.points?.takeIf { it.size >= 2 }?.let { coords ->
-            val routePoints = coords.map { (lat, lon) -> LatLng(lat, lon) }
-            map.addPolyline(PolylineOptions()
-                .addAll(routePoints)
-                .color(AndroidColor.rgb(15, 139, 107))
-                .width(6f))
-            val north = coords.maxOf { it.first }
-            val south = coords.minOf { it.first }
-            val east = coords.maxOf { it.second }
-            val west = coords.minOf { it.second }
-            if (north > south && east > west) {
-                map.animateCamera(CameraUpdateFactory.newLatLngBounds(
-                    org.maplibre.android.geometry.LatLngBounds.from(north, east, south, west), 76))
-            }
-        }
         phonePosition?.let { location ->
             phoneMarker = map.addMarker(MarkerOptions().position(location)
                 .title("Моё местоположение")
                 .icon(icons.fromBitmap(phoneLocationMarker(context))))
         }
         val selected = cars.firstOrNull { it.id == selectedVehicleId }
-        if (selected != null && lastSelected != selectedVehicleId &&
+        if (roadRoute == null && selected != null && lastSelected != selectedVehicleId &&
             selected.latitude != null && selected.longitude != null) {
             map.animateCamera(CameraUpdateFactory.newLatLng(
                 LatLng(selected.latitude, selected.longitude)))

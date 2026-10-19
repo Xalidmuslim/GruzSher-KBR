@@ -71,6 +71,48 @@ fun truckMapMarker(context: Context, hourlyRub: Int? = null, selected: Boolean =
     return BitmapDrawable(context.resources, bitmap)
 }
 
+/**
+ * Small yellow person indicating the phone's real, permissioned GPS position.
+ * Deliberately different from the green demo walking-route marker.
+ */
+fun phoneLocationMarker(context: Context): Bitmap {
+    val density = context.resources.displayMetrics.density
+    val bitmap = Bitmap.createBitmap(
+        (36f * density).roundToInt().coerceAtLeast(1),
+        (36f * density).roundToInt().coerceAtLeast(1),
+        Bitmap.Config.ARGB_8888
+    )
+    val canvas = Canvas(bitmap).apply { scale(density, density) }
+    val paint = Paint(Paint.ANTI_ALIAS_FLAG)
+    paint.color = Color.WHITE
+    canvas.drawCircle(18f, 18f, 16f, paint)
+    paint.color = Color.rgb(47, 50, 42)
+    paint.style = Paint.Style.STROKE
+    paint.strokeWidth = 1.5f
+    canvas.drawCircle(18f, 18f, 15.2f, paint)
+
+    fun limb(x1: Float, y1: Float, x2: Float, y2: Float) {
+        paint.strokeCap = Paint.Cap.ROUND
+        paint.color = Color.rgb(47, 50, 42)
+        paint.strokeWidth = 5.5f
+        canvas.drawLine(x1, y1, x2, y2, paint)
+        paint.color = Color.rgb(255, 202, 35)
+        paint.strokeWidth = 3.4f
+        canvas.drawLine(x1, y1, x2, y2, paint)
+    }
+    limb(18f, 15f, 18f, 23f)
+    limb(18f, 17f, 12.5f, 21f)
+    limb(18f, 17f, 23.5f, 21f)
+    limb(18f, 23f, 13f, 30f)
+    limb(18f, 23f, 23f, 30f)
+    paint.style = Paint.Style.FILL
+    paint.color = Color.rgb(47, 50, 42)
+    canvas.drawCircle(18f, 9.5f, 4.8f, paint)
+    paint.color = Color.rgb(255, 202, 35)
+    canvas.drawCircle(18f, 9.5f, 3.3f, paint)
+    return bitmap
+}
+
 /** A distinctly different moving pedestrian icon for the offline approach simulation. */
 fun walkingMapMarker(context: Context): Drawable {
     val scale = context.resources.displayMetrics.density

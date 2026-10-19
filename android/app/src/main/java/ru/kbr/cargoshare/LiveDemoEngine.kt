@@ -113,7 +113,7 @@ fun advanceLive(s: LiveDemoSession, now: Long): LiveDemoSession = when {
         s.copy(phase = LivePhase.INSPECT)
     s.phase == LivePhase.UNLOCK && now >= s.unlockingAt + LIVE_OPERATION_MS ->
         s.copy(phase = LivePhase.READY)
-    s.phase == LivePhase.RETURNING && now >= s.returnRequestedAt + LIVE_RETURN_MS ->
+    s.phase == LivePhase.RETURNING ->
         s.copy(phase = LivePhase.RETURN, pauseStartedAt = 0L)
     s.phase == LivePhase.DRIVING && routeFraction(s, now) >= 1f ->
         s.copy(phase = LivePhase.RETURN, pauseStartedAt = 0L)
@@ -135,9 +135,9 @@ fun applyLive(s: LiveDemoSession, event: LiveEvent, now: Long, value: String = "
                 else "Автомобиль выбран")
         LiveEvent.REQUEST_CODE -> if (c.phase != LivePhase.PHONE || !value.matches(Regex("^\\+?7[0-9]{10}$")))
             invalid(c, "Введите учебный номер +7 и 10 цифр")
-            else valid(c.copy(phone = value, codeRequestedAt = now), "Имитируем доставку SMS — код появится через 3 секунды")
-        LiveEvent.VERIFY_CODE -> if (c.phase != LivePhase.PHONE || c.codeRequestedAt == 0L || now - c.codeRequestedAt < 3000L || value != "2468")
-            invalid(c, "Дождитесь учебного SMS и введите показанный код")
+            else valid(c.copy(phone = value, codeRequestedAt = now), "Учебный код доступен сразу; SMS не отправляется")
+        LiveEvent.VERIFY_CODE -> if (c.phase != LivePhase.PHONE || c.codeRequestedAt == 0L || value != "2468")
+            invalid(c, "Введите учебный код из подсказки")
             else valid(c.copy(phase = LivePhase.DOCUMENTS, passportStartedAt = now,
                 licenceStartedAt = now, documentIssue = ""), "Учебный номер подтверждён · началась автоматическая демопроверка образцов")
         // Legacy manual triggers are disabled. Real document scans are not performed in offline demo.
@@ -194,17 +194,17 @@ fun applyLive(s: LiveDemoSession, event: LiveEvent, now: Long, value: String = "
             else {
                 val fraction = routeFraction(c, now)
                 val pauseSeconds = if (c.pauseStartedAt > 0L) ((now - c.pauseStartedAt) / 1000L).coerceAtLeast(0L) else 0L
-                valid(c.copy(phase = LivePhase.RETURNING, returnRequestedAt = now,
+                valid(c.copy(phase = LivePhase.RETURN, returnRequestedAt = now,
                     returnStartFraction = fraction, pausedSeconds = c.pausedSeconds + pauseSeconds,
                     pauseStartedAt = 0L),
-                    "Прокладываем демонстрационный маршрут к зоне возврата — прибытие примерно через 16 секунд")
+                    "Учебный возврат доступен сразу; местоположение машины не проверялось")
             }
         LiveEvent.TAKE_RETURN_PHOTO -> if (c.phase != LivePhase.RETURN || c.returnPhotoAt != 0L) invalid(c, "Дождитесь точки возврата")
-            else valid(c.copy(returnPhotoAt = now), "Фиксируем фото при возврате…")
-        LiveEvent.LOCK_DOORS -> if (c.phase != LivePhase.RETURN || c.returnPhotoAt == 0L || c.lockingAt != 0L || !c.returnConditionChecked || now < c.returnPhotoAt + LIVE_OPERATION_MS)
+            else valid(c.copy(returnPhotoAt = now), "Учебный фотоосмотр отмечен; фото не загружается")
+        LiveEvent.LOCK_DOORS -> if (c.phase != LivePhase.RETURN || c.returnPhotoAt == 0L || c.lockingAt != 0L || !c.returnConditionChecked || now < c.returnPhotoAt)
             invalid(c, "Сначала сфотографируйте машину при возврате")
-            else valid(c.copy(lockingAt = now), "Отправляем учебную команду закрытия…")
-        LiveEvent.FINISH -> if (c.phase != LivePhase.RETURN || c.lockingAt == 0L || now < c.lockingAt + LIVE_OPERATION_MS)
+            else valid(c.copy(lockingAt = now), "Демо: закрытие дверей отмечено; настоящая команда не отправляется")
+        LiveEvent.FINISH -> if (c.phase != LivePhase.RETURN || c.returnPhotoAt == 0L || !c.returnConditionChecked || c.lockingAt == 0L || now < c.lockingAt)
             invalid(c, "Проверьте фото и дождитесь закрытия дверей")
             else valid(c.copy(phase = LivePhase.RECEIPT, locked = true,
                 finishedAt = now, returningDemoDriver = true),

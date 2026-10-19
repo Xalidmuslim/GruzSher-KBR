@@ -206,7 +206,7 @@ fun LiveDemoScreen(
                 }
             }
             LivePhase.PHONE -> {
-                LiveHeader("02", "Подтвердите телефон", "Как при настоящей регистрации: запрос кода, ожидание SMS и ввод цифр.")
+                LiveHeader("02", "Подтвердите телефон", "Учебный код появляется сразу после запроса. Реальные SMS пока не подключены.")
                 OutlinedTextField(value = phone, onValueChange = { phone = it.take(12) },
                     modifier = Modifier.fillMaxWidth(), label = { Text("Телефон (учебный)") },
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone),
@@ -214,16 +214,11 @@ fun LiveDemoScreen(
                 if (session.codeRequestedAt == 0L) {
                     LiveButton("Получить SMS-код", Icons.Outlined.Sms) { perform(LiveEvent.REQUEST_CODE, phone) }
                 } else {
-                    val remaining = (3L - (now - session.codeRequestedAt) / 1000L).coerceAtLeast(0L)
-                    if (remaining > 0L) {
-                        LiveWait("Отправляем тестовый SMS-код…", remaining, 3f - remaining.toFloat())
-                    } else {
-                        LiveNote("Учебное сообщение: ваш код — 2468. Настоящее SMS не отправлялось.")
-                        OutlinedTextField(value = code, onValueChange = { code = it.filter(Char::isDigit).take(4) },
-                            modifier = Modifier.fillMaxWidth(), label = { Text("Код из сообщения") },
-                            singleLine = true, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number))
-                        LiveButton("Подтвердить номер", Icons.Outlined.CheckCircle) { perform(LiveEvent.VERIFY_CODE, code) }
-                    }
+                    LiveNote("Учебный код: 2468. Это не настоящее SMS.")
+                    OutlinedTextField(value = code, onValueChange = { code = it.filter(Char::isDigit).take(4) },
+                        modifier = Modifier.fillMaxWidth(), label = { Text("Код из сообщения") },
+                        singleLine = true, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number))
+                    LiveButton("Подтвердить номер", Icons.Outlined.CheckCircle) { perform(LiveEvent.VERIFY_CODE, code) }
                 }
             }
             LivePhase.DOCUMENTS -> {
@@ -391,8 +386,8 @@ fun LiveDemoScreen(
                     Text("Кузов и салон осмотрены, вещи забраны (демо)",fontSize=12.sp,modifier=Modifier.weight(1f))
                 }
                 if(session.returnPhotoAt>0L && car!=null) TruckArtwork(car,Modifier.fillMaxWidth().height(120.dp),"rear")
-                val photoDone = session.returnPhotoAt > 0L && now >= session.returnPhotoAt + LIVE_OPERATION_MS
-                val lockDone = session.lockingAt > 0L && now >= session.lockingAt + LIVE_OPERATION_MS
+                val photoDone = session.returnPhotoAt > 0L
+                val lockDone = session.lockingAt > 0L
                 Surface(color = Color.White, shape = RoundedCornerShape(21.dp)) {
                     Column(Modifier.fillMaxWidth().padding(16.dp),
                         verticalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -408,15 +403,9 @@ fun LiveDemoScreen(
                 }
                 if (session.returnPhotoAt == 0L) {
                     LiveNote("Шаг 1 из 3 · Сделайте учебный фотоосмотр машины, затем подтвердите закрытие дверей.")
-                } else if (!photoDone) LiveWait("Сохраняем учебный фотоотчёт…",
-                    (LIVE_OPERATION_MS - (now - session.returnPhotoAt)).coerceAtLeast(0L) / 1000L,
-                    (now - session.returnPhotoAt).toFloat() / 1000f)
-                else if (session.lockingAt == 0L) {
-                    LiveNote("Шаг 2 из 3 · Фотоосмотр завершён. Теперь закройте учебный автомобиль.")
-                } else if (!lockDone) LiveWait("Проверяем виртуальное закрытие дверей…",
-                    (LIVE_OPERATION_MS - (now - session.lockingAt)).coerceAtLeast(0L) / 1000L,
-                    (now - session.lockingAt).toFloat() / 1000f)
-                else LiveNote("Шаг 3 из 3 · Двери закрыты. Подтвердите завершение и получите чек.")
+                } else if (session.lockingAt == 0L) {
+                    LiveNote("Шаг 2 из 3 · Фотоосмотр отмечен. Закройте учебный автомобиль.")
+                } else LiveNote("Шаг 3 из 3 · Двери закрыты. Подтвердите завершение и получите чек.")
             }
             LivePhase.RECEIPT -> {
                 StageBanner("Поездка завершена", "Спасибо за учебную аренду!")
@@ -482,8 +471,8 @@ fun LiveDemoScreen(
         ) {
             Column(Modifier.fillMaxWidth().padding(horizontal = 18.dp, vertical = 10.dp),
                 verticalArrangement = Arrangement.spacedBy(3.dp)) {
-                val photoReady = session.returnPhotoAt > 0L && now >= session.returnPhotoAt + LIVE_OPERATION_MS
-                val lockReady = session.lockingAt > 0L && now >= session.lockingAt + LIVE_OPERATION_MS
+                val photoReady = session.returnPhotoAt > 0L
+                val lockReady = session.lockingAt > 0L
                 val target = when {
                     session.phase == LivePhase.INSPECT -> "Подтвердить осмотр и открыть двери"
                     session.phase == LivePhase.DRIVING -> "Завершить поездку"
@@ -496,7 +485,7 @@ fun LiveDemoScreen(
                 }
                 val enabled = (session.phase == LivePhase.INSPECT && session.inspected.size == 4) || session.phase == LivePhase.DRIVING ||
                     (session.phase == LivePhase.RETURN && (session.returnPhotoAt == 0L || photoReady &&
-                        (session.lockingAt == 0L && session.returnConditionChecked || lockReady)))
+                        session.returnConditionChecked && (session.lockingAt == 0L || lockReady)))
                 Button(
                     onClick = {
                         when {

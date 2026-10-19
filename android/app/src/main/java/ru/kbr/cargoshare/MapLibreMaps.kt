@@ -6,6 +6,8 @@ import android.content.pm.PackageManager
 import android.graphics.Color as AndroidColor
 import android.graphics.drawable.BitmapDrawable
 import android.location.LocationManager
+import android.location.LocationListener
+import android.os.Looper
 import android.os.Bundle
 import android.view.MotionEvent
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -159,12 +161,43 @@ internal fun MapLibreFleetMap(
     val map = handle.map
     val currentOnSelect by rememberUpdatedState(onSelect)
     var status by remember { mutableStateOf<String?>(null) }
+    var permissionGranted by remember { mutableStateOf(hasPhoneLocationPermission(context)) }
+    var phonePosition by remember { mutableStateOf<LatLng?>(null) }
+    var phoneMarker by remember(map) { mutableStateOf<Marker?>(null) }
+    var centerPending by remember { mutableStateOf(false) }
     val locationPermission = rememberLauncherForActivityResult(
         ActivityResultContracts.RequestMultiplePermissions()) { result ->
-        if (result[Manifest.permission.ACCESS_FINE_LOCATION] == true ||
+        permissionGranted = result[Manifest.permission.ACCESS_FINE_LOCATION] == true ||
             result[Manifest.permission.ACCESS_COARSE_LOCATION] == true
-        ) status = "Доступ разрешён. Нажмите геолокацию ещё раз для центрирования."
-        else status = "Разрешите доступ к местоположению в настройках Android."
+        if (permissionGranted) {
+            centerPending = true
+            status = "Определяем положение телефона…"
+        } else status = "Разрешите доступ к местоположению в настройках Android."
+    }
+    // MapLibre has no active user-location overlay here: subscribe to OS GPS/network
+    // only when a permissioned fleet map is visible, and release on disposal.
+    DisposableEffect(map, permissionGranted) {
+        if (map == null || !permissionGranted) {
+            onDispose { }
+        } else {
+            val lm = context.getSystemService(Context.LOCATION_SERVICE) as LocationManager
+            val listener = LocationListener { fix ->
+                phonePosition = LatLng(fix.latitude, fix.longitude)
+            }
+            val providers = listOf(LocationManager.GPS_PROVIDER, LocationManager.NETWORK_PROVIDER)
+            val fresh = providers.mapNotNull { provider ->
+                runCatching { lm.getLastKnownLocation(provider) }.getOrNull()
+            }.filter { fix -> System.currentTimeMillis() - fix.time in 0L..120_000L }
+                .maxByOrNull { it.time }
+            fresh?.let { phonePosition = LatLng(it.latitude, it.longitude) }
+            providers.forEach { provider ->
+                runCatching {
+                    if (lm.isProviderEnabled(provider))
+                        lm.requestLocationUpdates(provider, 1500L, 2f, listener, Looper.getMainLooper())
+                }
+            }
+            onDispose { lm.removeUpdates(listener) }
+        }
     }
     var lastSelected by remember { mutableStateOf<String?>(null) }
 
@@ -172,6 +205,7 @@ internal fun MapLibreFleetMap(
         if (map == null) return@LaunchedEffect
         // Avoid drawing and observing operational geofences in the fleet catalogue.
         map.clear()
+        phoneMarker = null
         val icons = IconFactory.getInstance(context)
         cars.forEach { vehicle ->
             val lat = vehicle.latitude
@@ -187,6 +221,11 @@ internal fun MapLibreFleetMap(
                     .icon(icons.fromBitmap(bitmap.bitmap)))
             }
         }
+        phonePosition?.let { location ->
+            phoneMarker = map.addMarker(MarkerOptions().position(location)
+                .title("Моё местоположение")
+                .icon(icons.fromBitmap(phoneLocationMarker(context))))
+        }
         val selected = cars.firstOrNull { it.id == selectedVehicleId }
         if (selected != null && lastSelected != selectedVehicleId &&
             selected.latitude != null && selected.longitude != null) {
@@ -194,6 +233,27 @@ internal fun MapLibreFleetMap(
                 LatLng(selected.latitude, selected.longitude)))
         }
         lastSelected = selectedVehicleId
+    }
+    LaunchedEffect(map, phonePosition) {
+        val geo = map ?: return@LaunchedEffect
+        val fix = phonePosition ?: return@LaunchedEffect
+        val marker = phoneMarker
+        if (marker == null) {
+            phoneMarker = geo.addMarker(MarkerOptions().position(fix)
+                .title("Моё местоположение")
+                .icon(IconFactory.getInstance(context).fromBitmap(phoneLocationMarker(context))))
+        } else {
+            marker.position = fix
+            geo.updateMarker(marker)
+        }
+    }
+    LaunchedEffect(map, phonePosition, centerPending) {
+        val fix = phonePosition
+        if (map != null && fix != null && centerPending) {
+            map.animateCamera(CameraUpdateFactory.newLatLngZoom(fix, 15.5))
+            centerPending = false
+            status = null
+        }
     }
     DisposableEffect(map, cars) {
         map?.setOnMarkerClickListener { marker: Marker ->
@@ -204,27 +264,19 @@ internal fun MapLibreFleetMap(
     }
 
     fun centerOnPhone() {
-        if (ContextCompat.checkSelfPermission(context,
-                Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED &&
-            ContextCompat.checkSelfPermission(context,
-                Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED
-        ) {
+        if (!permissionGranted) {
+            centerPending = true
             locationPermission.launch(arrayOf(Manifest.permission.ACCESS_FINE_LOCATION,
                 Manifest.permission.ACCESS_COARSE_LOCATION))
             return
         }
-        val lm = context.getSystemService(Context.LOCATION_SERVICE) as LocationManager
-        val last = runCatching {
-            listOf(LocationManager.GPS_PROVIDER, LocationManager.NETWORK_PROVIDER)
-                .mapNotNull { provider -> lm.getLastKnownLocation(provider) }
-                .maxByOrNull { it.time }
-        }.getOrNull()
-        if (last != null && System.currentTimeMillis() - last.time < 120_000L) {
-            map?.animateCamera(CameraUpdateFactory.newLatLngZoom(
-                LatLng(last.latitude, last.longitude), 15.5))
-            status = "Показано последнее доступное положение телефона"
+        val fix = phonePosition
+        if (fix != null) {
+            map?.animateCamera(CameraUpdateFactory.newLatLngZoom(fix, 15.5))
+            status = null
         } else {
-            status = "Свежая геопозиция недоступна. В OSMDroid доступно ожидание GPS."
+            centerPending = true
+            status = "Получаем свежие координаты GPS…"
         }
     }
     Box(modifier.clip(RoundedCornerShape(16.dp))) {

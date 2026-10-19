@@ -13,8 +13,8 @@ class LiveDemoEngineTest {
     private fun prepare(): LiveDemoSession {
         var s = action(LiveDemoSession(), LiveEvent.PICK_CAR, base, "ford-transit")
         s = action(s, LiveEvent.REQUEST_CODE, base + 100L, "+79000000000")
-        assertFalse(applyLive(s, LiveEvent.VERIFY_CODE, base + 2000L, "2468").accepted)
-        s = action(s, LiveEvent.VERIFY_CODE, base + 3200L, "2468")
+        assertFalse(applyLive(s, LiveEvent.VERIFY_CODE, base + 101L, "1111").accepted)
+        s = action(s, LiveEvent.VERIFY_CODE, base + 101L, "2468")
         assertEquals(LivePhase.DOCUMENTS, s.phase)
         assertTrue(s.passportStartedAt > 0L)
         assertEquals(s.passportStartedAt, s.licenceStartedAt)
@@ -27,12 +27,12 @@ class LiveDemoEngineTest {
         return action(s, LiveEvent.ACCEPT_TERMS, base + 8800L, "true")
     }
 
-    @Test fun phoneCodeIsDelayedAndActuallyValidated() {
+    @Test fun phoneCodeIsAvailableImmediatelyButStillValidated() {
         var s = action(LiveDemoSession(), LiveEvent.PICK_CAR, base, "gazelle-next")
         assertFalse(applyLive(s, LiveEvent.REQUEST_CODE, base, "1234").accepted)
         s = action(s, LiveEvent.REQUEST_CODE, base + 1L, "+79000000000")
-        assertFalse(applyLive(s, LiveEvent.VERIFY_CODE, base + 3010L, "1111").accepted)
-        assertEquals(LivePhase.DOCUMENTS, action(s, LiveEvent.VERIFY_CODE, base + 3010L, "2468").phase)
+        assertFalse(applyLive(s, LiveEvent.VERIFY_CODE, base + 1L, "1111").accepted)
+        assertEquals(LivePhase.DOCUMENTS, action(s, LiveEvent.VERIFY_CODE, base + 1L, "2468").phase)
     }
 
     @Test fun cannotBookBeforeVerifyingIdentityAndCard() {
@@ -108,10 +108,10 @@ class LiveDemoEngineTest {
         assertFalse(applyLive(s, LiveEvent.FINISH, base + 75_000L).accepted)
         s = action(s, LiveEvent.TAKE_RETURN_PHOTO, base + 76_000L)
         assertFalse(applyLive(s, LiveEvent.LOCK_DOORS, base + 77_000L).accepted)
-        s = action(s, LiveEvent.CHECK_RETURN_CONDITION, base + 78_400L, "true")
-        s = action(s, LiveEvent.LOCK_DOORS, base + 78_500L)
-        assertFalse(applyLive(s, LiveEvent.FINISH, base + 80_000L).accepted)
-        s = action(s, LiveEvent.FINISH, base + 81_000L)
+        s = action(s, LiveEvent.CHECK_RETURN_CONDITION, base + 76_000L, "true")
+        s = action(s, LiveEvent.LOCK_DOORS, base + 76_000L)
+        assertFalse(applyLive(s, LiveEvent.LOCK_DOORS, base + 76_000L).accepted)
+        s = action(s, LiveEvent.FINISH, base + 76_000L)
         assertEquals(LivePhase.RECEIPT, s.phase)
         assertTrue(s.locked)
     }
@@ -133,13 +133,17 @@ class LiveDemoEngineTest {
         val driving = LiveDemoSession(phase = LivePhase.DRIVING, drivingAt = base)
         val result = applyLive(driving, LiveEvent.REQUEST_RETURN, base + 8_000L)
         assertTrue(result.message, result.accepted)
-        assertEquals(LivePhase.RETURNING, result.state.phase)
-        assertEquals(0.1066f, routeFraction(result.state, base + 8_000L), 0.002f)
-        assertEquals(LivePhase.RETURNING,
-            advanceLive(result.state, base + 8_000L + LIVE_RETURN_MS - 1).phase)
-        val arrived = advanceLive(result.state, base + 8_000L + LIVE_RETURN_MS)
-        assertEquals(LivePhase.RETURN, arrived.phase)
-        assertEquals(1f, routeFraction(arrived, base + 8_000L + LIVE_RETURN_MS), 0.001f)
+        assertEquals(LivePhase.RETURN, result.state.phase)
+        assertEquals(1f, routeFraction(result.state, base + 8_000L), 0.001f)
+        assertEquals(LivePhase.RETURN, advanceLive(result.state, base + 8_000L).phase)
+    }
+
+    @Test fun savedLegacyReturningSessionDoesNotKeepArtificialDelay() {
+        val old = LiveDemoSession(phase = LivePhase.RETURNING,
+            drivingAt = base, returnRequestedAt = base + 5_000L, bookingId = "SIM-legacy")
+        val migrated = advanceLive(old, base + 5_001L)
+        assertEquals(LivePhase.RETURN, migrated.phase)
+        assertEquals("SIM-legacy", migrated.bookingId)
     }
 
     @Test fun returnFromWaitResumesTripWithoutLosingTime() {
@@ -251,11 +255,11 @@ class LiveDemoEngineTest {
             s=action(s,LiveEvent.EXTEND,++t)
             s=action(s,LiveEvent.TOGGLE_WAIT,++t)
             s=action(s,LiveEvent.REQUEST_RETURN,++t)
-            t+=LIVE_RETURN_MS;s=advanceLive(s,t)
+            assertEquals(LivePhase.RETURN, s.phase)
             s=action(s,LiveEvent.TAKE_RETURN_PHOTO,++t)
             s=action(s,LiveEvent.CHECK_RETURN_CONDITION,++t,"true")
-            t+=LIVE_OPERATION_MS;s=action(s,LiveEvent.LOCK_DOORS,t)
-            t+=LIVE_OPERATION_MS;s=action(s,LiveEvent.FINISH,t)
+            s=action(s,LiveEvent.LOCK_DOORS,++t)
+            s=action(s,LiveEvent.FINISH,++t)
             s=action(s,LiveEvent.SET_RATING,++t,"5")
             assertEquals(LivePhase.RECEIPT,s.phase)
             assertEquals(id,s.bookingId)

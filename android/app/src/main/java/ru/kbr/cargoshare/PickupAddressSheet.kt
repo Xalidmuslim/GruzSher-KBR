@@ -81,7 +81,8 @@ internal suspend fun findPickupAddress(context: Context, vehicle: Vehicle): Pick
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 internal fun PickupAddressSheet(
-    car: Vehicle, onDismiss: () -> Unit, onSelect: () -> Unit
+    car: Vehicle, onDismiss: () -> Unit, onSelect: () -> Unit,
+    onBuildRoute: () -> Unit
 ) {
     val context = LocalContext.current
     var address by remember(car.id, car.latitude, car.longitude) {
@@ -258,6 +259,16 @@ internal fun PickupAddressSheet(
             }
             feedback?.let {
                 Text(it, color = PremiumTheme.GreenDark, fontSize = 12.sp)
+            }
+            Button(onClick = onBuildRoute,
+                modifier = Modifier.fillMaxWidth().height(44.dp),
+                shape = RoundedCornerShape(14.dp),
+                colors = ButtonDefaults.buttonColors(containerColor = PremiumTheme.Green)) {
+                Icon(Icons.Outlined.AltRoute, contentDescription = null,
+                    modifier = Modifier.size(18.dp))
+                Spacer(Modifier.width(8.dp))
+                Text("Построить маршрут по улицам",
+                    fontSize = 13.sp, fontWeight = FontWeight.Bold)
             }
             Button(onClick = onSelect, modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(15.dp)) {

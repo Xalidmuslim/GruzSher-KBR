@@ -139,6 +139,16 @@ internal fun PickupAddressSheet(
                         color = PremiumTheme.Muted, fontSize = 12.sp)
                 }
             }
+            Button(onClick = onBuildRoute,
+                modifier = Modifier.fillMaxWidth().height(44.dp),
+                shape = RoundedCornerShape(14.dp),
+                colors = ButtonDefaults.buttonColors(containerColor = PremiumTheme.Green)) {
+                Icon(Icons.Outlined.AltRoute, contentDescription = null,
+                    modifier = Modifier.size(18.dp))
+                Spacer(Modifier.width(8.dp))
+                Text("Построить маршрут по улицам",
+                    fontSize = 13.sp, fontWeight = FontWeight.Bold)
+            }
             Surface(color = Color.White, shape = RoundedCornerShape(17.dp)) {
                 Column(Modifier.fillMaxWidth().padding(14.dp),
                     verticalArrangement = Arrangement.spacedBy(7.dp)) {
@@ -259,16 +269,6 @@ internal fun PickupAddressSheet(
             }
             feedback?.let {
                 Text(it, color = PremiumTheme.GreenDark, fontSize = 12.sp)
-            }
-            Button(onClick = onBuildRoute,
-                modifier = Modifier.fillMaxWidth().height(44.dp),
-                shape = RoundedCornerShape(14.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = PremiumTheme.Green)) {
-                Icon(Icons.Outlined.AltRoute, contentDescription = null,
-                    modifier = Modifier.size(18.dp))
-                Spacer(Modifier.width(8.dp))
-                Text("Построить маршрут по улицам",
-                    fontSize = 13.sp, fontWeight = FontWeight.Bold)
             }
             Button(onClick = onSelect, modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(15.dp)) {

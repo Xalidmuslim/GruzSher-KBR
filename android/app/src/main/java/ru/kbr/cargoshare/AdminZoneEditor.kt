@@ -20,7 +20,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
-import org.maplibre.android.annotations.CircleOptions
+import org.maplibre.android.annotations.MarkerOptions
 import org.maplibre.android.annotations.PolygonOptions
 import org.maplibre.android.annotations.PolylineOptions
 import org.maplibre.android.geometry.LatLng
@@ -86,10 +86,11 @@ internal fun AdminZoneEditor(onClose: () -> Unit) {
                 .width(4.5f).color(if (rule == ParkingRule.ALLOWED)
                     AndroidColor.rgb(0, 137, 78) else AndroidColor.rgb(201, 42, 42)))
         }
-        draft.forEach { point ->
-            map.addCircle(CircleOptions().position(LatLng(point.latitude, point.longitude))
-                .radius(5f).color(if (rule == ParkingRule.ALLOWED)
-                    AndroidColor.rgb(0, 155, 90) else AndroidColor.rgb(221, 57, 57)))
+        draft.forEachIndexed { index, point ->
+            // MapLibre SDK 12.3's annotation API supports markers, not addCircle.
+            map.addMarker(MarkerOptions()
+                .position(LatLng(point.latitude, point.longitude))
+                .title("Вершина ${index + 1}"))
         }
     }
 

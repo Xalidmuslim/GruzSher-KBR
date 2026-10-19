@@ -159,6 +159,12 @@ internal fun MapLibreFleetMap(
     }
     val handle = rememberLibreMap(CENTER_LAT, CENTER_LON, 12.7)
     val map = handle.map
+    // Fleet map keeps north-up orientation. GPS icon never changes its heading
+    // with the handset compass, and the user cannot accidentally rotate it.
+    DisposableEffect(map) {
+        map?.uiSettings?.isRotateGesturesEnabled = false
+        onDispose { map?.uiSettings?.isRotateGesturesEnabled = true }
+    }
     val currentOnSelect by rememberUpdatedState(onSelect)
     var status by remember { mutableStateOf<String?>(null) }
     var permissionGranted by remember { mutableStateOf(hasPhoneLocationPermission(context)) }

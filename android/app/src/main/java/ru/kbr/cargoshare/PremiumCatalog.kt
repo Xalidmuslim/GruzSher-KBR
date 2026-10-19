@@ -290,7 +290,15 @@ internal fun NalchikMap(cars: List<Vehicle>, onSelect: (Vehicle) -> Unit, modifi
             maxZoomLevel = 19.0
         }
     }
-    val locationOverlay = remember(map) { MyLocationNewOverlay(GpsMyLocationProvider(context), map) }
+    val locationOverlay = remember(map) {
+        MyLocationNewOverlay(GpsMyLocationProvider(context), map).apply {
+            val person = phoneLocationMarker(context)
+            setPersonIcon(person)
+            setDirectionIcon(person)
+            setPersonAnchor(0.5f, 0.5f)
+            setDirectionAnchor(0.5f, 0.5f)
+        }
+    }
     // The GPS-backed location provider requires precise location permission.
     var permissionGranted by remember {
         mutableStateOf(ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED)

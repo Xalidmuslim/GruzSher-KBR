@@ -103,10 +103,10 @@ fun FullScreenVehicleBooking(
         }
     }
     Dialog(onDismissRequest = onDismiss,
-        properties = DialogProperties(usePlatformDefaultWidth = false, decorFitsSystemWindows = true)) {
+        properties = DialogProperties(usePlatformDefaultWidth = false, decorFitsSystemWindows = false)) {
         // Let the dialog fit the OS window. The fixed footer owns the bottom insets.
         Column(Modifier.fillMaxSize().background(PremiumTheme.Paper)
-            .statusBarsPadding().navigationBarsPadding().imePadding()) {
+            .windowInsetsPadding(WindowInsets.safeDrawing).imePadding()) {
             Row(
                 Modifier.fillMaxWidth().background(Color.White).padding(start = 11.dp,
                     end = 18.dp, top = 7.dp, bottom = 7.dp),
@@ -401,9 +401,9 @@ fun FullScreenVehicleBooking(
     if (pickupMapExpanded) {
         Dialog(onDismissRequest = { pickupMapExpanded = false },
             properties = DialogProperties(usePlatformDefaultWidth = false,
-                decorFitsSystemWindows = true)) {
+                decorFitsSystemWindows = false)) {
             Column(Modifier.fillMaxSize().background(PremiumTheme.Paper)
-                .statusBarsPadding().navigationBarsPadding()) {
+                .windowInsetsPadding(WindowInsets.safeDrawing)) {
                 Row(Modifier.fillMaxWidth().background(Color.White)
                     .padding(horizontal = 10.dp, vertical = 6.dp),
                     verticalAlignment = Alignment.CenterVertically) {
@@ -421,42 +421,65 @@ fun FullScreenVehicleBooking(
                 Box(Modifier.fillMaxWidth().weight(1f)) {
                     // Full-bleed map continues behind the floating address glass.
                     // Tapping the only vehicle does not discard a route.
-                    NalchikMap(listOf(vehicle), onSelect = { },
-                        modifier = Modifier.fillMaxSize(), selectedVehicleId = vehicle.id,
+                    NalchikMap(listOf(vehicle), onSelect = {
+                        detailRoadRoute = null
+                        detailRouteRequested = true
+                        detailRouteTap += 1
+                    }, modifier = Modifier.fillMaxSize(), selectedVehicleId = vehicle.id,
                         roadRoute = detailRoadRoute)
 
-                    // Reserve an explicit bottom gap for Android gesture navigation.
-                    // The compact, free-floating chip never stretches below the
-                    // screen boundary and leaves visible map on all four sides.
-                    Surface(
+                    // Card is short and the route button is a separate action
+                    // below it. OS safeDrawing handles Android gesture navigation.
+                    Column(
                         modifier = Modifier.align(Alignment.BottomCenter)
                             .fillMaxWidth()
-                            .padding(start = 16.dp, end = 16.dp, bottom = 44.dp),
-                        color = Color.White.copy(alpha = 0.94f),
-                        shape = RoundedCornerShape(18.dp),
-                        shadowElevation = 6.dp
+                            .padding(horizontal = 14.dp)
+                            .padding(bottom = 14.dp),
+                        verticalArrangement = Arrangement.spacedBy(6.dp)
                     ) {
-                        Column(
-                            Modifier.fillMaxWidth()
-                                .padding(horizontal = 13.dp, vertical = 9.dp),
-                            verticalArrangement = Arrangement.spacedBy(2.dp)
+                        Surface(
+                            modifier = Modifier.fillMaxWidth(),
+                            color = Color.White.copy(alpha = .96f),
+                            shape = RoundedCornerShape(16.dp),
+                            shadowElevation = 4.dp
                         ) {
-                            Text("Адрес автомобиля",
-                                color = PremiumTheme.GreenDark,
-                                fontWeight = FontWeight.Bold, fontSize = 11.sp,
-                                lineHeight = 14.sp)
-                            Text(pickupAddress?.value ?: "Определяем адрес…",
-                                color = PremiumTheme.Text, fontSize = 12.sp,
-                                lineHeight = 16.sp, maxLines = 1,
-                                overflow = TextOverflow.Ellipsis)
-                            Text(pickupCoordinates(vehicle.latitude, vehicle.longitude),
-                                color = PremiumTheme.Muted, fontSize = 10.sp,
-                                lineHeight = 13.sp, maxLines = 1)
-                            if (detailRouteRequested) {
-                                key(vehicle.id, detailRouteTap) {
-                                    RoadDirectionsPanel(vehicle) { detailRoadRoute = it }
+                            Column(Modifier.fillMaxWidth()
+                                .padding(horizontal = 12.dp, vertical = 8.dp),
+                                verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                                Text("Адрес автомобиля", color = PremiumTheme.GreenDark,
+                                    fontWeight = FontWeight.Bold, fontSize = 11.sp)
+                                Text(pickupAddress?.value ?: "Определяем адрес…",
+                                    color = PremiumTheme.Text, fontSize = 12.sp,
+                                    maxLines = 2, lineHeight = 15.sp,
+                                    overflow = TextOverflow.Ellipsis)
+                                if (detailRouteRequested) {
+                                    key(vehicle.id, detailRouteTap) {
+                                        RoadDirectionsPanel(vehicle) { detailRoadRoute = it }
+                                    }
+                                } else {
+                                    Text(pickupCoordinates(vehicle.latitude, vehicle.longitude),
+                                        color = PremiumTheme.Muted, fontSize = 10.sp)
                                 }
                             }
+                        }
+                        OutlinedButton(
+                            onClick = {
+                                detailRoadRoute = null
+                                detailRouteRequested = true
+                                detailRouteTap += 1
+                            },
+                            modifier = Modifier.align(Alignment.End).heightIn(min = 38.dp),
+                            contentPadding = PaddingValues(horizontal = 13.dp, vertical = 0.dp),
+                            border = BorderStroke(1.dp, PremiumTheme.GreenDark),
+                            shape = RoundedCornerShape(12.dp),
+                            colors = ButtonDefaults.outlinedButtonColors(
+                                containerColor = Color.White,
+                                contentColor = PremiumTheme.GreenDark)
+                        ) {
+                            Icon(Icons.Outlined.AltRoute, null, Modifier.size(17.dp))
+                            Spacer(Modifier.width(7.dp))
+                            Text(if (detailRoadRoute != null) "Перестроить маршрут"
+                                 else "Построить маршрут", fontSize = 12.sp)
                         }
                     }
                 }

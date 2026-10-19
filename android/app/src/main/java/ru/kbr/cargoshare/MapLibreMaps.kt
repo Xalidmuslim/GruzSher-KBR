@@ -153,6 +153,11 @@ internal fun MapLibreFleetMap(
             .getBoolean("map_prices_visible", true)
     }
     val handle = rememberLibreMap(CENTER_LAT, CENTER_LON, 12.7)
+    val localZones = rememberLocalParkingZones()
+    val zonesVisible = remember(context) {
+        context.applicationContext.getSharedPreferences("gruzsher_preferences", 0)
+            .getBoolean("map_parking_zones_visible", true)
+    }
     val map = handle.map
     val currentOnSelect by rememberUpdatedState(onSelect)
     var status by remember { mutableStateOf<String?>(null) }
@@ -165,11 +170,14 @@ internal fun MapLibreFleetMap(
     }
     var lastSelected by remember { mutableStateOf<String?>(null) }
 
-    LaunchedEffect(map, cars, shownPrice, selectedVehicleId) {
+    LaunchedEffect(map, cars, shownPrice, selectedVehicleId, localZones, zonesVisible) {
         if (map == null) return@LaunchedEffect
-        // Deprecated annotation API is sufficient for three vehicles and avoids
-        // downloading a separate annotation plugin solely for demo markers.
         map.clear()
+        if (zonesVisible) {
+            localZones.filter { it.enabled }.forEach { zone ->
+                map.addPolygon(zoneLibrePolygon(zone))
+            }
+        }
         val icons = IconFactory.getInstance(context)
         cars.forEach { vehicle ->
             val lat = vehicle.latitude
@@ -289,11 +297,15 @@ internal fun MapLibreRouteMap(
         route[route.size / 2].longitude,
         if (compact) 14.5 else 15.0)
     val map = handle.map
+    val localZones = rememberLocalParkingZones()
     var moving by remember(map) { mutableStateOf<Marker?>(null) }
     val last = route.last()
-    LaunchedEffect(map, route, mode, showZones, compact) {
+    LaunchedEffect(map, route, mode, showZones, compact, localZones) {
         if (map == null) return@LaunchedEffect
         map.clear()
+        if (!compact && showZones) localZones.filter { it.enabled }.forEach { zone ->
+            map.addPolygon(zoneLibrePolygon(zone))
+        }
         val icons = IconFactory.getInstance(context)
         map.addPolyline(PolylineOptions().addAll(route)
             .color(AndroidColor.rgb(24, 79, 63)).width(5f))
@@ -395,3 +407,12 @@ private fun libCircle(lat: Double, lon: Double, radius: Double): List<LatLng> {
         LatLng(lat + r * sin(a), lon + r * cos(a) / lonScale)
     }
 }
+
+/** Distinct, user-configured local demonstration polygons. */
+private fun zoneLibrePolygon(zone: LocalParkingZone): PolygonOptions =
+    PolygonOptions().addAll(zone.vertices.map {
+        LatLng(it.latitude, it.longitude)
+    }).fillColor(if (zone.rule == ParkingRule.ALLOWED)
+        AndroidColor.argb(65, 0, 152, 78) else AndroidColor.argb(75, 220, 48, 48))
+        .strokeColor(if (zone.rule == ParkingRule.ALLOWED)
+            AndroidColor.rgb(0, 133, 69) else AndroidColor.rgb(194, 38, 38))

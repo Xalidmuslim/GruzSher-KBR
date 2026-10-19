@@ -348,14 +348,15 @@ fun FullScreenVehicleBooking(
                         Button(
                             onClick = { onTryLiveDemo(hours) },
                             enabled = canBook && !checking && quotedPrice != null,
-                            modifier = Modifier.fillMaxWidth().height(54.dp),
+                            modifier = Modifier.fillMaxWidth().heightIn(min = 54.dp),
                             shape = RoundedCornerShape(16.dp),
                             colors = ButtonDefaults.buttonColors(containerColor = PremiumTheme.Green)
                         ) {
                             Icon(Icons.Outlined.VerifiedUser, null, modifier = Modifier.size(18.dp))
                             Spacer(Modifier.width(8.dp))
                             Text("Продолжить к автопроверке · ДЕМО",
-                                fontSize = 13.sp, fontWeight = FontWeight.Bold, maxLines = 1)
+                                fontSize = 13.sp, fontWeight = FontWeight.Bold,
+                                maxLines = 2, lineHeight = 18.sp)
                         }
                     } else {
                     Button(

@@ -391,36 +391,37 @@ fun FullScreenVehicleBooking(
                             color = PremiumTheme.Muted)
                     }
                 }
-                // Map gets all remaining space; the address card lives BELOW it,
-                // so system navigation and edge-to-edge rendering cannot cover it.
                 Box(Modifier.fillMaxWidth().weight(1f)) {
+                    // Full-bleed map continues behind the floating address glass.
                     NalchikMap(listOf(vehicle), onSelect = { },
                         modifier = Modifier.fillMaxSize(), selectedVehicleId = vehicle.id)
-                }
-                Surface(
-                    modifier = Modifier.fillMaxWidth()
-                        .padding(horizontal = 14.dp)
-                        .padding(top = 10.dp, bottom = 14.dp),
-                    color = Color.White,
-                    shape = RoundedCornerShape(18.dp),
-                    shadowElevation = 4.dp
-                ) {
-                    Column(Modifier.fillMaxWidth().heightIn(max = 275.dp)
-                        .verticalScroll(rememberScrollState()).padding(15.dp),
-                        verticalArrangement = Arrangement.spacedBy(7.dp)) {
-                        Text("Адрес автомобиля", color = PremiumTheme.GreenDark,
-                            fontWeight = FontWeight.Bold, fontSize = 14.sp)
-                        Text(pickupAddress?.value ?: "Определяем адрес…",
-                            color = PremiumTheme.Text, fontSize = 13.sp,
-                            lineHeight = 18.sp)
-                        Text(pickupCoordinates(vehicle.latitude, vehicle.longitude),
-                            color = PremiumTheme.Muted, fontSize = 11.sp)
-                        VehicleMapDistance(vehicle)
-                        if (isTrainingPickup(vehicle.pickupLocation)) {
-                            Text("Учебные координаты: ближайший адрес — ориентир, " +
-                                "не подтверждённая стоянка.",
-                                color = PremiumTheme.Muted, fontSize = 10.sp,
-                                lineHeight = 14.sp)
+
+                    Surface(
+                        modifier = Modifier.align(Alignment.BottomCenter)
+                            .fillMaxWidth()
+                            .padding(horizontal = 15.dp, vertical = 14.dp),
+                        color = Color.White.copy(alpha = 0.91f),
+                        shape = RoundedCornerShape(20.dp),
+                        shadowElevation = 7.dp
+                    ) {
+                        Column(Modifier.fillMaxWidth()
+                            .heightIn(max = 180.dp)
+                            .verticalScroll(rememberScrollState())
+                            .padding(horizontal = 14.dp, vertical = 10.dp),
+                            verticalArrangement = Arrangement.spacedBy(3.dp)) {
+                            Text("Адрес автомобиля", color = PremiumTheme.GreenDark,
+                                fontWeight = FontWeight.Bold, fontSize = 12.sp)
+                            Text(pickupAddress?.value ?: "Определяем адрес…",
+                                color = PremiumTheme.Text, fontSize = 13.sp,
+                                lineHeight = 16.sp, maxLines = 2,
+                                overflow = TextOverflow.Ellipsis)
+                            Text(pickupCoordinates(vehicle.latitude, vehicle.longitude),
+                                color = PremiumTheme.Muted, fontSize = 10.sp)
+                            VehicleMapDistance(vehicle)
+                            if (isTrainingPickup(vehicle.pickupLocation)) {
+                                Text("Учебная точка автомобиля",
+                                    color = PremiumTheme.Muted, fontSize = 9.sp)
+                            }
                         }
                     }
                 }

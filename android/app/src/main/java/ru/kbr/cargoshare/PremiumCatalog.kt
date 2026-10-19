@@ -291,11 +291,25 @@ internal fun NalchikMap(cars: List<Vehicle>, onSelect: (Vehicle) -> Unit, modifi
         }
     }
     val locationOverlay = remember(map) {
-        MyLocationNewOverlay(GpsMyLocationProvider(context), map).apply {
-            val person = phoneLocationMarker(context)
-            setDirectionArrow(person, person)
-            setPersonIcon(person)
-            setPersonHotspot(person.width / 2f, person.height / 2f)
+        // MyLocationNewOverlay rotates the direction arrow from GPS bearing.
+        // Render its tracked fix ourselves so this 3D human stays upright even
+        // while the phone's compass heading changes.
+        val person = phoneLocationMarker(context)
+        val iconPaint = android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG)
+        object : MyLocationNewOverlay(GpsMyLocationProvider(context), map) {
+            private val projected = android.graphics.Point()
+            override fun draw(canvas: android.graphics.Canvas,
+                              projection: org.osmdroid.views.Projection) {
+                val fix = myLocation ?: return
+                projection.toPixels(fix, projected)
+                canvas.save()
+                canvas.rotate(-projection.orientation,
+                    projected.x.toFloat(), projected.y.toFloat())
+                canvas.drawBitmap(person,
+                    projected.x - person.width / 2f,
+                    projected.y - person.height / 2f, iconPaint)
+                canvas.restore()
+            }
         }
     }
     // The GPS-backed location provider requires precise location permission.

@@ -39,6 +39,8 @@ fun PremiumFleetScreen(
     var showEmbeddedMap by rememberSaveable { mutableStateOf(true) }
     var fullMap by rememberSaveable { mutableStateOf(false) }
     var selectedId by rememberSaveable { mutableStateOf("") }
+    // Open an address sheet only when a customer explicitly taps a truck pin.
+    var addressCarId by rememberSaveable { mutableStateOf<String?>(null) }
     val shown = remember(cars, filter) { cars.filter { filter == "Все" || fleetClass(it) == filter } }
     val carousel = rememberLazyListState()
     val scroll = rememberLazyListState()
@@ -69,8 +71,10 @@ fun PremiumFleetScreen(
                 FleetFilters(filter) { filter = it; selectedId = "" }
             }
             Box(Modifier.fillMaxWidth().weight(1f).clipToBounds().background(PremiumTheme.Mint)) {
-                NalchikMap(shown, { selectedId = it.id },
-                    Modifier.fillMaxSize().clipToBounds(), selectedId)
+                NalchikMap(shown, {
+                    selectedId = it.id
+                    addressCarId = it.id
+                }, Modifier.fillMaxSize().clipToBounds(), selectedId)
                 Surface(Modifier.align(Alignment.TopStart).padding(14.dp),
                     shape = RoundedCornerShape(24.dp), color = Color.White) {
                     Text("Грузовики · ${shown.size}", fontSize = 11.sp,
@@ -92,8 +96,8 @@ fun PremiumFleetScreen(
                                     overflow = TextOverflow.Ellipsis, color = PremiumTheme.Text)
                                 Text("${car.hourlyPriceRub} ₽/ч", fontSize = 17.sp,
                                     fontWeight = FontWeight.ExtraBold, color = PremiumTheme.GreenDark)
-                                Text("Учебная точка · ДЕМО", fontSize = 10.sp,
-                                    color = PremiumTheme.Muted)
+                                Text(car.pickupLocation, fontSize = 10.sp, maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis, color = PremiumTheme.Muted)
                             }
                             Icon(Icons.Outlined.ChevronRight, "Открыть автомобиль",
                                 tint = PremiumTheme.Green)
@@ -106,6 +110,12 @@ fun PremiumFleetScreen(
                         .background(Color.White.copy(alpha = .95f), RoundedCornerShape(12.dp))
                         .padding(horizontal = 11.dp, vertical = 5.dp),
                     fontSize = 10.sp, color = PremiumTheme.GreenDark)
+            }
+        }
+        addressCarId?.let { id ->
+            shown.firstOrNull { it.id == id }?.let { car ->
+                PickupAddressSheet(car, onDismiss = { addressCarId = null },
+                    onSelect = { addressCarId = null; onSelect(car) })
             }
         }
         return
@@ -145,6 +155,7 @@ fun PremiumFleetScreen(
                 .background(PremiumTheme.Mint)) {
                 NalchikMap(shown, { car ->
                     selectedId = car.id
+                    addressCarId = car.id
                     scope.launch { carousel.animateScrollToItem(shown.indexOf(car).coerceAtLeast(0)) }
                 }, Modifier.fillMaxSize(), selectedVehicleId = selectedId)
                 Surface(Modifier.align(Alignment.TopStart).padding(10.dp),
@@ -187,6 +198,12 @@ fun PremiumFleetScreen(
             items(shown, key = { "list_${it.id}" }) { car ->
                 PremiumFleetListRow(car) { onSelect(car) }
             }
+        }
+    }
+    addressCarId?.let { id ->
+        shown.firstOrNull { it.id == id }?.let { car ->
+            PickupAddressSheet(car, onDismiss = { addressCarId = null },
+                onSelect = { addressCarId = null; onSelect(car) })
         }
     }
 }

@@ -133,4 +133,47 @@ class LayoutSmokeTest {
         assertNotNull(device.wait(Until.findObject(By.text("Подробнее")), 5_000L))
         capture("layout_vehicle_marker_card")
     }
+    @Test fun fontSizesInSettingsKeepPrimaryGreenActionVisible() {
+        val prefs = context.getSharedPreferences("gruzsher_preferences", 0)
+        prefs.edit().putFloat(APP_FONT_SCALE_KEY, 1f).commit()
+        try {
+            context.startActivity(context.packageManager
+                .getLaunchIntentForPackage(context.packageName)!!
+                .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK))
+            assertTrue(device.wait(Until.hasObject(By.text("Найти грузовик")), 30_000L))
+            click("Профиль")
+            assertTrue(device.wait(Until.hasObject(By.text("Личный кабинет")), 15_000L))
+            click("Настройки")
+            assertTrue(device.wait(Until.hasObject(By.text("Размер шрифта")), 15_000L))
+            for (percent in listOf("90%", "100%", "110%", "120%")) {
+                click(percent)
+                assertTrue("Option not displayed after changing font: $percent",
+                    device.wait(Until.hasObject(By.text("Размер шрифта")), 5_000L))
+                capture("layout_font_" + percent.removeSuffix("%"))
+            }
+            assertEquals(1.2f, prefs.getFloat(APP_FONT_SCALE_KEY, 1f), 0f)
+            device.pressBack() // Close settings bottom sheet
+            click("Автомобили")
+            assertTrue(device.wait(Until.hasObject(By.text("Найти грузовик")), 15_000L))
+            device.swipe(device.displayWidth / 2,
+                (device.displayHeight * .78).toInt(), device.displayWidth / 2,
+                (device.displayHeight * .35).toInt(), 28)
+            click("Выбрать")
+            assertTrue(device.wait(Until.hasObject(By.text("Выбор грузовика")), 15_000L))
+            val green = device.wait(
+                Until.findObject(By.text("Продолжить к автопроверке · ДЕМО")), 15_000L)
+            assertNotNull("Green CTA not visible at 120% font", green)
+            val button = generateSequence(green!!) { it.parent }
+                .firstOrNull { it.isClickable } ?: green
+            val bottom = button.visibleBounds.bottom
+            val safeEdge = device.displayHeight -
+                (18 * context.resources.displayMetrics.density).toInt()
+            capture("layout_booking_font_120")
+            assertTrue("Green CTA is clipped at 120% ($bottom >= $safeEdge)",
+                bottom < safeEdge)
+        } finally {
+            prefs.edit().putFloat(APP_FONT_SCALE_KEY, 1f).commit()
+        }
+    }
+
 }

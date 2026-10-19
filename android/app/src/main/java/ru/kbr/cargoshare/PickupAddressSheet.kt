@@ -13,6 +13,7 @@ import androidx.compose.material.icons.outlined.GpsFixed
 import kotlin.math.roundToInt
 import android.location.Geocoder
 import android.net.Uri
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -139,15 +140,18 @@ internal fun PickupAddressSheet(
                         color = PremiumTheme.Muted, fontSize = 12.sp)
                 }
             }
-            Button(onClick = onBuildRoute,
-                modifier = Modifier.fillMaxWidth().height(44.dp),
-                shape = RoundedCornerShape(14.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = PremiumTheme.Green)) {
+            OutlinedButton(onClick = onBuildRoute,
+                modifier = Modifier.align(Alignment.End).height(36.dp),
+                shape = RoundedCornerShape(11.dp),
+                contentPadding = PaddingValues(horizontal = 12.dp, vertical = 0.dp),
+                border = BorderStroke(1.dp, PremiumTheme.Green),
+                colors = ButtonDefaults.outlinedButtonColors(
+                    contentColor = PremiumTheme.GreenDark)) {
                 Icon(Icons.Outlined.AltRoute, contentDescription = null,
-                    modifier = Modifier.size(18.dp))
-                Spacer(Modifier.width(8.dp))
-                Text("Построить маршрут по улицам",
-                    fontSize = 13.sp, fontWeight = FontWeight.Bold)
+                    modifier = Modifier.size(16.dp))
+                Spacer(Modifier.width(6.dp))
+                Text("Построить маршрут",
+                    fontSize = 11.sp, fontWeight = FontWeight.SemiBold)
             }
             Surface(color = Color.White, shape = RoundedCornerShape(17.dp)) {
                 Column(Modifier.fillMaxWidth().padding(14.dp),

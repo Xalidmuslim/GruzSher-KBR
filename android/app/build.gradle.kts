@@ -8,11 +8,11 @@ android {
     namespace = "ru.kbr.cargoshare"
     compileSdk = 35
     defaultConfig {
-        applicationId = "ru.kbr.cargoshare.referencepreview.ux379"
+        applicationId = "ru.kbr.cargoshare.referencepreview.ux380"
         minSdk = 26
         targetSdk = 35
-        versionCode = 58
-        versionName = "3.7.9-route-button-matte-line"
+        versionCode = 59
+        versionName = "3.8.0-safe-route-cta"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
     buildFeatures {

@@ -50,7 +50,7 @@ fun PremiumFleetScreen(
     val carousel = rememberLazyListState()
     val scroll = rememberLazyListState()
     val scope = rememberCoroutineScope()
-    val selectedCar = shown.firstOrNull { it.id == selectedId } ?: shown.firstOrNull()
+    val selectedMapCar = shown.firstOrNull { it.id == roadCarId }
     LaunchedEffect(carousel.firstVisibleItemIndex, shown) {
         shown.getOrNull(carousel.firstVisibleItemIndex)?.let { selectedId = it.id }
     }
@@ -75,6 +75,8 @@ fun PremiumFleetScreen(
             Box(Modifier.fillMaxWidth().background(PremiumTheme.Paper).zIndex(2f)) {
                 FleetFilters(filter) { filter = it; selectedId = ""; roadCarId = null; roadRoute = null; roadRequested = false }
             }
+            // Map owns the remaining viewport. Controls and selection info sit
+            // BELOW it, not in a floating panel covering markers or zoom buttons.
             Box(Modifier.fillMaxWidth().weight(1f).clipToBounds().background(PremiumTheme.Mint)) {
                 NalchikMap(shown, {
                     selectedId = it.id
@@ -82,67 +84,70 @@ fun PremiumFleetScreen(
                     roadRoute = null
                     roadRequested = false
                 }, Modifier.fillMaxSize().clipToBounds(), selectedId, roadRoute)
-                Surface(Modifier.align(Alignment.TopStart).padding(14.dp),
-                    shape = RoundedCornerShape(24.dp), color = Color.White) {
+                Surface(Modifier.align(Alignment.TopStart).padding(12.dp),
+                    shape = RoundedCornerShape(20.dp), color = Color.White.copy(alpha = .94f)) {
                     Text("Грузовики · ${shown.size}", fontSize = 11.sp,
                         color = PremiumTheme.GreenDark,
-                        modifier = Modifier.padding(horizontal = 13.dp, vertical = 9.dp))
+                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 7.dp))
                 }
-                selectedCar?.let { car ->
-                    Card(
-                        modifier = Modifier.fillMaxWidth().align(Alignment.BottomCenter)
-                            .padding(horizontal = 13.dp, vertical = 43.dp),
-                        shape = RoundedCornerShape(19.dp),
-                        colors = CardDefaults.cardColors(containerColor = Color.White)) {
-                        Row(Modifier.fillMaxWidth()
-                            .clickable { onSelect(car) }.padding(9.dp),
-                            verticalAlignment = Alignment.CenterVertically) {
-                            TruckArtwork(car, Modifier.size(78.dp, 67.dp))
-                            Spacer(Modifier.width(11.dp))
+            }
+            selectedMapCar?.let { car ->
+                Surface(
+                    modifier = Modifier.fillMaxWidth()
+                        .padding(horizontal = 11.dp, vertical = 5.dp),
+                    shape = RoundedCornerShape(16.dp),
+                    color = Color.White,
+                    shadowElevation = 2.dp
+                ) {
+                    Column(Modifier.fillMaxWidth()
+                        .padding(horizontal = 10.dp, vertical = 7.dp),
+                        verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                        Row(verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            TruckArtwork(car, Modifier.size(52.dp, 44.dp))
                             Column(Modifier.weight(1f)) {
-                                Text(car.name, fontWeight = FontWeight.Bold, maxLines = 1,
-                                    overflow = TextOverflow.Ellipsis, color = PremiumTheme.Text)
-                                Text("${car.hourlyPriceRub} ₽/ч", fontSize = 17.sp,
-                                    fontWeight = FontWeight.ExtraBold, color = PremiumTheme.GreenDark)
-                                Text(car.pickupLocation, fontSize = 10.sp, maxLines = 1,
-                                    overflow = TextOverflow.Ellipsis, color = PremiumTheme.Muted)
+                                Text(car.name, fontWeight = FontWeight.Bold,
+                                    fontSize = 13.sp, color = PremiumTheme.Text,
+                                    maxLines = 1, overflow = TextOverflow.Ellipsis)
+                                Text("${car.hourlyPriceRub} ₽/ч · Учебная точка",
+                                    fontSize = 10.sp, color = PremiumTheme.Muted,
+                                    maxLines = 1)
                             }
-                            Icon(Icons.Outlined.ChevronRight, "Открыть автомобиль",
-                                tint = PremiumTheme.Green)
+                            TextButton(onClick = { onSelect(car) },
+                                modifier = Modifier.height(34.dp),
+                                contentPadding = PaddingValues(horizontal = 4.dp)) {
+                                Text("Открыть", fontSize = 11.sp)
+                                Icon(Icons.Outlined.ChevronRight, contentDescription = null,
+                                    modifier = Modifier.size(17.dp))
+                            }
                         }
-                        Column(Modifier.fillMaxWidth()
-                            .padding(start = 12.dp, end = 12.dp, bottom = 10.dp),
-                            verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                            Button(onClick = {
+                        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
+                            OutlinedButton(onClick = {
                                 roadCarId = car.id
                                 roadRoute = null
                                 roadRequested = true
                                 roadTap += 1
-                            }, modifier = Modifier.fillMaxWidth().height(38.dp),
-                                shape = RoundedCornerShape(12.dp),
+                            }, modifier = Modifier.height(35.dp),
+                                shape = RoundedCornerShape(11.dp),
                                 contentPadding = PaddingValues(horizontal = 12.dp, vertical = 0.dp),
-                                colors = ButtonDefaults.buttonColors(containerColor = PremiumTheme.Green)) {
+                                border = BorderStroke(1.dp, PremiumTheme.Green),
+                                colors = ButtonDefaults.outlinedButtonColors(
+                                    contentColor = PremiumTheme.GreenDark)) {
                                 Icon(Icons.Outlined.AltRoute, contentDescription = null,
-                                    modifier = Modifier.size(17.dp))
-                                Spacer(Modifier.width(7.dp))
-                                Text(if (roadCarId == car.id && roadRoute != null)
-                                    "Перестроить маршрут" else "Построить маршрут",
-                                    fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                                    modifier = Modifier.size(16.dp))
+                                Spacer(Modifier.width(6.dp))
+                                Text(if (roadRoute != null) "Перестроить маршрут"
+                                    else "Построить маршрут",
+                                    fontSize = 11.sp, fontWeight = FontWeight.SemiBold)
                             }
-                            if (roadRequested && roadCarId == car.id) {
-                                key(car.id, roadTap) {
-                                    RoadDirectionsPanel(car) { roadRoute = it }
-                                }
+                        }
+                        if (roadRequested && roadCarId == car.id) {
+                            key(car.id, roadTap) {
+                                RoadDirectionsPanel(car) { roadRoute = it }
                             }
                         }
                     }
                 }
-                Text("Учебные точки — не GPS автомобилей",
-                    modifier = Modifier.align(Alignment.BottomCenter)
-                        .padding(bottom = 10.dp)
-                        .background(Color.White.copy(alpha = .95f), RoundedCornerShape(12.dp))
-                        .padding(horizontal = 11.dp, vertical = 5.dp),
-                    fontSize = 10.sp, color = PremiumTheme.GreenDark)
             }
         }
         addressCarId?.let { id ->

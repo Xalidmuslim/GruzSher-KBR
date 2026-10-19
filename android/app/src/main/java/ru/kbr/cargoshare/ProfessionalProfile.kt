@@ -39,7 +39,8 @@ private val ProfilePaper = PremiumTheme.Paper
 fun ProfessionalProfile(
     live: LiveDemoSession, bookings: List<Booking>,
     onLive: () -> Unit, onTrips: () -> Unit,
-    onMore: () -> Unit, onFleet: () -> Unit
+    onMore: () -> Unit, onFleet: () -> Unit,
+    fontScale: Float, onFontScaleChange: (Float) -> Unit
 ) {
     val context = LocalContext.current
     val prefs = remember(context) {

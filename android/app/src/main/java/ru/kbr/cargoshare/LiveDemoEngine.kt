@@ -8,6 +8,8 @@ enum class LivePhase { CHOOSE, PHONE, DOCUMENTS, PAYMENT, CONFIRM, APPROVAL, WAL
 
 data class LiveDemoSession(
     val phase: LivePhase = LivePhase.CHOOSE,
+    /** Only completed training rentals unlock fast checkout; never real verification. */
+    val returningDemoDriver: Boolean = false,
     val carId: String = "",
     val phone: String = "",
     val codeRequestedAt: Long = 0L,
@@ -121,9 +123,16 @@ fun advanceLive(s: LiveDemoSession, now: Long): LiveDemoSession = when {
 fun applyLive(s: LiveDemoSession, event: LiveEvent, now: Long, value: String = ""): LiveOutcome {
     val c = advanceLive(s, now)
     return when (event) {
-        LiveEvent.RESET -> valid(LiveDemoSession(), "Учебный сценарий сброшен")
+        LiveEvent.RESET -> valid(LiveDemoSession(returningDemoDriver =
+            c.returningDemoDriver || c.phase == LivePhase.RECEIPT),
+            "Начните следующую аренду: повторная учебная регистрация не требуется")
         LiveEvent.PICK_CAR -> if (c.phase != LivePhase.CHOOSE || value !in offlineDemoCatalog().map { it.id }) invalid(c, "Выберите грузовик из учебного каталога")
-            else valid(c.copy(phase = LivePhase.PHONE, carId = value), "Автомобиль выбран")
+            else valid(c.copy(
+                phase = if (c.returningDemoDriver) LivePhase.CONFIRM else LivePhase.PHONE,
+                carId = value, termsAccepted = false, durationHours = 2),
+                if (c.returningDemoDriver)
+                    "Повторная учебная аренда: номер, документы и виртуальная карта сохранены как пройденные"
+                else "Автомобиль выбран")
         LiveEvent.REQUEST_CODE -> if (c.phase != LivePhase.PHONE || !value.matches(Regex("^\\+?7[0-9]{10}$")))
             invalid(c, "Введите учебный номер +7 и 10 цифр")
             else valid(c.copy(phone = value, codeRequestedAt = now), "Имитируем доставку SMS — код появится через 3 секунды")
@@ -197,7 +206,9 @@ fun applyLive(s: LiveDemoSession, event: LiveEvent, now: Long, value: String = "
             else valid(c.copy(lockingAt = now), "Отправляем учебную команду закрытия…")
         LiveEvent.FINISH -> if (c.phase != LivePhase.RETURN || c.lockingAt == 0L || now < c.lockingAt + LIVE_OPERATION_MS)
             invalid(c, "Проверьте фото и дождитесь закрытия дверей")
-            else valid(c.copy(phase = LivePhase.RECEIPT, locked = true, finishedAt = now), "Учебная поездка завершена; реального списания нет")
+            else valid(c.copy(phase = LivePhase.RECEIPT, locked = true,
+                finishedAt = now, returningDemoDriver = true),
+                "Учебная поездка завершена; следующий выбор грузовика будет без повторной регистрации")
         LiveEvent.SET_RATING -> if (c.phase != LivePhase.RECEIPT || value.toIntOrNull() !in 1..5)
             invalid(c, "Укажите оценку")
             else valid(c.copy(rating = value.toInt()), "Спасибо за отзыв!")

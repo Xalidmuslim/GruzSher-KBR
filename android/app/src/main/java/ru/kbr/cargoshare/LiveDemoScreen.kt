@@ -86,6 +86,8 @@ fun LiveDemoScreen(
 
     val car = cars.find { it.id == session.carId } ?: cars.firstOrNull()
     fun perform(event: LiveEvent, value: String = "") {
+        // Receipt status is persisted by the storage independently of the
+        // current car selection; restarting a demo does not reset onboarding.
         val result = applyLive(session, event, System.currentTimeMillis(), value)
         message = result.message
         if (result.accepted) {
@@ -182,6 +184,11 @@ fun LiveDemoScreen(
         }
         when (session.phase) {
             LivePhase.CHOOSE -> {
+                if (session.returningDemoDriver) {
+                    LiveNote("Постоянный учебный клиент: повторное подтверждение номера, " +
+                        "проверка образцов документов и привязка виртуальной карты не нужны. " +
+                        "Выберите грузовик и подтвердите новый тариф.")
+                }
                 LiveHeader("01", "Найдите грузовик", "Выберите автомобиль. После выбора пройдёте весь путь клиента — от входа до чека.")
                 cars.forEach { vehicle ->
                     Surface(onClick = { perform(LiveEvent.PICK_CAR, vehicle.id) },
@@ -253,6 +260,10 @@ fun LiveDemoScreen(
                     (now - session.paymentStartedAt).toFloat() / 1000f)
             }
             LivePhase.CONFIRM -> {
+                if (session.returningDemoDriver) {
+                    LiveNote("Повторная аренда: учебная регистрация уже пройдена. " +
+                        "Подтвердите тариф и условия текущей поездки.")
+                }
                 LiveHeader("05", "Условия аренды", "Выберите срок. Учебная бронь создаётся автоматически после подтверждения условий — без оператора.")
                 if (car != null) {
                     Text("Срок аренды", color = LiveInk, fontWeight = FontWeight.SemiBold)

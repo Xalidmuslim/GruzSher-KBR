@@ -9,6 +9,18 @@ class LiveDemoStorage(context: Context) {
     private val prefs = context.getSharedPreferences("gruzsher_live_demo_v1", Context.MODE_PRIVATE)
 
     fun load(): LiveDemoSession = decode(prefs.getString("progress", "{}") ?: "{}")
+        .let { state ->
+            // Durable training status across RESET and process death. Detect
+            // completed existing receipt records once for a seamless upgrade.
+            state.copy(returningDemoDriver = state.returningDemoDriver ||
+                prefs.getBoolean("returning_demo_driver_v1", false) ||
+                prefs.all.keys.any { key -> key.startsWith("receipt_") &&
+                    receipt(key.removePrefix("receipt_"))?.phase == LivePhase.RECEIPT })
+        }
+
+    fun resetTrainingOnboarding() {
+        prefs.edit().remove("returning_demo_driver_v1").apply()
+    }
 
     fun receipt(id: String): LiveDemoSession? = prefs.getString("receipt_$id", null)?.let(::decode)
 
@@ -19,6 +31,7 @@ class LiveDemoStorage(context: Context) {
         val events = j.optJSONArray("events") ?: JSONArray()
         LiveDemoSession(
             phase = phase,
+            returningDemoDriver = j.optBoolean("returningDemoDriver", false),
             carId = j.optString("carId"),
             phone = "", // never persist phone input
             codeRequestedAt = j.optLong("codeRequestedAt"),
@@ -61,12 +74,15 @@ class LiveDemoStorage(context: Context) {
         val j = encode(s)
         val edit = prefs.edit().putString("progress",j.toString())
         if (s.phase == LivePhase.RECEIPT && s.bookingId.isNotBlank()) edit.putString("receipt_${s.bookingId}",j.toString())
+        if (s.phase == LivePhase.RECEIPT && s.finishedAt > 0L)
+            edit.putBoolean("returning_demo_driver_v1", true)
         edit.apply()
     }
 
     private fun encode(s: LiveDemoSession): JSONObject {
         val j = JSONObject().apply {
             put("phase", s.phase.name)
+            put("returningDemoDriver", s.returningDemoDriver)
             put("carId", s.carId)
             put("codeRequestedAt", s.codeRequestedAt)
             put("passportStartedAt", s.passportStartedAt)

@@ -4,8 +4,6 @@ import coil.compose.AsyncImage
 import android.app.DatePickerDialog
 import android.app.TimePickerDialog
 import android.os.Bundle
-import android.os.SystemClock
-import android.app.Activity
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.compose.BackHandler
@@ -94,14 +92,12 @@ private fun AppScreen() {
     var showLiveDemo by rememberSaveable { mutableStateOf(false) }
     // Routes 0..3 are bottom destinations; route 4 represents LIVE inside More.
     var navigationTrail by rememberSaveable { mutableStateOf(emptyList<Int>()) }
-    var lastRootBackAt by remember { mutableLongStateOf(0L) }
     fun currentRoute(): Int = if (tab == 3 && showLiveDemo) 4 else tab
     fun navigateTo(destination: Int, openDemo: Boolean = false) {
         val target = if (destination == 3 && openDemo) 4 else destination
         navigationTrail = pushNavigationRoute(navigationTrail, currentRoute(), target)
         tab = destination
         showLiveDemo = destination == 3 && openDemo
-        lastRootBackAt = 0L
     }
     var liveSelectedCarId by rememberSaveable { mutableStateOf<String?>(null) }
     var selectedCarKey by rememberSaveable { mutableStateOf<String?>(null) }
@@ -225,22 +221,15 @@ private fun AppScreen() {
             if (tab == 3 && showLiveDemo && previous != 4) receiptId = null
             tab = if (previous == 4) 3 else previous
             showLiveDemo = previous == 4
-            lastRootBackAt = 0L
         } else if (tab != 0) {
             receiptId = null
             showLiveDemo = false
             tab = 0
         } else {
-            // One unintentional edge swipe on Home must not close GruzSher.
-            val now = SystemClock.elapsedRealtime()
-            if (now - lastRootBackAt < 2_000L) {
-                (context as? Activity)?.finish()
-            } else {
-                lastRootBackAt = now
-                scope.launch {
-                    snackbar.currentSnackbarData?.dismiss()
-                    snackbar.showSnackbar("Ещё раз «Назад» — выйти из приложения",
-                        duration = SnackbarDuration.Short)
+            // Root Back is consumed. Android Home/app switcher still works normally.
+            scope.launch {
+                if (snackbar.currentSnackbarData == null) {
+                    snackbar.showSnackbar("Вы на главном экране", duration = SnackbarDuration.Short)
                 }
             }
         }

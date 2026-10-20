@@ -135,7 +135,7 @@ fun PremiumFleetScreen(
                 Surface(
                     onClick = { onSelect(car) },
                     modifier = Modifier.fillMaxWidth()
-                        .animateContentSize(animationSpec = tween(170))
+                        .animateContentSize(animationSpec = tween(400, easing = PremiumMotion.Smooth))
                         .padding(horizontal = 11.dp, vertical = 5.dp),
                     shape = RoundedCornerShape(16.dp),
                     color = Color.White,

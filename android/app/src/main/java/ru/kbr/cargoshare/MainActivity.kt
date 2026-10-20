@@ -158,7 +158,7 @@ private fun AppScreen(fontScale: Float, onFontScaleChange: (Float) -> Unit) {
     val screenReveal = remember(tab, showLiveDemo) { Animatable(0f) }
     LaunchedEffect(tab, showLiveDemo) {
         screenReveal.animateTo(1f, animationSpec = tween(
-            durationMillis = 165, easing = FastOutSlowInEasing))
+            durationMillis = 450, easing = FastOutSlowInEasing))
     }
     // Vehicle filtering is cached. The LIVE Demo clock no longer makes the
     // fleet recalculate the list on unrelated UI recompositions.

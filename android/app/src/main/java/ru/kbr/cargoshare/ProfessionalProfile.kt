@@ -268,9 +268,23 @@ fun ProfessionalProfile(
                                 )
                             }
                         }
-                        Text("Пример: грузовик · 650 ₽/ч · Нальчик",
-                            color = ProfileInk, fontSize = 13.sp,
-                            modifier = Modifier.fillMaxWidth().padding(bottom = 9.dp))
+                        // This visible sample must resize DURING the tap,
+                        // while the settings sheet remains open.
+                        Surface(color = Color.White,
+                            shape = RoundedCornerShape(14.dp)) {
+                            Column(Modifier.fillMaxWidth().padding(12.dp),
+                                verticalArrangement = Arrangement.spacedBy(3.dp)) {
+                                Text("Проверка шрифта", color = ProfileInk,
+                                    fontSize = 20.sp, fontWeight = FontWeight.Bold,
+                                    maxLines = 1)
+                                Text("ГрузШер · 650 ₽/ч · Нальчик",
+                                    color = ProfileMuted, fontSize = 13.sp,
+                                    maxLines = 2)
+                                Text("Выбран размер: ${(fontScale * 100).toInt()}%",
+                                    color = ProfileGreen, fontSize = 12.sp,
+                                    fontWeight = FontWeight.Medium)
+                            }
+                        }
                         HorizontalDivider(color = ProfileMint)
                         ProfileHint("Выбранный движок используется для всех карт: " +
                             "автопарк, подход к машине и возврат. Карты требуют интернет.")

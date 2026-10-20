@@ -329,6 +329,12 @@ private fun AppScreen(fontScale: Float, onFontScaleChange: (Float) -> Unit) {
                 }
             }
             tabStates.SaveableStateProvider(tab) {
+                // One destination at a time; do not double-render map surfaces.
+                PremiumEntrance(
+                    key = "${tab}:${showLiveDemo}",
+                    modifier = Modifier.fillMaxSize(),
+                    riseDp = if (tab == 0) 0f else 9f
+                ) {
             when (tab) {
                 0 -> PremiumFleetScreen(fleetCars, busy, onSelect = { selectedCarKey = it.id }, onRefresh = { reloadVehicles() }, onLiveDemo = { receiptId=null; liveSelectedCarId = null; navigateTo(3, openDemo = true) }, active=liveOverview.phase !in setOf(LivePhase.CHOOSE,LivePhase.RECEIPT))
                 1 -> TripsDashboard(bookings = bookings, cars = vehicles,
@@ -412,6 +418,7 @@ private fun AppScreen(fontScale: Float, onFontScaleChange: (Float) -> Unit) {
                     }
                 )
             }
+                }
             }
         }
     }

@@ -147,12 +147,24 @@ class LayoutSmokeTest {
             assertTrue(device.wait(Until.hasObject(By.text("Личный кабинет")), 15_000L))
             click("Настройки")
             assertTrue(device.wait(Until.hasObject(By.text("Размер шрифта")), 15_000L))
+            var previewAt90 = 0
+            var previewAt120 = 0
             for (percent in listOf("90%", "100%", "110%", "120%")) {
                 click(percent)
-                assertTrue("Option not displayed after changing font: $percent",
-                    device.wait(Until.hasObject(By.text("Размер шрифта")), 5_000L))
+                assertTrue("Selected font percentage did not update in the OPEN settings",
+                    device.wait(Until.hasObject(
+                        By.text("Выбран размер: $percent")), 5_000L))
+                val preview = device.wait(
+                    Until.findObject(By.text("Проверка шрифта")), 5_000L)
+                assertNotNull("Live typography preview missing", preview)
+                val height = preview!!.visibleBounds.height()
+                if (percent == "90%") previewAt90 = height
+                if (percent == "120%") previewAt120 = height
                 capture("layout_font_" + percent.removeSuffix("%"))
             }
+            assertTrue(
+                "Text did not physically grow in live settings: 90%=$previewAt90, 120%=$previewAt120",
+                previewAt120 > previewAt90 * 1.2f)
             assertEquals(1.2f, prefs.getFloat(APP_FONT_SCALE_KEY, 1f), 0f)
             device.pressBack() // Close settings bottom sheet
             click("Автомобили")

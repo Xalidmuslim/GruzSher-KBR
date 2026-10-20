@@ -1,7 +1,10 @@
 #!/usr/bin/env bash
 # Keep the Gradle exit status, but collect real emulator screenshots regardless.
 set +e
-if [[ "${GITHUB_REF_NAME:-}" == "feature/gruzsher-v386-compact-cards-safe-footer" ]]; then
+if [[ "${GITHUB_REF_NAME:-}" == "feature/gruzsher-v387-selected-icon-back-to-map" ]]; then
+  gradle -p android --no-daemon connectedDebugAndroidTest \
+    -Pandroid.testInstrumentationRunnerArguments.class=ru.kbr.cargoshare.MapListBackNavigationTest
+elif [[ "${GITHUB_REF_NAME:-}" == "feature/gruzsher-v386-compact-cards-safe-footer" ]]; then
   # Pixel-size QA of the actual selected truck card and clipped booking CTA,
   # plus a live settings font-size regression at 100–150%.
   gradle -p android --no-daemon connectedDebugAndroidTest \

@@ -194,7 +194,7 @@ private fun PremiumTruckCard(vehicle: Vehicle, onClick: () -> Unit) {
         Column(Modifier.padding(14.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 val demoImage = when (vehicle.id) {
-                    "gazelle-next" -> "file:///android_asset/truck_g01.webp"
+                    "gazelle-next", "gazelle-next-2" -> "file:///android_asset/truck_g01.webp"
                     "ford-transit" -> "file:///android_asset/truck_g02.webp"
                     "largus-van" -> "file:///android_asset/truck_g03.webp"
                     else -> ""

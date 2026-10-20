@@ -32,7 +32,7 @@ object PremiumTheme {
 }
 
 fun artworkSource(vehicle: Vehicle, view: String = "hero"): String {
-    val model = when(vehicle.id) { "gazelle-next" -> "gazelle"; "ford-transit" -> "transit"; else -> "largus" }
+    val model = when(vehicle.id) { "gazelle-next", "gazelle-next-2" -> "gazelle"; "ford-transit" -> "transit"; else -> "largus" }
     return "file:///android_asset/premium/${model}_${view}.webp"
 }
 fun localTruckArtwork(vehicle: Vehicle): String = artworkSource(vehicle)

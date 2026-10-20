@@ -38,6 +38,20 @@ def test_catalog_seed_data_are_explicitly_demo(client):
     assert all(v['dailyPriceRub'] > 0 for v in response.json()['data'])
 
 
+def test_four_demo_trucks_include_independent_second_gazelle(client):
+    response = client.get('/v1/vehicles')
+    assert response.status_code == 200
+    cars = response.json()['data']
+    assert len(cars) == 4
+    assert len({car['id'] for car in cars}) == 4
+    extra = next(car for car in cars if car['id'] == 'gazelle-next-2')
+    original = next(car for car in cars if car['id'] == 'gazelle-next')
+    assert extra['name'] == 'ГАЗель NEXT №2'
+    assert extra['hourlyPriceRub'] == original['hourlyPriceRub']
+    assert extra['latitude'] is None
+    assert extra['longitude'] is None
+
+
 def test_booking_requires_authentication(client):
     start, end = time_window()
     response = client.post('/v1/bookings', json={'vehicleId': 'gazelle-next', 'startAt': start, 'endAt': end})

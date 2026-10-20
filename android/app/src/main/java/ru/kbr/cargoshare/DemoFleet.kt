@@ -8,4 +8,8 @@ internal fun offlineDemoCatalog(): List<Vehicle> = listOf(
         "Механика", "Нальчик · учебная точка №2 (юг)", "Вымышленное местоположение — демо, не GPS автомобиля", "", 43.4759, 43.6071),
     Vehicle("largus-van", "LADA Largus фургон", "Компактный фургон", 650, 3, 350, 2200,
         "Механика", "Нальчик · учебная точка №3 (восток)", "Вымышленное местоположение — демо, не GPS автомобиля", "", 43.4853, 43.6282),
+    // Second Gazelle uses the exact same photos and rental characteristics as
+    // the existing Gazelle NEXT, but a unique ID and separate demo map pin.
+    Vehicle("gazelle-next-2", "ГАЗель NEXT №2", "Тентованный фургон", 1500, 16, 550, 3400,
+        "Механика", "Нальчик · учебная точка №4 (запад)", "Вымышленное местоположение — демо, не GPS автомобиля", "", 43.4824, 43.5856),
 )

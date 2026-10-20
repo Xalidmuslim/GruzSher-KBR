@@ -100,11 +100,7 @@ fun LiveDemoScreen(
     // screen even on static forms, receipts and idle welcome screens.
     LaunchedEffect(session.phase) {
         now = System.currentTimeMillis()
-        val animatedPhase = session.phase in setOf(
-            LivePhase.DOCUMENTS, LivePhase.PAYMENT, LivePhase.APPROVAL,
-            LivePhase.WALK, LivePhase.UNLOCK, LivePhase.DRIVING,
-            LivePhase.RETURNING, LivePhase.RETURN)
-        if (animatedPhase) {
+        if (needsLiveClock(session.phase)) {
             while (isActive) {
                 delay(1000L)
                 now = System.currentTimeMillis()

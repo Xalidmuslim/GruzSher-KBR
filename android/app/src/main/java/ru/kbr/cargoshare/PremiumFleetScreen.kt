@@ -39,6 +39,8 @@ fun PremiumFleetScreen(
     var filter by rememberSaveable { mutableStateOf("Все") }
     var showEmbeddedMap by rememberSaveable { mutableStateOf(true) }
     var fullMap by rememberSaveable { mutableStateOf(false) }
+    // A back gesture from the list restores its preceding embedded-map mode.
+    var restoreEmbeddedMapOnBack by remember { mutableStateOf(false) }
     var selectedId by rememberSaveable { mutableStateOf("") }
     // Open an address sheet only when a customer explicitly taps a truck pin.
     var addressCarId by rememberSaveable { mutableStateOf<String?>(null) }
@@ -62,7 +64,25 @@ fun PremiumFleetScreen(
     LaunchedEffect(carousel.firstVisibleItemIndex, shown) {
         shown.getOrNull(carousel.firstVisibleItemIndex)?.let { selectedId = it.id }
     }
-    BackHandler(enabled = fullMap) { fullMap = false }
+    BackHandler(enabled = fullMap || (!showEmbeddedMap && addressCarId == null)) {
+        if (fullMap) {
+            fullMap = false
+        } else {
+            showEmbeddedMap = true
+            restoreEmbeddedMapOnBack = true
+        }
+    }
+    LaunchedEffect(showEmbeddedMap, restoreEmbeddedMapOnBack) {
+        if (showEmbeddedMap && restoreEmbeddedMapOnBack) {
+            // Header, optional live trip, banner, search, filters, optional
+            // loading indicator, then the map. Scroll into the restored map
+            // instead of leaving the user looking at carousel content.
+            val mapItemIndex = 4 + (if (active) 1 else 0) +
+                (if (loading) 1 else 0)
+            scroll.scrollToItem(mapItemIndex)
+            restoreEmbeddedMapOnBack = false
+        }
+    }
 
     if (fullMap) {
         Column(Modifier.fillMaxSize().background(PremiumTheme.Paper)) {

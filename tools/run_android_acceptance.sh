@@ -2,7 +2,8 @@
 # Keep the Gradle exit status, but collect real emulator screenshots regardless.
 set +e
 if [[ "${GITHUB_REF_NAME:-}" == "feature/gruzsher-v384-live-global-font-scale" ||
-      "${GITHUB_REF_NAME:-}" == "feature/gruzsher-v385-gallery-layout-icon-font" ]]; then
+      "${GITHUB_REF_NAME:-}" == "feature/gruzsher-v385-gallery-layout-icon-font" ||
+      "${GITHUB_REF_NAME:-}" == "feature/gruzsher-v386-compact-cards-safe-footer" ]]; then
   # Verify visible glyph bounds immediately while the settings sheet is open.
   gradle -p android --no-daemon connectedDebugAndroidTest \
     -Pandroid.testInstrumentationRunnerArguments.class=ru.kbr.cargoshare.FontScaleLiveTest

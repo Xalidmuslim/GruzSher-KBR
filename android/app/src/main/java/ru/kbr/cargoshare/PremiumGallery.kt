@@ -154,8 +154,16 @@ fun PremiumGallery(car: Vehicle) {
                                 } while (event.changes.any { it.pressed })
                             }
                         }
-                        .graphicsLayer(scaleX = zoom, scaleY = zoom,
-                            translationX = panX, translationY = panY)
+                        .then(
+                            // No resting GPU layer. Allocate only during actual
+                            // pinch zoom/pan; single-finger pager still owns swipe.
+                            if (zoom > 1.001f || panX != 0f || panY != 0f)
+                                Modifier.graphicsLayer(
+                                    scaleX = zoom, scaleY = zoom,
+                                    translationX = panX, translationY = panY
+                                )
+                            else Modifier
+                        )
                 )
             }
             IconButton(onClick = { expanded = false },

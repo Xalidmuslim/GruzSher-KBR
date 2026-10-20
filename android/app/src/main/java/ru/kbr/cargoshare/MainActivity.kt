@@ -34,11 +34,9 @@ import androidx.compose.runtime.saveable.rememberSaveableStateHolder
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import kotlinx.coroutines.launch
@@ -75,12 +73,19 @@ class MainActivity : ComponentActivity() {
                 mutableFloatStateOf(
                     normalizeAppFontScale(appPrefs.getFloat(APP_FONT_SCALE_KEY, 1f)))
             }
-            val systemDensity = LocalDensity.current
-            CompositionLocalProvider(
-                LocalDensity provides Density(
-                    systemDensity.density, systemDensity.fontScale * appFontScale)
-            ) {
-                MaterialTheme(colorScheme = lightColorScheme(primary = PremiumTheme.Green, onPrimary = Color.White, background = PremiumTheme.Paper, surface = Color.White, onSurface = PremiumTheme.Text)) {
+            // Text nodes subscribe to this snapshot-backed CompositionLocal.
+            // Unlike the former LocalDensity-only override, it also redraws
+            // labels immediately inside already-open bottom sheets / dialogs.
+            CompositionLocalProvider(LocalAppFontScale provides appFontScale) {
+                val typography = remember(appFontScale) {
+                    scaledAppTypography(appFontScale)
+                }
+                MaterialTheme(
+                    typography = typography,
+                    colorScheme = lightColorScheme(primary = PremiumTheme.Green,
+                        onPrimary = Color.White, background = PremiumTheme.Paper,
+                        surface = Color.White, onSurface = PremiumTheme.Text)
+                ) {
                     AppScreen(appFontScale) { chosen ->
                         appFontScale = normalizeAppFontScale(chosen)
                         appPrefs.edit().putFloat(APP_FONT_SCALE_KEY, appFontScale).apply()

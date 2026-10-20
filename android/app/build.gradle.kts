@@ -11,8 +11,8 @@ android {
         applicationId = "ru.kbr.cargoshare.referencepreview.ux388"
         minSdk = 26
         targetSdk = 35
-        versionCode = 67
-        versionName = "3.8.8-smooth-navigation-optimized"
+        versionCode = 68
+        versionName = "3.8.9-native-performance-release"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
     buildFeatures {
@@ -25,11 +25,23 @@ android {
             // Opt in via -PdemoServerEnabled=true for local emulator testing.
             val connectDemoServer = providers.gradleProperty("demoServerEnabled").orNull == "true"
             buildConfigField("boolean", "DEMO_SERVER_ENABLED", connectDemoServer.toString())
+            buildConfigField("boolean", "TRAINING_PREVIEW_ENABLED", "true")
             buildConfigField("String", "API_URL", "\"http://10.0.2.2:8000\"")
         }
         release {
+            // Release-mode R8, code/resource shrinking and an installable test
+            // signature. This is NOT a Play Store / production signing key.
+            isMinifyEnabled = true
+            isShrinkResources = true
+            proguardFiles(
+                getDefaultProguardFile("proguard-android-optimize.txt"),
+                "proguard-rules.pro"
+            )
+            signingConfig = signingConfigs.getByName("debug")
+            // Preserve exactly the offline training functionality present in
+            // debug previews. BuildConfig.DEBUG is false in every release APK.
+            buildConfigField("boolean", "TRAINING_PREVIEW_ENABLED", "true")
             buildConfigField("boolean", "DEMO_SERVER_ENABLED", "false")
-            isMinifyEnabled = false
             buildConfigField("String", "API_URL", "\"https://api.example.invalid\"")
         }
     }

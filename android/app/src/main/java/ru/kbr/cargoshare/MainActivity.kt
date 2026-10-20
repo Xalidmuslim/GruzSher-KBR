@@ -7,6 +7,10 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.compose.BackHandler
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.tween
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -130,6 +134,21 @@ private fun AppScreen(fontScale: Float, onFontScaleChange: (Float) -> Unit) {
     var receiptId by rememberSaveable { mutableStateOf<String?>(null) }
     val snackbar = remember { SnackbarHostState() }
     val tabStates = rememberSaveableStateHolder()
+    // A single short GPU-layer entrance, not an AnimatedContent crossfade:
+    // this never composes two expensive live maps at once.
+    val screenReveal = remember(tab, showLiveDemo) { Animatable(0f) }
+    LaunchedEffect(tab, showLiveDemo) {
+        screenReveal.animateTo(1f, animationSpec = tween(
+            durationMillis = 165, easing = FastOutSlowInEasing))
+    }
+    // Vehicle filtering is cached. The LIVE Demo clock no longer makes the
+    // fleet recalculate the list on unrelated UI recompositions.
+    val fleetCars = remember(vehicles, liveOverview.carId, liveOverview.phase) {
+        val engaged = liveOverview.phase in setOf(
+            LivePhase.WALK, LivePhase.INSPECT, LivePhase.UNLOCK,
+            LivePhase.READY, LivePhase.DRIVING, LivePhase.RETURNING, LivePhase.RETURN)
+        if (engaged) vehicles.filterNot { it.id == liveOverview.carId } else vehicles
+    }
     LaunchedEffect(tab) {
         if (tab == 1 || tab == 2) liveOverview = LiveDemoStorage(context.applicationContext).load()
     }
@@ -283,7 +302,13 @@ private fun AppScreen(fontScale: Float, onFontScaleChange: (Float) -> Unit) {
             }
         }
     ) { padding ->
-        Column(Modifier.padding(padding).fillMaxSize()) {
+        Column(Modifier.padding(padding).fillMaxSize()
+            .graphicsLayer {
+                // Only a render-layer change per animation frame: no remeasure
+                // of the heavy map or the scrollable screen contents.
+                alpha = 0.89f + 0.11f * screenReveal.value
+                translationY = (1f - screenReveal.value) * 6f * density
+            }) {
             if (error != null) {
                 Surface(color = Color(0xFFFFEBE7), modifier = Modifier.fillMaxWidth()) {
                     Row(Modifier.padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
@@ -294,7 +319,7 @@ private fun AppScreen(fontScale: Float, onFontScaleChange: (Float) -> Unit) {
             }
             tabStates.SaveableStateProvider(tab) {
             when (tab) {
-                0 -> PremiumFleetScreen(vehicles.filterNot { it.id==liveOverview.carId && liveOverview.phase in setOf(LivePhase.WALK,LivePhase.INSPECT,LivePhase.UNLOCK,LivePhase.READY,LivePhase.DRIVING,LivePhase.RETURNING,LivePhase.RETURN) }, busy, onSelect = { selectedCarKey = it.id }, onRefresh = { reloadVehicles() }, onLiveDemo = { receiptId=null; liveSelectedCarId = null; navigateTo(3, openDemo = true) }, active=liveOverview.phase !in setOf(LivePhase.CHOOSE,LivePhase.RECEIPT))
+                0 -> PremiumFleetScreen(fleetCars, busy, onSelect = { selectedCarKey = it.id }, onRefresh = { reloadVehicles() }, onLiveDemo = { receiptId=null; liveSelectedCarId = null; navigateTo(3, openDemo = true) }, active=liveOverview.phase !in setOf(LivePhase.CHOOSE,LivePhase.RECEIPT))
                 1 -> TripsDashboard(bookings = bookings, cars = vehicles,
                     live = liveOverview, offline = offlineDemo,
                     onResume = { chooseTrip(it) },

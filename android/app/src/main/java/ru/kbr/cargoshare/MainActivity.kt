@@ -44,6 +44,8 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.delay
+import androidx.lifecycle.lifecycleScope
 import java.time.ZoneId
 import java.time.ZonedDateTime
 import java.time.format.DateTimeFormatter
@@ -67,6 +69,12 @@ class MainActivity : ComponentActivity() {
         window.statusBarColor = android.graphics.Color.rgb(246, 247, 242)
         androidx.core.view.WindowInsetsControllerCompat(window, window.decorView)
             .isAppearanceLightStatusBars = true
+        // Preload only AFTER the first Compose frame. Coil enqueues decoding
+        // on background workers; it never blocks initial map composition.
+        lifecycleScope.launch {
+            delay(500L)
+            FleetImagePreloader.enqueueAboveTheFold(applicationContext)
+        }
         setContent {
             // One consistent app typography scale. Multiply Android accessibility
             // settings; don't modify display density or absolute dp measurements.
@@ -104,7 +112,7 @@ class MainActivity : ComponentActivity() {
 private fun AppScreen(fontScale: Float, onFontScaleChange: (Float) -> Unit) {
     val api = remember { Api() }
     val scope = rememberCoroutineScope()
-    var vehicles by remember { mutableStateOf(if (BuildConfig.DEBUG) offlineDemoCatalog() else emptyList()) }
+    var vehicles by remember { mutableStateOf(if (BuildConfig.TRAINING_PREVIEW_ENABLED) offlineDemoCatalog() else emptyList()) }
     val context = LocalContext.current
     val demoStore = remember(context) { DemoSnapshotStore(context.applicationContext) }
     val restoredDemo = remember(demoStore) { demoStore.load() }
@@ -113,9 +121,9 @@ private fun AppScreen(fontScale: Float, onFontScaleChange: (Float) -> Unit) {
     var demoNotice by remember { mutableStateOf<String?>(null) }
     var liveOverview by remember { mutableStateOf(LiveDemoStorage(context.applicationContext).load()) }
     var token by remember { mutableStateOf<String?>(null) }
-    var busy by remember { mutableStateOf(!BuildConfig.DEBUG) }
+    var busy by remember { mutableStateOf(!BuildConfig.TRAINING_PREVIEW_ENABLED) }
     var error by remember { mutableStateOf<String?>(null) }
-    var offlineDemo by remember { mutableStateOf(BuildConfig.DEBUG) }
+    var offlineDemo by remember { mutableStateOf(BuildConfig.TRAINING_PREVIEW_ENABLED) }
     var tab by rememberSaveable { mutableIntStateOf(0) }
     // Tab 3 is the compact More hub; an explicit action opens the retained LIVE demo.
     var showLiveDemo by rememberSaveable { mutableStateOf(false) }
@@ -174,7 +182,7 @@ private fun AppScreen(fontScale: Float, onFontScaleChange: (Float) -> Unit) {
         }
     }
     fun trainForBooking(booking: Booking) {
-        if (!offlineDemo || !BuildConfig.DEBUG) {
+        if (!offlineDemo || !BuildConfig.TRAINING_PREVIEW_ENABLED) {
             error = "Учебный сценарий доступен только в демонстрационном режиме."
             return
         }
@@ -243,14 +251,14 @@ private fun AppScreen(fontScale: Float, onFontScaleChange: (Float) -> Unit) {
         try {
             vehicles = api.vehicles()
             offlineDemo = false
-            if (BuildConfig.DEBUG) {
+            if (BuildConfig.TRAINING_PREVIEW_ENABLED) {
                 token = api.demoSession()
                 bookings = api.bookings(token!!)
             }
         } catch (e: Exception) {
-            offlineDemo = BuildConfig.DEBUG
-            if (BuildConfig.DEBUG) vehicles = offlineDemoCatalog()
-            error = if (BuildConfig.DEBUG) "Нет связи с демосервером. Доступна только учебная симуляция аренды на телефоне." else "Не удалось подключиться к серверу: ${e.localizedMessage}"
+            offlineDemo = BuildConfig.TRAINING_PREVIEW_ENABLED
+            if (BuildConfig.TRAINING_PREVIEW_ENABLED) vehicles = offlineDemoCatalog()
+            error = if (BuildConfig.TRAINING_PREVIEW_ENABLED) "Нет связи с демосервером. Доступна только учебная симуляция аренды на телефоне." else "Не удалось подключиться к серверу: ${e.localizedMessage}"
         } finally {
             busy = false
         }
@@ -303,12 +311,15 @@ private fun AppScreen(fontScale: Float, onFontScaleChange: (Float) -> Unit) {
         }
     ) { padding ->
         Column(Modifier.padding(padding).fillMaxSize()
-            .graphicsLayer {
-                // Only a render-layer change per animation frame: no remeasure
-                // of the heavy map or the scrollable screen contents.
-                alpha = 0.89f + 0.11f * screenReveal.value
-                translationY = (1f - screenReveal.value) * 6f * density
-            }) {
+            .then(
+                // Temporarily allocate a GPU layer DURING the 165ms existing
+                // entrance; drop it afterwards instead of retaining one layer
+                // for the whole screen for its entire lifetime.
+                if (screenReveal.value < 0.999f) Modifier.graphicsLayer {
+                    alpha = 0.89f + 0.11f * screenReveal.value
+                    translationY = (1f - screenReveal.value) * 6f * density
+                } else Modifier
+            )) {
             if (error != null) {
                 Surface(color = Color(0xFFFFEBE7), modifier = Modifier.fillMaxWidth()) {
                     Row(Modifier.padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
@@ -326,7 +337,7 @@ private fun AppScreen(fontScale: Float, onFontScaleChange: (Float) -> Unit) {
                     onTrain = { trainForBooking(it) },
                     onBrowse = { navigateTo(0) },
                     onTimeline = { id ->
-                        if (offlineDemo && BuildConfig.DEBUG) {
+                        if (offlineDemo && BuildConfig.TRAINING_PREVIEW_ENABLED) {
                             val current = bookings.find { it.id == id }
                             val store = LiveDemoStorage(context.applicationContext)
                             val journal = (store.receipt(id) ?: store.load().takeIf { it.bookingId == id })?.events.orEmpty()
@@ -335,7 +346,7 @@ private fun AppScreen(fontScale: Float, onFontScaleChange: (Float) -> Unit) {
                         } else token?.let { api.timeline(id, it) } ?: emptyList()
                     },
                     onRefresh = { if (!offlineDemo) token?.let { reloadBookings(it) } }, onCancel = { id ->
-                    if (offlineDemo && BuildConfig.DEBUG) {
+                    if (offlineDemo && BuildConfig.TRAINING_PREVIEW_ENABLED) {
                         if (bookings.any { it.id == id && canCancelBooking(it.status) }) {
                             bookings = bookings.map { if (it.id == id) it.copy(status = "CANCELLED") else it }
                             offlineCancelledAt[id] = Instant.now().toString()
@@ -405,8 +416,8 @@ private fun AppScreen(fontScale: Float, onFontScaleChange: (Float) -> Unit) {
         }
     }
     selected?.let { vehicle ->
-        VehicleBookingSheet(vehicle = vehicle, canBook = token != null || (offlineDemo && BuildConfig.DEBUG),
-            offlineTraining = offlineDemo && BuildConfig.DEBUG,
+        VehicleBookingSheet(vehicle = vehicle, canBook = token != null || (offlineDemo && BuildConfig.TRAINING_PREVIEW_ENABLED),
+            offlineTraining = offlineDemo && BuildConfig.TRAINING_PREVIEW_ENABLED,
             onDismiss = { selectedCarKey = null },
             onTryLiveDemo = { requestedHours ->
                 receiptId = null
@@ -426,7 +437,7 @@ private fun AppScreen(fontScale: Float, onFontScaleChange: (Float) -> Unit) {
                 }
             },
             onQuote = { start, end ->
-                if (offlineDemo && BuildConfig.DEBUG) {
+                if (offlineDemo && BuildConfig.TRAINING_PREVIEW_ENABLED) {
                     val h = java.time.Duration.between(start, end).toHours().toInt()
                     val days = h / 24
                     val remainder = h % 24
@@ -437,7 +448,7 @@ private fun AppScreen(fontScale: Float, onFontScaleChange: (Float) -> Unit) {
             },
             onBook = { start, end, idempotencyKey ->
                 val t = token
-                if (offlineDemo && BuildConfig.DEBUG) {
+                if (offlineDemo && BuildConfig.TRAINING_PREVIEW_ENABLED) {
                     if (!validDemoWindow(start.toInstant(), end.toInstant(), Instant.now())) {
                         error = "Начало должно быть в будущем (до 90 дней), аренда от 2 часов до 30 дней"; false
                     } else if (!canReserveDemo(demoSlots(), vehicle.id, start.toInstant(), end.toInstant())) {

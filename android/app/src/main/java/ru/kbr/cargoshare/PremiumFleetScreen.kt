@@ -300,18 +300,25 @@ private fun PremiumFleetCard(car: Vehicle, modifier: Modifier, selected: Boolean
                              onClick: () -> Unit) {
     val context = LocalContext.current
     val prefs = remember(context) { context.getSharedPreferences("gruzsher_preferences", 0) }
-    var favourite by remember(car.id) { mutableStateOf(prefs.getBoolean("favourite_${car.id}", false)) }
-    Card(onClick = onClick, modifier = modifier.heightIn(min = 247.dp),
-        shape = RoundedCornerShape(19.dp),
+    var favourite by remember(car.id) {
+        mutableStateOf(prefs.getBoolean("favourite_${car.id}", false))
+    }
+    // Wrap the actual content. Previously heightIn(min=247.dp) combined with
+    // fillMaxSize + weight(1f) spacer created a large empty middle section,
+    // especially when titles fit on one line.
+    Card(onClick = onClick, modifier = modifier,
+        shape = RoundedCornerShape(18.dp),
         colors = CardDefaults.cardColors(containerColor = Color.White),
         elevation = CardDefaults.cardElevation(1.dp),
         border = if (selected) BorderStroke(2.dp, PremiumTheme.Green) else null) {
-        Column(Modifier.fillMaxSize().padding(6.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-            Box(Modifier.fillMaxWidth().height(100.dp)) {
+        Column(Modifier.fillMaxWidth().padding(7.dp),
+            verticalArrangement = Arrangement.spacedBy(4.dp)) {
+            Box(Modifier.fillMaxWidth().height(101.dp)) {
                 TruckArtwork(car, Modifier.fillMaxSize())
                 Surface(Modifier.align(Alignment.TopStart).padding(4.dp),
                     shape = RoundedCornerShape(14.dp), color = PremiumTheme.Mint) {
                     Text("● Доступен", fontSize = 9.sp, color = PremiumTheme.Green,
+                        maxLines = 1,
                         modifier = Modifier.padding(horizontal = 6.dp, vertical = 3.dp))
                 }
                 IconButton(onClick = {
@@ -324,20 +331,24 @@ private fun PremiumFleetCard(car: Vehicle, modifier: Modifier, selected: Boolean
                 }
             }
             Text(car.name, color = PremiumTheme.Text, fontWeight = FontWeight.Bold,
-                fontSize = 14.sp, lineHeight = 16.sp, maxLines = 2,
-                overflow = TextOverflow.Ellipsis, minLines = 2)
+                fontSize = 14.sp, lineHeight = 17.sp, maxLines = 2,
+                overflow = TextOverflow.Ellipsis)
             Text(car.type, color = PremiumTheme.Muted, fontSize = 9.sp,
                 maxLines = 1, overflow = TextOverflow.Ellipsis)
             Text("${car.payloadKg} кг  ◇  ${car.cargoVolumeM3} м³",
-                color = PremiumTheme.Muted, fontSize = 10.sp, maxLines = 1)
-            Spacer(Modifier.weight(1f))
-            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                color = PremiumTheme.Muted, fontSize = 10.sp,
+                maxLines = 1, overflow = TextOverflow.Ellipsis)
+            Row(Modifier.fillMaxWidth().padding(top = 2.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(4.dp)) {
                 Text("${car.hourlyPriceRub} ₽/ч", fontSize = 15.sp,
                     fontWeight = FontWeight.ExtraBold, color = PremiumTheme.GreenDark,
-                    maxLines = 1, modifier = Modifier.weight(1f))
-                Surface(shape = RoundedCornerShape(13.dp), color = PremiumTheme.Green) {
+                    maxLines = 1, overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.weight(1f))
+                Surface(shape = RoundedCornerShape(12.dp), color = PremiumTheme.Green) {
                     Text("Выбрать", fontSize = 10.sp, color = Color.White,
-                        modifier = Modifier.padding(horizontal = 9.dp, vertical = 9.dp))
+                        maxLines = 1,
+                        modifier = Modifier.padding(horizontal = 9.dp, vertical = 8.dp))
                 }
             }
         }

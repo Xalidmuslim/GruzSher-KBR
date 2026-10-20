@@ -1,10 +1,13 @@
 #!/usr/bin/env bash
 # Keep the Gradle exit status, but collect real emulator screenshots regardless.
 set +e
-if [[ "${GITHUB_REF_NAME:-}" == "feature/gruzsher-v384-live-global-font-scale" ||
-      "${GITHUB_REF_NAME:-}" == "feature/gruzsher-v385-gallery-layout-icon-font" ||
-      "${GITHUB_REF_NAME:-}" == "feature/gruzsher-v386-compact-cards-safe-footer" ]]; then
-  # Verify visible glyph bounds immediately while the settings sheet is open.
+if [[ "${GITHUB_REF_NAME:-}" == "feature/gruzsher-v386-compact-cards-safe-footer" ]]; then
+  # Pixel-size QA of the actual selected truck card and clipped booking CTA,
+  # plus a live settings font-size regression at 100–150%.
+  gradle -p android --no-daemon connectedDebugAndroidTest \
+    -Pandroid.testInstrumentationRunnerArguments.class=ru.kbr.cargoshare.CompactLayoutTest,ru.kbr.cargoshare.FontScaleLiveTest
+elif [[ "${GITHUB_REF_NAME:-}" == "feature/gruzsher-v384-live-global-font-scale" ||
+      "${GITHUB_REF_NAME:-}" == "feature/gruzsher-v385-gallery-layout-icon-font" ]]; then
   gradle -p android --no-daemon connectedDebugAndroidTest \
     -Pandroid.testInstrumentationRunnerArguments.class=ru.kbr.cargoshare.FontScaleLiveTest
 elif [[ "${GITHUB_REF_NAME:-}" == "feature/gruzsher-v381-map-vehicle-card-layout-audit" ||

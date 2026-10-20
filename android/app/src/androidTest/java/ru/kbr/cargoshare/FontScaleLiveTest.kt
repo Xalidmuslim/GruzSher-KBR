@@ -6,6 +6,8 @@ import androidx.test.platform.app.InstrumentationRegistry
 import androidx.test.uiautomator.By
 import androidx.test.uiautomator.UiDevice
 import androidx.test.uiautomator.UiObject2
+import androidx.test.uiautomator.UiScrollable
+import androidx.test.uiautomator.UiSelector
 import androidx.test.uiautomator.Until
 import org.junit.Assert.*
 import org.junit.Test
@@ -19,6 +21,12 @@ class FontScaleLiveTest {
     private val context = inst.targetContext
 
     private fun tap(label: String): UiObject2 {
+        if (!device.wait(Until.hasObject(By.text(label)), 2_000L)) {
+            runCatching {
+                UiScrollable(UiSelector().scrollable(true))
+                    .scrollIntoView(UiSelector().text(label))
+            }
+        }
         val element = device.wait(Until.findObject(By.text(label)), 15_000L)
         assertNotNull("Cannot find '$label'", element)
         val clickable = generateSequence(element!!) { it.parent }

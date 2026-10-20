@@ -11,8 +11,8 @@ android {
         applicationId = "ru.kbr.cargoshare.referencepreview.ux388"
         minSdk = 26
         targetSdk = 35
-        versionCode = 68
-        versionName = "3.8.9-native-performance-release"
+        versionCode = 69
+        versionName = "3.9.0-premium-motion-120hz"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
     buildFeatures {

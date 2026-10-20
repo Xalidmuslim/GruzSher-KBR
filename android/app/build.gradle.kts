@@ -8,11 +8,11 @@ android {
     namespace = "ru.kbr.cargoshare"
     compileSdk = 35
     defaultConfig {
-        applicationId = "ru.kbr.cargoshare.referencepreview.ux384"
+        applicationId = "ru.kbr.cargoshare.referencepreview.ux385"
         minSdk = 26
         targetSdk = 35
-        versionCode = 63
-        versionName = "3.8.4-global-live-font-scaling"
+        versionCode = 64
+        versionName = "3.8.5-gallery-layout-new-icon"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
     buildFeatures {

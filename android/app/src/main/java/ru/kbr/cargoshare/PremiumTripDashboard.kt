@@ -12,6 +12,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import java.util.Locale
@@ -123,14 +124,29 @@ private fun TripAction(
     label: String, icon: androidx.compose.ui.graphics.vector.ImageVector,
     modifier: Modifier, onClick: () -> Unit,
 ) {
-    Surface(onClick = onClick, modifier = modifier,
-        shape = RoundedCornerShape(17.dp), color = Color.White,
+    // Stable two-column tiles across 100–150% font scaling. Putting the
+    // caption below the icon prevents long Russian words being crushed
+    // between a leading glyph and right-side chevron.
+    Surface(onClick = onClick, modifier = modifier.height(122.dp),
+        shape = RoundedCornerShape(18.dp), color = Color.White,
         shadowElevation = 1.dp) {
-        Row(Modifier.fillMaxWidth().padding(12.dp),verticalAlignment=Alignment.CenterVertically) {
-            Surface(color=PremiumTheme.Mint,shape=RoundedCornerShape(30.dp)) {Icon(icon,null,tint=PremiumTheme.Green,modifier=Modifier.padding(9.dp).size(26.dp))}
-            Spacer(Modifier.width(10.dp))
-            Text(label,fontSize=13.sp,color=PremiumTheme.Text,fontWeight=FontWeight.Bold,modifier=Modifier.weight(1f))
-            Icon(Icons.Outlined.ChevronRight,null,tint=PremiumTheme.Muted,modifier=Modifier.size(18.dp))
+        Column(
+            Modifier.fillMaxSize().padding(horizontal = 9.dp, vertical = 10.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center
+        ) {
+            Surface(color = PremiumTheme.Mint, shape = RoundedCornerShape(28.dp)) {
+                Icon(icon, contentDescription = null, tint = PremiumTheme.Green,
+                    modifier = Modifier.padding(9.dp).size(24.dp))
+            }
+            Spacer(Modifier.height(8.dp))
+            Text(
+                text = label, color = PremiumTheme.Text,
+                fontWeight = FontWeight.SemiBold, fontSize = 12.sp,
+                maxLines = 2, lineHeight = 16.sp,
+                textAlign = TextAlign.Center,
+                modifier = Modifier.fillMaxWidth()
+            )
         }
     }
 }

@@ -251,7 +251,7 @@ fun ProfessionalProfile(
                     "Настройки" -> {
                         Text("Размер шрифта", fontSize = 16.sp,
                             fontWeight = FontWeight.Bold, color = ProfileInk)
-                        ProfileHint("Размер применяется ко всем разделам и сохраняется " +
+                        ProfileHint("По умолчанию 110%. Размер применяется ко всем разделам и сохраняется " +
                             "на этом телефоне. Системный размер шрифта Android также учитывается.")
                         Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
                             horizontalArrangement = Arrangement.spacedBy(8.dp)) {

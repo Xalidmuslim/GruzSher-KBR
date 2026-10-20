@@ -42,7 +42,7 @@ class FontScaleLiveTest {
 
     @Test fun changingFontSizeImmediatelyResizesTextInsideOpenSheet() {
         val prefs = context.getSharedPreferences("gruzsher_preferences", 0)
-        prefs.edit().putFloat(APP_FONT_SCALE_KEY, 1f).commit()
+        prefs.edit().putFloat(APP_FONT_SCALE_KEY, 1.1f).commit()
         try {
             val launch = context.packageManager.getLaunchIntentForPackage(
                 context.packageName)!!.addFlags(
@@ -54,26 +54,26 @@ class FontScaleLiveTest {
             tap("Настройки")
             assertTrue(device.wait(Until.hasObject(By.text("Размер шрифта")), 15_000L))
 
-            tap("90%")
-            assertTrue(device.wait(Until.hasObject(By.text("Выбран размер: 90%")), 5_000L))
+            tap("100%")
+            assertTrue(device.wait(Until.hasObject(By.text("Выбран размер: 100%")), 5_000L))
             val small = device.wait(
                 Until.findObject(By.text("Проверка шрифта")), 5_000L)
             assertNotNull(small)
             val smallHeight = small!!.visibleBounds.height()
-            screenshot("font_live_90")
+            screenshot("font_live_100")
 
-            tap("120%")
-            assertTrue(device.wait(Until.hasObject(By.text("Выбран размер: 120%")), 5_000L))
+            tap("150%")
+            assertTrue(device.wait(Until.hasObject(By.text("Выбран размер: 150%")), 5_000L))
             assertTrue("Settings sheet closed unexpectedly",
                 device.hasObject(By.text("Размер шрифта")))
             val large = device.wait(
                 Until.findObject(By.text("Проверка шрифта")), 5_000L)
             assertNotNull(large)
             val largeHeight = large!!.visibleBounds.height()
-            screenshot("font_live_120")
+            screenshot("font_live_150")
             assertTrue("Font scale not applied to visible text. Before=$smallHeight after=$largeHeight",
-                largeHeight >= smallHeight * 1.22f)
-            assertEquals(1.2f, prefs.getFloat(APP_FONT_SCALE_KEY, 1f), 0f)
+                largeHeight >= smallHeight * 1.30f)
+            assertEquals(1.5f, prefs.getFloat(APP_FONT_SCALE_KEY, 1.1f), 0f)
         } finally {
             prefs.edit().putFloat(APP_FONT_SCALE_KEY, 1f).commit()
         }

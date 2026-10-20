@@ -71,7 +71,7 @@ class MainActivity : ComponentActivity() {
             }
             var appFontScale by remember {
                 mutableFloatStateOf(
-                    normalizeAppFontScale(appPrefs.getFloat(APP_FONT_SCALE_KEY, 1f)))
+                    normalizeAppFontScale(appPrefs.getFloat(APP_FONT_SCALE_KEY, 1.1f)))
             }
             // Text nodes subscribe to this snapshot-backed CompositionLocal.
             // Unlike the former LocalDensity-only override, it also redraws

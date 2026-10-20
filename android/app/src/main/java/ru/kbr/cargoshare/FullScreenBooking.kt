@@ -110,8 +110,13 @@ fun FullScreenVehicleBooking(
             decorFitsSystemWindows = true)) {
         // Reserve system safe drawing area on the full dialog, not on its
         // scrollable body, so the footer can't slide below Android gesture bar.
+        // Some OEM fullscreen Dialog windows report zero safeDrawing bottom
+        // inset while their content still extends behind the gesture nav bar.
+        // Reserve room on the ROOT (reduces measured content height), rather
+        // than inflating the CTA footer itself with large empty padding.
         Column(Modifier.fillMaxSize().background(PremiumTheme.Paper)
-            .windowInsetsPadding(WindowInsets.safeDrawing).imePadding()) {
+            .windowInsetsPadding(WindowInsets.safeDrawing).imePadding()
+            .padding(bottom = 60.dp)) {
             Row(
                 Modifier.fillMaxWidth().background(Color.White).padding(start = 11.dp,
                     end = 18.dp, top = 7.dp, bottom = 7.dp),
@@ -314,7 +319,7 @@ fun FullScreenVehicleBooking(
                 // the dialog root; only a modest extra gap is needed here.
                 // Both rows size to their CONTENT even when text is enlarged.
                 Column(Modifier.fillMaxWidth()
-                    .padding(start = 16.dp, end = 16.dp, top = 6.dp, bottom = 20.dp),
+                    .padding(start = 16.dp, end = 16.dp, top = 6.dp, bottom = 10.dp),
                     verticalArrangement = Arrangement.spacedBy(4.dp)) {
                     Row(Modifier.fillMaxWidth(),
                         verticalAlignment = Alignment.CenterVertically,

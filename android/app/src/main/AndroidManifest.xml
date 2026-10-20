@@ -2,7 +2,7 @@
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
-    <application android:theme="@android:style/Theme.Material.Light.NoActionBar" android:label="ГрузШер КБР · Демо" android:supportsRtl="true" android:usesCleartextTraffic="false">
+    <application android:theme="@android:style/Theme.Material.Light.NoActionBar" android:label="ГрузШер КБР · Демо" android:icon="@mipmap/ic_launcher" android:roundIcon="@mipmap/ic_launcher_round" android:supportsRtl="true" android:usesCleartextTraffic="false">
         <activity android:name=".MainActivity" android:exported="true" android:windowSoftInputMode="adjustResize" android:enableOnBackInvokedCallback="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />

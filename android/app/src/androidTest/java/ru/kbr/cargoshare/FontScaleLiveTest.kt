@@ -63,7 +63,15 @@ class FontScaleLiveTest {
             screenshot("font_live_100")
 
             tap("150%")
-            assertTrue(device.wait(Until.hasObject(By.text("Выбран размер: 150%")), 5_000L))
+            // At 150%, the live preview grows beyond the visible bottom of
+            // the settings sheet. Scroll the SHEET to inspect its new bounds,
+            // rather than interpreting an off-screen label as a failed update.
+            device.swipe((device.displayWidth * .55).toInt(),
+                (device.displayHeight * .86).toInt(),
+                (device.displayWidth * .55).toInt(),
+                (device.displayHeight * .56).toInt(), 25)
+            assertTrue("Selected size did not update",
+                device.wait(Until.hasObject(By.text("Выбран размер: 150%")), 6_000L))
             assertTrue("Settings sheet closed unexpectedly",
                 device.hasObject(By.text("Размер шрифта")))
             val large = device.wait(

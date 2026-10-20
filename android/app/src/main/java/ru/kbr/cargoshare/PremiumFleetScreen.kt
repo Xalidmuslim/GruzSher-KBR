@@ -47,7 +47,7 @@ fun PremiumFleetScreen(
     // Fade in only the newly visible layer after swapping the mode.
     val modeReveal = remember(showEmbeddedMap) { Animatable(0f) }
     LaunchedEffect(showEmbeddedMap) {
-        modeReveal.animateTo(1f, tween(145, easing = FastOutSlowInEasing))
+        modeReveal.animateTo(1f, tween(PremiumMotion.SCREEN_MS, easing = PremiumMotion.Smooth))
     }
     var fullMap by rememberSaveable { mutableStateOf(false) }
     // A back gesture from the list restores its preceding embedded-map mode.
@@ -354,7 +354,7 @@ private fun PremiumFleetCard(car: Vehicle, modifier: Modifier, selected: Boolean
     // Wrap the actual content. Previously heightIn(min=247.dp) combined with
     // fillMaxSize + weight(1f) spacer created a large empty middle section,
     // especially when titles fit on one line.
-    Card(onClick = onClick, modifier = modifier,
+    Card(onClick = onClick, modifier = modifier.premiumSelected(selected),
         shape = RoundedCornerShape(18.dp),
         colors = CardDefaults.cardColors(containerColor = Color.White),
         elevation = CardDefaults.cardElevation(1.dp),

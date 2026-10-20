@@ -244,7 +244,9 @@ fun PremiumFleetScreen(
         if (loading) item(key = "loading") { LinearProgressIndicator(Modifier.fillMaxWidth()) }
         if (showEmbeddedMap) item(key = "map") {
             Box(Modifier.fillMaxWidth().height(258.dp)
-                .graphicsLayer { alpha = 0.88f + 0.12f * modeReveal.value }
+                .then(if (modeReveal.value < 0.999f) {
+                    Modifier.graphicsLayer { alpha = 0.88f + 0.12f * modeReveal.value }
+                } else Modifier)
                 .clip(RoundedCornerShape(20.dp))
                 .background(PremiumTheme.Mint)) {
                 NalchikMap(shown, { car ->
@@ -281,7 +283,9 @@ fun PremiumFleetScreen(
         } else if (showEmbeddedMap) {
             item(key = "carousel") {
                 LazyRow(state = carousel,
-                    modifier = Modifier.graphicsLayer { alpha = 0.88f + 0.12f * modeReveal.value },
+                    modifier = Modifier.then(if (modeReveal.value < 0.999f) {
+                    Modifier.graphicsLayer { alpha = 0.88f + 0.12f * modeReveal.value }
+                } else Modifier),
                     horizontalArrangement = Arrangement.spacedBy(9.dp)) {
                     items(shown, key = { it.id }) { car ->
                         PremiumFleetCard(car, Modifier.width(178.dp), selectedId == car.id) {
@@ -292,9 +296,13 @@ fun PremiumFleetScreen(
             }
         } else {
             items(shown, key = { "list_${it.id}" }) { car ->
-                Box(Modifier.graphicsLayer {
-                    alpha = 0.88f + 0.12f * modeReveal.value
-                }) {
+                Box(Modifier.then(
+                    if (modeReveal.value < 0.999f)
+                        Modifier.graphicsLayer {
+                            alpha = 0.88f + 0.12f * modeReveal.value
+                        }
+                    else Modifier
+                )) {
                     PremiumFleetListRow(car) { onSelect(car) }
                 }
             }

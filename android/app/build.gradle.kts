@@ -8,11 +8,11 @@ android {
     namespace = "ru.kbr.cargoshare"
     compileSdk = 35
     defaultConfig {
-        applicationId = "ru.kbr.cargoshare.referencepreview.ux387"
+        applicationId = "ru.kbr.cargoshare.referencepreview.ux388"
         minSdk = 26
         targetSdk = 35
-        versionCode = 66
-        versionName = "3.8.7-selected-icon-map-back"
+        versionCode = 67
+        versionName = "3.8.8-smooth-navigation-optimized"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
     buildFeatures {
@@ -43,6 +43,7 @@ android {
 dependencies {
     val composeBom = platform("androidx.compose:compose-bom:2024.10.01")
     implementation(composeBom)
+    implementation("androidx.compose.animation:animation")
     implementation("androidx.activity:activity-compose:1.9.3")
     implementation("androidx.compose.ui:ui")
     implementation("androidx.compose.ui:ui-tooling-preview")

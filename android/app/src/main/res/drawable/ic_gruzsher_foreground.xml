@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp" android:height="108dp"
+    android:viewportWidth="108" android:viewportHeight="108">
+    <!-- Matte, premium 3D delivery truck. The Android launcher masks the background. -->
+    <!-- Curved road underneath the vehicle -->
+    <path android:fillColor="#153D35"
+        android:pathData="M22,83 C37,75 61,76 83,67 L89,73 C72,85 50,86 29,93 Z"/>
+    <path android:fillColor="#F0E5CC"
+        android:pathData="M23,82 C39,75 60,76 83,67 L86,71 C66,82 46,83 27,90 Z"/>
+    <!-- Cargo body: matte offset shadow, roof face, then light main face -->
+    <path android:fillColor="#0C332A"
+        android:pathData="M23,48 L57,48 L62,54 L62,73 L23,73 Z"/>
+    <path android:fillColor="#D6CDB8"
+        android:pathData="M24,46 L55,44 L60,50 L60,69 L24,69 Z"/>
+    <path android:fillColor="#FFF5E1"
+        android:pathData="M24,46 L54,46 L54,68 L24,68 Z"/>
+    <path android:fillColor="#E5D7B8"
+        android:pathData="M54,46 L60,50 L60,68 L54,68 Z"/>
+    <path android:fillColor="#FFFAEF"
+        android:pathData="M24,46 L54,46 L60,50 L28,50 Z"/>
+    <!-- Cab silhouette -->
+    <path android:fillColor="#10392D"
+        android:pathData="M60,54 L72,54 L80,61 L82,68 L82,74 L60,74 Z"/>
+    <path android:fillColor="#FFF2D8"
+        android:pathData="M60,53 L70,53 L79,60 L79,70 L60,70 Z"/>
+    <path android:fillColor="#B7D0C0"
+        android:pathData="M65,56 L70,56 L76,61 L76,63 L65,63 Z"/>
+    <path android:fillColor="#D6C6A8"
+        android:pathData="M61,53 L64,54 L64,70 L61,70 Z"/>
+    <!-- Solid wheel faces with soft highlights -->
+    <path android:fillColor="#0B2B25"
+        android:pathData="M37,66 a6,6 0,1 1,0 12 a6,6 0,1 1,0 -12"/>
+    <path android:fillColor="#E7D9BD"
+        android:pathData="M37,69 a3,3 0,1 1,0 6 a3,3 0,1 1,0 -6"/>
+    <path android:fillColor="#0B2B25"
+        android:pathData="M70,66 a6,6 0,1 1,0 12 a6,6 0,1 1,0 -12"/>
+    <path android:fillColor="#E7D9BD"
+        android:pathData="M70,69 a3,3 0,1 1,0 6 a3,3 0,1 1,0 -6"/>
+    <!-- Yellow position pin above truck; solid matte, no glow or gradients -->
+    <path android:fillColor="#FAD44D"
+        android:pathData="M79,18 C71,18 66,23 66,30 C66,38 79,50 79,50 C79,50 92,38 92,30 C92,23 87,18 79,18 Z"/>
+    <path android:fillColor="#0B4939"
+        android:pathData="M79,25 a5,5 0,1 1,0 10 a5,5 0,1 1,0 -10"/>
+</vector>

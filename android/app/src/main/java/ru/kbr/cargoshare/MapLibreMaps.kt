@@ -158,6 +158,18 @@ internal fun MapLibreFleetMap(
         context.applicationContext.getSharedPreferences("gruzsher_preferences", 0)
             .getBoolean("map_prices_visible", true)
     }
+    // Cache BOTH marker states. This avoids repeated Android Canvas bitmap
+    // creation whenever GPS, selection or the route changes, keeping map
+    // interaction smooth on mid-range Android hardware.
+    val fleetIcons = remember(context, cars, shownPrice) {
+        cars.associate { vehicle ->
+            val displayed = if (shownPrice) vehicle.hourlyPriceRub else null
+            vehicle.id to Pair(
+                (truckMapMarker(context, displayed, selected = false) as BitmapDrawable).bitmap,
+                (truckMapMarker(context, displayed, selected = true) as BitmapDrawable).bitmap
+            )
+        }
+    }
     val handle = rememberLibreMap(CENTER_LAT, CENTER_LON, 12.7)
     val map = handle.map
     // Fleet map keeps north-up orientation. GPS icon never changes its heading
@@ -235,14 +247,14 @@ internal fun MapLibreFleetMap(
             val lat = vehicle.latitude
             val lon = vehicle.longitude
             if (lat != null && lon != null) {
-                val bitmap = truckMapMarker(context,
-                    if (shownPrice) vehicle.hourlyPriceRub else null,
-                    selectedVehicleId == vehicle.id) as BitmapDrawable
+                val images = fleetIcons[vehicle.id] ?: return@forEach
+                val bitmap = if (selectedVehicleId == vehicle.id)
+                    images.second else images.first
                 map.addMarker(MarkerOptions()
                     .position(LatLng(lat, lon))
                     .title(vehicle.name)
                     .snippet(vehicle.pickupLocation)
-                    .icon(icons.fromBitmap(bitmap.bitmap)))
+                    .icon(icons.fromBitmap(bitmap)))
             }
         }
         phonePosition?.let { location ->

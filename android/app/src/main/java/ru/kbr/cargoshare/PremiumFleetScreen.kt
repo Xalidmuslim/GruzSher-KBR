@@ -1,5 +1,10 @@
 package ru.kbr.cargoshare
 
+import androidx.compose.animation.animateContentSize
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.tween
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
@@ -38,6 +43,12 @@ fun PremiumFleetScreen(
 ) {
     var filter by rememberSaveable { mutableStateOf("Все") }
     var showEmbeddedMap by rememberSaveable { mutableStateOf(true) }
+    // The map is expensive: never cross-compose map and list simultaneously.
+    // Fade in only the newly visible layer after swapping the mode.
+    val modeReveal = remember(showEmbeddedMap) { Animatable(0f) }
+    LaunchedEffect(showEmbeddedMap) {
+        modeReveal.animateTo(1f, tween(145, easing = FastOutSlowInEasing))
+    }
     var fullMap by rememberSaveable { mutableStateOf(false) }
     // A back gesture from the list restores its preceding embedded-map mode.
     var restoreEmbeddedMapOnBack by remember { mutableStateOf(false) }
@@ -124,6 +135,7 @@ fun PremiumFleetScreen(
                 Surface(
                     onClick = { onSelect(car) },
                     modifier = Modifier.fillMaxWidth()
+                        .animateContentSize(animationSpec = tween(170))
                         .padding(horizontal = 11.dp, vertical = 5.dp),
                     shape = RoundedCornerShape(16.dp),
                     color = Color.White,
@@ -231,7 +243,9 @@ fun PremiumFleetScreen(
         item(key = "filters") { FleetFilters(filter) { filter = it; selectedId = ""; scope.launch { carousel.scrollToItem(0) } } }
         if (loading) item(key = "loading") { LinearProgressIndicator(Modifier.fillMaxWidth()) }
         if (showEmbeddedMap) item(key = "map") {
-            Box(Modifier.fillMaxWidth().height(258.dp).clip(RoundedCornerShape(20.dp))
+            Box(Modifier.fillMaxWidth().height(258.dp)
+                .graphicsLayer { alpha = 0.88f + 0.12f * modeReveal.value }
+                .clip(RoundedCornerShape(20.dp))
                 .background(PremiumTheme.Mint)) {
                 NalchikMap(shown, { car ->
                     selectedId = car.id
@@ -266,7 +280,9 @@ fun PremiumFleetScreen(
             Text("В этой категории нет автомобилей.", modifier = Modifier.padding(20.dp))
         } else if (showEmbeddedMap) {
             item(key = "carousel") {
-                LazyRow(state = carousel, horizontalArrangement = Arrangement.spacedBy(9.dp)) {
+                LazyRow(state = carousel,
+                    modifier = Modifier.graphicsLayer { alpha = 0.88f + 0.12f * modeReveal.value },
+                    horizontalArrangement = Arrangement.spacedBy(9.dp)) {
                     items(shown, key = { it.id }) { car ->
                         PremiumFleetCard(car, Modifier.width(178.dp), selectedId == car.id) {
                             onSelect(car)
@@ -276,7 +292,11 @@ fun PremiumFleetScreen(
             }
         } else {
             items(shown, key = { "list_${it.id}" }) { car ->
-                PremiumFleetListRow(car) { onSelect(car) }
+                Box(Modifier.graphicsLayer {
+                    alpha = 0.88f + 0.12f * modeReveal.value
+                }) {
+                    PremiumFleetListRow(car) { onSelect(car) }
+                }
             }
         }
     }

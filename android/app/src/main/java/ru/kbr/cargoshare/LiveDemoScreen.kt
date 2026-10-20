@@ -95,10 +95,16 @@ fun LiveDemoScreen(
             if (selectedBookingId == null) onTripChanged(session)
         }
     }
-    LaunchedEffect(Unit) {
-        while (isActive) {
-            now = System.currentTimeMillis()
-            delay(1000L)
+    // Tick only during phases that have elapsed time, transitions or motion.
+    // Previously the 1-second global ticker re-composed the entire huge LIVE
+    // screen even on static forms, receipts and idle welcome screens.
+    LaunchedEffect(session.phase) {
+        now = System.currentTimeMillis()
+        if (needsLiveClock(session.phase)) {
+            while (isActive) {
+                delay(1000L)
+                now = System.currentTimeMillis()
+            }
         }
     }
     LaunchedEffect(now, session) {

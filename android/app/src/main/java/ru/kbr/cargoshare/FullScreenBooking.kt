@@ -310,45 +310,54 @@ fun FullScreenVehicleBooking(
             }
             Surface(color = Color.White, shadowElevation = 12.dp,
                 modifier = Modifier.fillMaxWidth()) {
-                // Keep the whole green action ABOVE the gesture bar, including
-                // on OEM Android builds that report zero inset to Compose Dialog.
-                // Dialog's content scrolls independently, while this fixed footer
-                // reserves a guaranteed 56dp bottom safety zone.
+                // Compact fixed bottom summary: price + route action share ONE row.
+                // The Dialog already respects WindowInsets.safeDrawing; retain a
+                // modest extra margin instead of 56dp empty space.
                 Column(Modifier.fillMaxWidth()
-                    .padding(start = 17.dp, end = 17.dp, top = 9.dp, bottom = 56.dp),
-                    verticalArrangement = Arrangement.spacedBy(7.dp)) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Column(Modifier.weight(1f)) {
-                            Text("Итого за ${hours} ч", fontSize = 12.sp, color = PremiumTheme.Muted)
-                            Text(if (checking) "Рассчитываем…" else if (available && quotedPrice != null)
-                                    "${quotedPrice} ₽" else "Нет тарифа",
-                                fontSize = 27.sp, fontWeight = FontWeight.ExtraBold,
-                                color = PremiumTheme.GreenDark)
+                    .padding(start = 17.dp, end = 17.dp, top = 7.dp, bottom = 21.dp),
+                    verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                    Row(Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Column(Modifier.weight(1f),
+                            verticalArrangement = Arrangement.spacedBy(1.dp)) {
+                            Text("Итого за ${hours} ч", fontSize = 11.sp,
+                                color = PremiumTheme.Muted)
+                            Text(if (checking) "Рассчитываем…"
+                                 else if (available && quotedPrice != null)
+                                     "${quotedPrice} ₽" else "Нет тарифа",
+                                fontSize = 25.sp, fontWeight = FontWeight.ExtraBold,
+                                color = PremiumTheme.GreenDark, maxLines = 1,
+                                overflow = TextOverflow.Ellipsis)
                         }
-                        Text("Без залога", fontSize = 12.sp, color = PremiumTheme.Green)
-                    }
-                    // Secondary map action belongs ABOVE the primary verification
-                    // CTA, not inside a map overlay that can be obscured by panels.
-                    if (vehicle.latitude != null && vehicle.longitude != null) {
-                        OutlinedButton(
-                            onClick = {
-                                detailRoadRoute = null
-                                detailRouteRequested = true
-                                detailRouteTap += 1
-                                pickupMapExpanded = true
-                            },
-                            modifier = Modifier.align(Alignment.End).height(36.dp),
-                            shape = RoundedCornerShape(11.dp),
-                            contentPadding = PaddingValues(horizontal = 12.dp, vertical = 0.dp),
-                            border = BorderStroke(1.dp, PremiumTheme.Green),
-                            colors = ButtonDefaults.outlinedButtonColors(
-                                contentColor = PremiumTheme.GreenDark)
-                        ) {
-                            Icon(Icons.Outlined.AltRoute, contentDescription = null,
-                                modifier = Modifier.size(16.dp))
-                            Spacer(Modifier.width(6.dp))
-                            Text("Построить маршрут", fontSize = 11.sp,
-                                fontWeight = FontWeight.SemiBold)
+                        Column(horizontalAlignment = Alignment.End,
+                            verticalArrangement = Arrangement.spacedBy(5.dp)) {
+                            Text("Без залога", fontSize = 11.sp,
+                                color = PremiumTheme.Green)
+                            if (vehicle.latitude != null && vehicle.longitude != null) {
+                                OutlinedButton(
+                                    onClick = {
+                                        detailRoadRoute = null
+                                        detailRouteRequested = true
+                                        detailRouteTap += 1
+                                        pickupMapExpanded = true
+                                    },
+                                    modifier = Modifier.heightIn(min = 36.dp),
+                                    shape = RoundedCornerShape(11.dp),
+                                    contentPadding = PaddingValues(
+                                        horizontal = 11.dp, vertical = 0.dp),
+                                    border = BorderStroke(1.dp, PremiumTheme.Green),
+                                    colors = ButtonDefaults.outlinedButtonColors(
+                                        contentColor = PremiumTheme.GreenDark)
+                                ) {
+                                    Icon(Icons.Outlined.AltRoute, contentDescription = null,
+                                        modifier = Modifier.size(16.dp))
+                                    Spacer(Modifier.width(5.dp))
+                                    Text("Построить маршрут", fontSize = 11.sp,
+                                        fontWeight = FontWeight.SemiBold,
+                                        maxLines = 1, overflow = TextOverflow.Ellipsis)
+                                }
+                            }
                         }
                     }
                     if (offlineTraining) {

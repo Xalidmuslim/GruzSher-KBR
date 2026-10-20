@@ -56,6 +56,24 @@ internal fun PremiumEntrance(
     }, content = content)
 }
 
+/**
+ * Small reusable entrance for existing surfaces (booking footer, information
+ * cards). Modifies only GPU alpha/position and never changes measurement.
+ */
+@Composable
+internal fun Modifier.premiumAppear(key: Any?, riseDp: Float = 7f): Modifier {
+    val progress = remember(key) { Animatable(0f) }
+    val density = LocalDensity.current.density
+    LaunchedEffect(key) {
+        progress.animateTo(1f,
+            animationSpec = tween(PremiumMotion.SCREEN_MS, easing = PremiumMotion.Smooth))
+    }
+    return this.graphicsLayer {
+        alpha = 0.78f + progress.value * 0.22f
+        translationY = (1f - progress.value) * riseDp * density
+    }
+}
+
 /** Small matte emphasis rather than a sharp jump on selected truck cards. */
 @Composable
 internal fun Modifier.premiumSelected(selected: Boolean): Modifier {

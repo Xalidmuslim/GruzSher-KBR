@@ -17,6 +17,11 @@ import kotlin.math.roundToInt
  */
 fun truckMapMarker(context: Context, hourlyRub: Int? = null, selected: Boolean = false): Drawable {
     val scale = context.resources.displayMetrics.density
+    // Price labels are drawn directly on Android Canvas (not Compose Text),
+    // so read the same persisted preference when recreating map markers.
+    val textMultiplier = normalizeAppFontScale(context.applicationContext
+        .getSharedPreferences("gruzsher_preferences", Context.MODE_PRIVATE)
+        .getFloat(APP_FONT_SCALE_KEY, 1f))
     val width = 106f
     val height = 77f
     val bitmap = Bitmap.createBitmap((width * scale).roundToInt(), (height * scale).roundToInt(), Bitmap.Config.ARGB_8888)
@@ -34,7 +39,7 @@ fun truckMapMarker(context: Context, hourlyRub: Int? = null, selected: Boolean =
         canvas.drawRoundRect(RectF(5f, 1f, 101f, 29f), 14f, 14f, paint)
         paint.color = white
         paint.textAlign = Paint.Align.CENTER
-        paint.textSize = 12.5f
+        paint.textSize = 12.5f * textMultiplier
         paint.isFakeBoldText = true
         canvas.drawText("${hourlyRub} ₽/ч", 53f, 19.5f, paint)
     }

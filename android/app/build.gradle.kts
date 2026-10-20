@@ -8,11 +8,11 @@ android {
     namespace = "ru.kbr.cargoshare"
     compileSdk = 35
     defaultConfig {
-        applicationId = "ru.kbr.cargoshare.referencepreview.ux383"
+        applicationId = "ru.kbr.cargoshare.referencepreview.ux384"
         minSdk = 26
         targetSdk = 35
-        versionCode = 62
-        versionName = "3.8.3-fixed-bottom-booking-button"
+        versionCode = 63
+        versionName = "3.8.4-global-live-font-scaling"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
     buildFeatures {

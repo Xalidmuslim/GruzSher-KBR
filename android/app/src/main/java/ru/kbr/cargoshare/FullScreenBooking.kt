@@ -310,53 +310,48 @@ fun FullScreenVehicleBooking(
             }
             Surface(color = Color.White, shadowElevation = 12.dp,
                 modifier = Modifier.fillMaxWidth()) {
-                // Compact fixed bottom summary: price + route action share ONE row.
-                // The Dialog already respects WindowInsets.safeDrawing; retain a
-                // modest extra margin instead of 56dp empty space.
+                // Compact fixed footer. Safe drawing inset is applied to
+                // the dialog root; only a modest extra gap is needed here.
+                // Both rows size to their CONTENT even when text is enlarged.
                 Column(Modifier.fillMaxWidth()
-                    .padding(start = 17.dp, end = 17.dp, top = 7.dp, bottom = 21.dp),
-                    verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                    .padding(start = 16.dp, end = 16.dp, top = 6.dp, bottom = 20.dp),
+                    verticalArrangement = Arrangement.spacedBy(4.dp)) {
                     Row(Modifier.fillMaxWidth(),
                         verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                         Column(Modifier.weight(1f),
-                            verticalArrangement = Arrangement.spacedBy(1.dp)) {
-                            Text("Итого за ${hours} ч", fontSize = 11.sp,
-                                color = PremiumTheme.Muted)
+                            verticalArrangement = Arrangement.spacedBy(0.dp)) {
+                            Text("Итого за ${hours} ч", fontSize = 10.sp,
+                                color = PremiumTheme.Muted, maxLines = 1)
                             Text(if (checking) "Рассчитываем…"
                                  else if (available && quotedPrice != null)
                                      "${quotedPrice} ₽" else "Нет тарифа",
-                                fontSize = 25.sp, fontWeight = FontWeight.ExtraBold,
+                                fontSize = 22.sp, fontWeight = FontWeight.ExtraBold,
                                 color = PremiumTheme.GreenDark, maxLines = 1,
                                 overflow = TextOverflow.Ellipsis)
                         }
-                        Column(horizontalAlignment = Alignment.End,
-                            verticalArrangement = Arrangement.spacedBy(5.dp)) {
-                            Text("Без залога", fontSize = 11.sp,
-                                color = PremiumTheme.Green)
-                            if (vehicle.latitude != null && vehicle.longitude != null) {
-                                OutlinedButton(
-                                    onClick = {
-                                        detailRoadRoute = null
-                                        detailRouteRequested = true
-                                        detailRouteTap += 1
-                                        pickupMapExpanded = true
-                                    },
-                                    modifier = Modifier.heightIn(min = 36.dp),
-                                    shape = RoundedCornerShape(11.dp),
-                                    contentPadding = PaddingValues(
-                                        horizontal = 11.dp, vertical = 0.dp),
-                                    border = BorderStroke(1.dp, PremiumTheme.Green),
-                                    colors = ButtonDefaults.outlinedButtonColors(
-                                        contentColor = PremiumTheme.GreenDark)
-                                ) {
-                                    Icon(Icons.Outlined.AltRoute, contentDescription = null,
-                                        modifier = Modifier.size(16.dp))
-                                    Spacer(Modifier.width(5.dp))
-                                    Text("Построить маршрут", fontSize = 11.sp,
-                                        fontWeight = FontWeight.SemiBold,
-                                        maxLines = 1, overflow = TextOverflow.Ellipsis)
-                                }
+                        if (vehicle.latitude != null && vehicle.longitude != null) {
+                            OutlinedButton(
+                                onClick = {
+                                    detailRoadRoute = null
+                                    detailRouteRequested = true
+                                    detailRouteTap += 1
+                                    pickupMapExpanded = true
+                                },
+                                modifier = Modifier.heightIn(min = 34.dp),
+                                shape = RoundedCornerShape(11.dp),
+                                contentPadding = PaddingValues(
+                                    horizontal = 9.dp, vertical = 0.dp),
+                                border = BorderStroke(1.dp, PremiumTheme.Green),
+                                colors = ButtonDefaults.outlinedButtonColors(
+                                    contentColor = PremiumTheme.GreenDark)
+                            ) {
+                                Icon(Icons.Outlined.AltRoute, contentDescription = null,
+                                    modifier = Modifier.size(15.dp))
+                                Spacer(Modifier.width(4.dp))
+                                Text("Построить маршрут", fontSize = 10.sp,
+                                    fontWeight = FontWeight.SemiBold,
+                                    maxLines = 1, overflow = TextOverflow.Ellipsis)
                             }
                         }
                     }
@@ -364,15 +359,17 @@ fun FullScreenVehicleBooking(
                         Button(
                             onClick = { onTryLiveDemo(hours) },
                             enabled = canBook && !checking && quotedPrice != null,
-                            modifier = Modifier.fillMaxWidth().heightIn(min = 54.dp),
+                            modifier = Modifier.fillMaxWidth().heightIn(min = 46.dp),
+                            contentPadding = PaddingValues(horizontal = 10.dp, vertical = 6.dp),
                             shape = RoundedCornerShape(16.dp),
                             colors = ButtonDefaults.buttonColors(containerColor = PremiumTheme.Green)
                         ) {
                             Icon(Icons.Outlined.VerifiedUser, null, modifier = Modifier.size(18.dp))
                             Spacer(Modifier.width(8.dp))
                             Text("Продолжить к автопроверке · ДЕМО",
-                                fontSize = 13.sp, fontWeight = FontWeight.Bold,
-                                maxLines = 2, lineHeight = 18.sp)
+                                fontSize = 12.sp, fontWeight = FontWeight.Bold,
+                                maxLines = 2, lineHeight = 16.sp,
+                                overflow = TextOverflow.Ellipsis)
                         }
                     } else {
                     Button(

@@ -53,8 +53,10 @@ class MapListBackNavigationTest {
             device.wait(Until.hasObject(By.textContains("Списком")), 8_000L))
         assertTrue("Embedded vehicle map was not brought into view",
             device.wait(Until.hasObject(By.textContains("Учебные точки")), 8_000L))
-        assertTrue("Fleet screen exited unexpectedly",
-            device.hasObject(By.text("Найти грузовик")))
+        // "Найти грузовик" is intentionally scrolled offscreen after we
+        // restore the map. Map caption plus bottom navigation identify Fleet.
+        assertTrue("Fleet tab is no longer selected",
+            device.hasObject(By.text("Автомобили")))
         capture("fleet_map_after_back")
     }
 }

@@ -253,19 +253,26 @@ fun ProfessionalProfile(
                             fontWeight = FontWeight.Bold, color = ProfileInk)
                         ProfileHint("По умолчанию 110%. Размер применяется ко всем разделам и сохраняется " +
                             "на этом телефоне. Системный размер шрифта Android также учитывается.")
-                        Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
-                            horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                            APP_FONT_SCALE_OPTIONS.forEach { size ->
-                                val percent = (size * 100).toInt()
-                                FilterChip(
-                                    selected = kotlin.math.abs(fontScale - size) < .01f,
-                                    onClick = { onFontScaleChange(size) },
-                                    label = { Text("$percent%", maxLines = 1) },
-                                    colors = FilterChipDefaults.filterChipColors(
-                                        selectedContainerColor = ProfileGreen,
-                                        selectedLabelColor = Color.White),
-                                    modifier = Modifier.heightIn(min = 44.dp)
-                                )
+                        // Two visible rows of three options: 150% must never
+                        // be hidden offscreen inside a horizontally scrolling bar.
+                        Column(Modifier.fillMaxWidth(),
+                            verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                            APP_FONT_SCALE_OPTIONS.chunked(3).forEach { group ->
+                                Row(Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                                    group.forEach { size ->
+                                        val percent = (size * 100).toInt()
+                                        FilterChip(
+                                            selected = kotlin.math.abs(fontScale - size) < .01f,
+                                            onClick = { onFontScaleChange(size) },
+                                            label = { Text("$percent%", maxLines = 1) },
+                                            colors = FilterChipDefaults.filterChipColors(
+                                                selectedContainerColor = ProfileGreen,
+                                                selectedLabelColor = Color.White),
+                                            modifier = Modifier.weight(1f).heightIn(min = 44.dp)
+                                        )
+                                    }
+                                }
                             }
                         }
                         // This visible sample must resize DURING the tap,

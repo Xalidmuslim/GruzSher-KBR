@@ -48,8 +48,8 @@ def test_four_demo_trucks_include_independent_second_gazelle(client):
     original = next(car for car in cars if car['id'] == 'gazelle-next')
     assert extra['name'] == 'ГАЗель NEXT №2'
     assert extra['hourlyPriceRub'] == original['hourlyPriceRub']
-    assert extra['latitude'] == 43.4824
-    assert extra['longitude'] == 43.5856
+    assert extra['latitude'] is None
+    assert extra['longitude'] is None
 
 
 def test_booking_requires_authentication(client):

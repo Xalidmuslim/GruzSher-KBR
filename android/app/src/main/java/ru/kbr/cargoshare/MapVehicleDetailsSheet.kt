@@ -47,6 +47,7 @@ internal fun MapVehicleDetailsSheet(
     ) {
         Column(
             Modifier.fillMaxWidth().heightIn(max = maxSheetHeight)
+                .premiumAppear(vehicle.id, riseDp = 5f)
                 .verticalScroll(rememberScrollState())
                 .padding(horizontal = 16.dp)
                 .padding(bottom = 24.dp),

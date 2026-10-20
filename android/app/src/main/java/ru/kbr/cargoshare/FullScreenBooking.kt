@@ -314,7 +314,7 @@ fun FullScreenVehicleBooking(
                     fontSize = 11.sp, color = PremiumTheme.Muted, lineHeight = 16.sp)
             }
             Surface(color = Color.White, shadowElevation = 12.dp,
-                modifier = Modifier.fillMaxWidth()) {
+                modifier = Modifier.fillMaxWidth().premiumAppear(vehicle.id, riseDp = 6f)) {
                 // Compact fixed footer. Safe drawing inset is applied to
                 // the dialog root; only a modest extra gap is needed here.
                 // Both rows size to their CONTENT even when text is enlarged.

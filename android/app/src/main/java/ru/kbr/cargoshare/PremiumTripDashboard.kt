@@ -127,7 +127,8 @@ private fun TripAction(
     // Stable two-column tiles across 100–150% font scaling. Putting the
     // caption below the icon prevents long Russian words being crushed
     // between a leading glyph and right-side chevron.
-    Surface(onClick = onClick, modifier = modifier.height(122.dp),
+    Surface(onClick = onClick, modifier = modifier.height(122.dp)
+            .premiumAppear(label, riseDp = 5f),
         shape = RoundedCornerShape(18.dp), color = Color.White,
         shadowElevation = 1.dp) {
         Column(

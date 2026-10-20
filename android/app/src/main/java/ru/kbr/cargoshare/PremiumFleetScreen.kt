@@ -268,15 +268,25 @@ fun PremiumFleetScreen(
             item(key = "carousel") {
                 LazyRow(state = carousel, horizontalArrangement = Arrangement.spacedBy(9.dp)) {
                     items(shown, key = { it.id }) { car ->
-                        PremiumFleetCard(car, Modifier.width(178.dp), selectedId == car.id) {
-                            onSelect(car)
+                        PremiumEntrance(
+                            key = "${car.id}:carousel",
+                            modifier = Modifier.width(178.dp), riseDp = 6f
+                        ) {
+                            PremiumFleetCard(car, Modifier.fillMaxWidth(), selectedId == car.id) {
+                                onSelect(car)
+                            }
                         }
                     }
                 }
             }
         } else {
             items(shown, key = { "list_${it.id}" }) { car ->
-                PremiumFleetListRow(car) { onSelect(car) }
+                PremiumEntrance(
+                    key = "${car.id}:list",
+                    modifier = Modifier.fillMaxWidth(), riseDp = 6f
+                ) {
+                    PremiumFleetListRow(car) { onSelect(car) }
+                }
             }
         }
     }
@@ -326,7 +336,7 @@ private fun PremiumFleetCard(car: Vehicle, modifier: Modifier, selected: Boolean
     // Wrap the actual content. Previously heightIn(min=247.dp) combined with
     // fillMaxSize + weight(1f) spacer created a large empty middle section,
     // especially when titles fit on one line.
-    Card(onClick = onClick, modifier = modifier,
+    Card(onClick = onClick, modifier = modifier.premiumSelected(selected),
         shape = RoundedCornerShape(18.dp),
         colors = CardDefaults.cardColors(containerColor = Color.White),
         elevation = CardDefaults.cardElevation(1.dp),

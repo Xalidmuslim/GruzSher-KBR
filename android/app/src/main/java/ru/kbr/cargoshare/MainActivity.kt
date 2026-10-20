@@ -293,6 +293,13 @@ private fun AppScreen(fontScale: Float, onFontScaleChange: (Float) -> Unit) {
                 }
             }
             tabStates.SaveableStateProvider(tab) {
+                // Do not keep two map screens alive for a crossfade. Reveal the
+                // destination with one lightweight GPU layer instead.
+                PremiumEntrance(
+                    key = "${tab}:${showLiveDemo}",
+                    modifier = Modifier.fillMaxSize(),
+                    riseDp = if (tab == 0) 0f else 9f
+                ) {
             when (tab) {
                 0 -> PremiumFleetScreen(vehicles.filterNot { it.id==liveOverview.carId && liveOverview.phase in setOf(LivePhase.WALK,LivePhase.INSPECT,LivePhase.UNLOCK,LivePhase.READY,LivePhase.DRIVING,LivePhase.RETURNING,LivePhase.RETURN) }, busy, onSelect = { selectedCarKey = it.id }, onRefresh = { reloadVehicles() }, onLiveDemo = { receiptId=null; liveSelectedCarId = null; navigateTo(3, openDemo = true) }, active=liveOverview.phase !in setOf(LivePhase.CHOOSE,LivePhase.RECEIPT))
                 1 -> TripsDashboard(bookings = bookings, cars = vehicles,
@@ -376,6 +383,7 @@ private fun AppScreen(fontScale: Float, onFontScaleChange: (Float) -> Unit) {
                     }
                 )
             }
+                }
             }
         }
     }

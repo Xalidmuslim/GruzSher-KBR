@@ -1,7 +1,11 @@
 #!/usr/bin/env bash
 # Keep the Gradle exit status, but collect real emulator screenshots regardless.
 set +e
-if [[ "${GITHUB_REF_NAME:-}" == "feature/gruzsher-v387-selected-icon-back-to-map" ||
+if [[ "${GITHUB_REF_NAME:-}" == "feature/gruzsher-v390-premium-motion-perf" ]]; then
+  # Keep map/list Back, safe CTA and font-scale correctness under slow motion.
+  gradle -p android --no-daemon connectedDebugAndroidTest \
+    -Pandroid.testInstrumentationRunnerArguments.class=ru.kbr.cargoshare.MapListBackNavigationTest,ru.kbr.cargoshare.CompactLayoutTest
+elif [[ "${GITHUB_REF_NAME:-}" == "feature/gruzsher-v387-selected-icon-back-to-map" ||
       "${GITHUB_REF_NAME:-}" == "feature/gruzsher-v388-smooth-navigation-performance" ]]; then
   gradle -p android --no-daemon connectedDebugAndroidTest \
     -Pandroid.testInstrumentationRunnerArguments.class=ru.kbr.cargoshare.MapListBackNavigationTest

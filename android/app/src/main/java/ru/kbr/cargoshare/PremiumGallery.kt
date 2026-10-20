@@ -1,6 +1,7 @@
 package ru.kbr.cargoshare
 
 import android.content.Intent
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.awaitEachGesture
@@ -70,13 +71,13 @@ fun PremiumGallery(car: Vehicle) {
                 TruckArtwork(car, Modifier.fillMaxSize().clickable { expanded = true }, views[page])
             }
             IconButton(onClick = {
-                scope.launch { pager.animateScrollToPage((pager.currentPage + 5) % views.size) }
+                scope.launch { pager.animateScrollToPage((pager.currentPage + 5) % views.size, animationSpec = tween(PremiumMotion.GALLERY_MS, easing = PremiumMotion.Smooth)) }
             }, modifier = Modifier.align(Alignment.CenterStart)
                 .padding(5.dp).background(Color.White, RoundedCornerShape(50.dp))) {
                 Icon(Icons.Outlined.ChevronLeft, "Предыдущее фото")
             }
             IconButton(onClick = {
-                scope.launch { pager.animateScrollToPage((pager.currentPage + 1) % views.size) }
+                scope.launch { pager.animateScrollToPage((pager.currentPage + 1) % views.size, animationSpec = tween(PremiumMotion.GALLERY_MS, easing = PremiumMotion.Smooth)) }
             }, modifier = Modifier.align(Alignment.CenterEnd)
                 .padding(5.dp).background(Color.White, RoundedCornerShape(50.dp))) {
                 Icon(Icons.Outlined.ChevronRight, "Следующее фото")
@@ -113,7 +114,7 @@ fun PremiumGallery(car: Vehicle) {
         LazyRow(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
             items(views.size) { n ->
                 Surface(onClick = {
-                    scope.launch { pager.animateScrollToPage(n) }
+                    scope.launch { pager.animateScrollToPage(n, animationSpec = tween(PremiumMotion.GALLERY_MS, easing = PremiumMotion.Smooth)) }
                 }, shape = RoundedCornerShape(9.dp),
                     border = if (pager.currentPage == n) {
                         androidx.compose.foundation.BorderStroke(2.dp, PremiumTheme.Green)

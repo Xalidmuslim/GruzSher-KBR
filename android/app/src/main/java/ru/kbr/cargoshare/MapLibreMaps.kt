@@ -142,7 +142,7 @@ private fun applyRussianLabels(style: org.maplibre.android.maps.Style) {
 private fun zoomLibre(map: MapLibreMap?, increase: Boolean) {
     if (map == null) return
     map.animateCamera(if (increase) CameraUpdateFactory.zoomIn()
-        else CameraUpdateFactory.zoomOut())
+        else CameraUpdateFactory.zoomOut(), PremiumMotion.SCREEN_MS + 180)
 }
 
 @Composable
@@ -240,7 +240,8 @@ internal fun MapLibreFleetMap(
             val west = coords.minOf { it.second }
             if (north > south && east > west) {
                 map.animateCamera(CameraUpdateFactory.newLatLngBounds(
-                    org.maplibre.android.geometry.LatLngBounds.from(north, east, south, west), 100))
+                    org.maplibre.android.geometry.LatLngBounds.from(north, east, south, west), 100),
+                    PremiumMotion.SCREEN_MS + 240)
             }
         }
         cars.forEach { vehicle ->
@@ -266,7 +267,7 @@ internal fun MapLibreFleetMap(
         if (roadRoute == null && selected != null && lastSelected != selectedVehicleId &&
             selected.latitude != null && selected.longitude != null) {
             map.animateCamera(CameraUpdateFactory.newLatLng(
-                LatLng(selected.latitude, selected.longitude)))
+                LatLng(selected.latitude, selected.longitude)), PremiumMotion.SCREEN_MS + 200)
         }
         lastSelected = selectedVehicleId
     }
@@ -286,7 +287,7 @@ internal fun MapLibreFleetMap(
     LaunchedEffect(map, phonePosition, centerPending) {
         val fix = phonePosition
         if (map != null && fix != null && centerPending) {
-            map.animateCamera(CameraUpdateFactory.newLatLngZoom(fix, 15.5))
+            map.animateCamera(CameraUpdateFactory.newLatLngZoom(fix, 15.5), PremiumMotion.SCREEN_MS + 180)
             centerPending = false
             status = null
         }
@@ -308,7 +309,7 @@ internal fun MapLibreFleetMap(
         }
         val fix = phonePosition
         if (fix != null) {
-            map?.animateCamera(CameraUpdateFactory.newLatLngZoom(fix, 15.5))
+            map?.animateCamera(CameraUpdateFactory.newLatLngZoom(fix, 15.5), PremiumMotion.SCREEN_MS + 180)
             status = null
         } else {
             centerPending = true
@@ -457,7 +458,7 @@ internal fun MapLibreRouteMap(
             }
             FilledIconButton(onClick = {
                 map?.animateCamera(CameraUpdateFactory.newLatLngZoom(
-                    route[route.size / 2], 15.0))
+                    route[route.size / 2], 15.0), PremiumMotion.SCREEN_MS + 180)
             }, modifier = Modifier.align(Alignment.TopEnd)
                 .padding(end = 12.dp, top = if (onExpand == null) 12.dp else 67.dp),
                 colors = IconButtonDefaults.filledIconButtonColors(

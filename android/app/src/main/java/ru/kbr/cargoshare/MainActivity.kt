@@ -65,6 +65,17 @@ private val TimeFmt = DateTimeFormatter.ofPattern("d MMMM, HH:mm", Ru)
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        // Request the phone's native ~120 Hz mode only when it exists.
+        // The OS may lower it for power saver / thermal conditions; Compose
+        // remains vsync-driven and never assumes a fixed 120 fps timer.
+        val highRefresh = display?.supportedModes
+            ?.map { it.refreshRate }
+            ?.firstOrNull { kotlin.math.abs(it - 120f) < 1f }
+        if (highRefresh != null) {
+            val attrs = window.attributes
+            attrs.preferredRefreshRate = highRefresh
+            window.attributes = attrs
+        }
         // Light system bar background requires dark status-bar icons.
         window.statusBarColor = android.graphics.Color.rgb(246, 247, 242)
         androidx.core.view.WindowInsetsControllerCompat(window, window.decorView)
@@ -329,6 +340,12 @@ private fun AppScreen(fontScale: Float, onFontScaleChange: (Float) -> Unit) {
                 }
             }
             tabStates.SaveableStateProvider(tab) {
+                // One destination at a time; do not double-render map surfaces.
+                PremiumEntrance(
+                    key = "${tab}:${showLiveDemo}",
+                    modifier = Modifier.fillMaxSize(),
+                    riseDp = if (tab == 0) 0f else 9f
+                ) {
             when (tab) {
                 0 -> PremiumFleetScreen(fleetCars, busy, onSelect = { selectedCarKey = it.id }, onRefresh = { reloadVehicles() }, onLiveDemo = { receiptId=null; liveSelectedCarId = null; navigateTo(3, openDemo = true) }, active=liveOverview.phase !in setOf(LivePhase.CHOOSE,LivePhase.RECEIPT))
                 1 -> TripsDashboard(bookings = bookings, cars = vehicles,
@@ -412,6 +429,7 @@ private fun AppScreen(fontScale: Float, onFontScaleChange: (Float) -> Unit) {
                     }
                 )
             }
+                }
             }
         }
     }

@@ -30,6 +30,19 @@ def login(client):
     return {'Authorization': f"Bearer {response.json()['accessToken']}"}
 
 
+def test_fourth_gazelle_business_2012_is_in_demo_catalog(client):
+    response = client.get('/v1/vehicles')
+    assert response.status_code == 200
+    vehicles = response.json()['data']
+    assert len(vehicles) == 4
+    fourth = next(vehicle for vehicle in vehicles
+                  if vehicle['id'] == 'gazelle-business-2012')
+    assert fourth['name'] == 'ГАЗель Бизнес 2012'
+    assert fourth['hourlyPriceRub'] == 500
+    assert fourth['latitude'] is None
+    assert fourth['longitude'] is None
+
+
 def test_catalog_seed_data_are_explicitly_demo(client):
     response = client.get('/v1/vehicles')
     assert response.status_code == 200

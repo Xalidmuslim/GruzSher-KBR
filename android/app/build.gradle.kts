@@ -8,11 +8,11 @@ android {
     namespace = "ru.kbr.cargoshare"
     compileSdk = 35
     defaultConfig {
-        applicationId = "ru.kbr.cargoshare.referencepreview.ux386"
+        applicationId = "ru.kbr.cargoshare.referencepreview.ux387"
         minSdk = 26
         targetSdk = 35
-        versionCode = 65
-        versionName = "3.8.6-compact-cards-footer"
+        versionCode = 66
+        versionName = "3.8.7-selected-icon-map-back"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
     buildFeatures {

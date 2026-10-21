@@ -137,6 +137,9 @@ DEMO_VEHICLES = [
     dict(id='largus-van', name='LADA Largus фургон', type='Компактный фургон', payload_kg=650,
          cargo_volume_m3=3, hourly_rate_rub=350, daily_rate_rub=2200,
          transmission='Механика', pickup_location='Нальчик · демонстрационная точка'),
+    dict(id='gazelle-business-2012', name='ГАЗель Бизнес 2012', type='Бортовая ГАЗель · ДЕМО', payload_kg=1500,
+         cargo_volume_m3=10, hourly_rate_rub=500, daily_rate_rub=3000,
+         transmission='Механика', pickup_location='Нальчик · учебная точка №4 (условная)'),
 ]
 
 

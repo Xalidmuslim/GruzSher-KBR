@@ -28,8 +28,11 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import kotlinx.coroutines.launch
 
-private fun fleetClass(v: Vehicle) =
-    if (v.type.contains("тент", true)) "Тентованные" else "Цельнометаллические"
+private fun fleetClass(v: Vehicle) = when {
+    v.type.contains("тент", ignoreCase = true) -> "Тентованные"
+    v.type.contains("борт", ignoreCase = true) -> "Бортовые"
+    else -> "Цельнометаллические"
+}
 
 @Composable
 fun PremiumFleetScreen(
@@ -301,7 +304,7 @@ fun PremiumFleetScreen(
 private fun FleetFilters(selected: String, onChange: (String) -> Unit) {
     LazyRow(contentPadding = PaddingValues(horizontal = 12.dp),
         horizontalArrangement = Arrangement.spacedBy(7.dp)) {
-        items(listOf("Все", "Тентованные", "Цельнометаллические")) { name ->
+        items(listOf("Все", "Тентованные", "Цельнометаллические", "Бортовые")) { name ->
             FilterChip(selected = selected == name, onClick = { onChange(name) },
                 label = { Text(name, fontSize = 11.sp) },
                 leadingIcon = { Icon(
